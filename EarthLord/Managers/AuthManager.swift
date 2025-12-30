@@ -53,8 +53,14 @@ final class AuthManager: ObservableObject {
     // MARK: - 初始化
 
     private init() {
-        // 启动认证状态监听
-        startAuthStateListener()
+        // 延迟启动认证状态监听，避免初始化时的潜在问题
+        Task { @MainActor in
+            // 等待一小段时间确保应用完全启动
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1秒
+            self.startAuthStateListener()
+            // 检查当前会话
+            await self.checkSession()
+        }
     }
 
     deinit {
@@ -243,6 +249,8 @@ final class AuthManager: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        print("🔐 开始登录: \(email)")
+
         do {
             let session = try await supabase.auth.signIn(
                 email: email,
@@ -253,9 +261,29 @@ final class AuthManager: ObservableObject {
             isAuthenticated = true
 
             print("✅ 登录成功: \(session.user.email ?? "unknown")")
+        } catch let error as NSError {
+            // 详细错误信息
+            print("❌ 登录失败详情:")
+            print("   错误域: \(error.domain)")
+            print("   错误码: \(error.code)")
+            print("   错误描述: \(error.localizedDescription)")
+            print("   详细信息: \(error)")
+
+            // 根据错误类型提供友好的提示
+            if error.localizedDescription.contains("Invalid login credentials") ||
+               error.localizedDescription.contains("invalid") {
+                errorMessage = "邮箱或密码错误，请检查后重试"
+            } else if error.localizedDescription.contains("Email not confirmed") {
+                errorMessage = "邮箱未验证，请先验证邮箱"
+            } else if error.localizedDescription.contains("network") ||
+                      error.localizedDescription.contains("connection") {
+                errorMessage = "网络连接失败，请检查网络"
+            } else {
+                errorMessage = "登录失败: \(error.localizedDescription)"
+            }
         } catch {
-            errorMessage = "登录失败: \(error.localizedDescription)"
             print("❌ 登录失败: \(error)")
+            errorMessage = "登录失败: \(error.localizedDescription)"
         }
 
         isLoading = false

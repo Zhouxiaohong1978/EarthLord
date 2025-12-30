@@ -17,12 +17,7 @@ final class SupabaseManager {
     private init() {
         client = SupabaseClient(
             supabaseURL: URL(string: "https://bckczjqrrsuhfzudrkin.supabase.co")!,
-            supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJja2N6anFycnN1aGZ6dWRya2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0MzU0ODEsImV4cCI6MjA4MTAxMTQ4MX0.MR0ZfnhulWqIeseXOp4tEOJMFQlJ4-LW6agJnBRqoSg",
-            options: SupabaseClientOptions(
-                auth: SupabaseClientOptions.AuthOptions(
-                    autoRefreshToken: false
-                )
-            )
+            supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJja2N6anFycnN1aGZ6dWRya2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0MzU0ODEsImV4cCI6MjA4MTAxMTQ4MX0.MR0ZfnhulWqIeseXOp4tEOJMFQlJ4-LW6agJnBRqoSg"
         )
     }
 }

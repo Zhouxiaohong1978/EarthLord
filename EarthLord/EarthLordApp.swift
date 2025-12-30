@@ -9,19 +9,28 @@ import SwiftUI
 
 @main
 struct EarthLordApp: App {
-    /// 认证管理器
+    /// 认证管理器 - 使用 lazy 初始化避免启动时的问题
     @StateObject private var authManager = AuthManager.shared
 
     /// 启动页是否完成
     @State private var splashFinished = false
 
+    /// 应用是否已准备好
+    @State private var isReady = false
+
     var body: some Scene {
         WindowGroup {
             ZStack {
-                if !splashFinished {
+                if !splashFinished || !isReady {
                     // 启动页
                     SplashView(isFinished: $splashFinished)
                         .transition(.opacity)
+                        .onAppear {
+                            // 确保应用初始化完成
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                isReady = true
+                            }
+                        }
                 } else if !authManager.isAuthenticated || authManager.needsPasswordSetup {
                     // 未登录或需要设置密码：显示认证页面
                     AuthView()
@@ -35,6 +44,7 @@ struct EarthLordApp: App {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: splashFinished)
+            .animation(.easeInOut(duration: 0.3), value: isReady)
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
             .animation(.easeInOut(duration: 0.3), value: authManager.needsPasswordSetup)
         }

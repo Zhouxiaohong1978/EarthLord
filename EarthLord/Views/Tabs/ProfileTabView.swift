@@ -31,11 +31,13 @@ struct ProfileTabView: View {
 
                         // 退出登录按钮
                         logoutButton
-
-                        Spacer(minLength: 100)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
+                }
+                .scrollIndicators(.hidden)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear.frame(height: 180)
                 }
             }
             .navigationTitle("个人中心")

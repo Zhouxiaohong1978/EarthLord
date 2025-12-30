@@ -416,6 +416,42 @@ final class AuthManager: ObservableObject {
         isLoading = false
     }
 
+    /// 删除账户
+    /// 调用 Supabase 边缘函数删除当前用户账户
+    func deleteAccount() async throws {
+        isLoading = true
+        errorMessage = nil
+
+        print("🗑️ 开始删除账户...")
+
+        do {
+            // 调用边缘函数删除账户
+            _ = try await supabase.functions.invoke(
+                "delete-account",
+                options: FunctionInvokeOptions(
+                    body: Data() // 空请求体
+                )
+            )
+
+            print("✅ 账户删除成功")
+
+            // 重置所有状态
+            isAuthenticated = false
+            needsPasswordSetup = false
+            currentUser = nil
+            otpSent = false
+            otpVerified = false
+
+        } catch {
+            print("❌ 删除账户失败: \(error)")
+            print("❌ 错误详情: \(error.localizedDescription)")
+            errorMessage = "删除账户失败: \(error.localizedDescription)"
+            throw error
+        }
+
+        isLoading = false
+    }
+
     /// 检查当前会话状态
     func checkSession() async {
         isLoading = true

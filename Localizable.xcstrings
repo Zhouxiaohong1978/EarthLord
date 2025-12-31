@@ -1,18 +1,6 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
-    "%llds" : {
-
-    },
-    "EARTH LORD" : {
-
-    },
-    "English" : {
-
-    },
-    "ID: %@..." : {
-
-    },
     "Supabase 测试" : {
       "localizations" : {
         "en" : {
@@ -670,9 +658,6 @@
           }
         }
       }
-    },
-    "简体中文" : {
-
     },
     "管理你的领地" : {
       "localizations" : {

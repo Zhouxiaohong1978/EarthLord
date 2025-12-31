@@ -37,7 +37,7 @@ struct ProfileTabView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 12) {
                         // 用户头像和信息
                         userInfoSection
 
@@ -49,14 +49,12 @@ struct ProfileTabView: View {
 
                         // 删除账户按钮
                         deleteAccountButton
+                            .padding(.bottom, 120)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, 12)
                 }
                 .scrollIndicators(.hidden)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    Color.clear.frame(height: 180)
-                }
             }
             .navigationTitle("个人中心")
             .navigationBarTitleDisplayMode(.inline)
@@ -85,42 +83,42 @@ struct ProfileTabView: View {
     // MARK: - 用户信息区域
 
     private var userInfoSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             // 头像
             ZStack {
                 Circle()
                     .fill(ApocalypseTheme.primary)
-                    .frame(width: 100, height: 100)
+                    .frame(width: 80, height: 80)
 
                 // 显示用户名首字符
                 Text(avatarText)
-                    .font(.system(size: 48, weight: .bold))
+                    .font(.system(size: 38, weight: .bold))
                     .foregroundColor(.white)
             }
-            .padding(.top, 20)
+            .padding(.top, 12)
 
             // 用户名
             Text(displayName)
-                .font(.title2)
+                .font(.title3)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
             // 邮箱
             Text(authManager.currentUser?.email ?? "未设置邮箱")
-                .font(.subheadline)
+                .font(.footnote)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
             // 用户ID
             if let userId = authManager.currentUser?.id.uuidString {
                 Text("ID: \(String(userId.prefix(8)))...")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(ApocalypseTheme.textMuted)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .padding(.vertical, 16)
         .background(ApocalypseTheme.cardBackground)
-        .cornerRadius(16)
+        .cornerRadius(12)
     }
 
     /// 头像显示文字（用户名首字符）
@@ -161,7 +159,7 @@ struct ProfileTabView: View {
             menuItem(icon: "info.circle.fill", title: "关于", subtitle: "版本信息", color: ApocalypseTheme.success)
         }
         .background(ApocalypseTheme.cardBackground)
-        .cornerRadius(16)
+        .cornerRadius(12)
     }
 
     private var menuDivider: some View {
@@ -171,19 +169,19 @@ struct ProfileTabView: View {
     }
 
     private func menuItem(icon: String, title: String, subtitle: String, color: Color) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.title3)
+                .font(.body)
                 .foregroundColor(color)
-                .frame(width: 24)
+                .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.body)
+                    .font(.callout)
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(ApocalypseTheme.textSecondary)
             }
 
@@ -193,8 +191,8 @@ struct ProfileTabView: View {
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textMuted)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
     }
 
     // MARK: - 退出登录按钮
@@ -205,18 +203,18 @@ struct ProfileTabView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.body)
+                    .font(.callout)
                 Text("退出登录")
-                    .font(.body)
+                    .font(.callout)
                     .fontWeight(.medium)
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .padding(.vertical, 12)
             .background(ApocalypseTheme.primary)
-            .cornerRadius(12)
+            .cornerRadius(10)
         }
-        .padding(.top, 10)
+        .padding(.top, 6)
     }
 
     // MARK: - 删除账户按钮
@@ -228,18 +226,18 @@ struct ProfileTabView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "trash.fill")
-                    .font(.body)
+                    .font(.callout)
                 Text("删除账户")
-                    .font(.body)
+                    .font(.callout)
                     .fontWeight(.medium)
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .padding(.vertical, 12)
             .background(ApocalypseTheme.danger)
-            .cornerRadius(12)
+            .cornerRadius(10)
         }
-        .padding(.top, 8)
+        .padding(.top, 4)
     }
 
     // MARK: - 删除账户确认视图

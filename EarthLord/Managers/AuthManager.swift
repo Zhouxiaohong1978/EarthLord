@@ -380,14 +380,33 @@ final class AuthManager: ObservableObject {
     }
 
     /// 使用 Google 账号登录
-    /// TODO: 实现 Google 登录
-    /// - 需要配置 Google Cloud Console
-    /// - 需要在 Supabase Dashboard 启用 Google Provider
     func signInWithGoogle() async {
-        // TODO: 实现 Google 登录
-        // 1. 使用 Google Sign-In SDK 获取 ID token
-        // 2. 调用 supabase.auth.signInWithIdToken(credentials: .init(provider: .google, idToken: idToken))
-        print("🔵 Google 登录 - 待实现")
+        isLoading = true
+        errorMessage = nil
+
+        print("🔵 开始 Google 登录流程")
+
+        do {
+            // 调用 GoogleAuthService 执行登录
+            let session = try await GoogleAuthService.shared.signInWithGoogle()
+
+            // 登录成功，更新状态
+            currentUser = session.user
+            isAuthenticated = true
+
+            print("✅ Google 登录完成")
+            print("   用户邮箱: \(session.user.email ?? "未知")")
+        } catch let error as GoogleAuthError {
+            // Google 登录特定错误
+            print("❌ Google 登录失败: \(error.localizedDescription)")
+            errorMessage = "Google 登录失败: \(error.localizedDescription)"
+        } catch {
+            // 其他错误
+            print("❌ Google 登录失败: \(error)")
+            errorMessage = "Google 登录失败，请重试"
+        }
+
+        isLoading = false
     }
 
     // MARK: - 其他方法

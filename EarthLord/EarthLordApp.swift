@@ -47,6 +47,16 @@ struct EarthLordApp: App {
             .animation(.easeInOut(duration: 0.3), value: isReady)
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
             .animation(.easeInOut(duration: 0.3), value: authManager.needsPasswordSetup)
+            .onOpenURL { url in
+                // 处理 Google 登录回调 URL
+                print("📱 收到 URL 回调: \(url)")
+                let handled = GoogleAuthService.shared.handleURL(url)
+                if handled {
+                    print("✅ URL 已被 Google 登录处理")
+                } else {
+                    print("⚠️ URL 未被处理: \(url)")
+                }
+            }
         }
     }
 }

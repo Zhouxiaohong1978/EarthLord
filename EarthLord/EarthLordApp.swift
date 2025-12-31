@@ -12,6 +12,9 @@ struct EarthLordApp: App {
     /// 认证管理器 - 使用 lazy 初始化避免启动时的问题
     @StateObject private var authManager = AuthManager.shared
 
+    /// 语言管理器
+    @StateObject private var languageManager = LanguageManager.shared
+
     /// 启动页是否完成
     @State private var splashFinished = false
 
@@ -43,6 +46,9 @@ struct EarthLordApp: App {
                         .transition(.opacity)
                 }
             }
+            .id(languageManager.currentLocale) // 语言切换时强制重新创建视图
+            .environmentObject(languageManager)
+            .environment(\.locale, .init(identifier: languageManager.currentLocale))
             .animation(.easeInOut(duration: 0.3), value: splashFinished)
             .animation(.easeInOut(duration: 0.3), value: isReady)
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)

@@ -110,7 +110,7 @@ struct ProfileTabView: View {
 
             // 用户ID
             if let userId = authManager.currentUser?.id.uuidString {
-                Text("ID: \(String(userId.prefix(8)))...")
+                Text(String(format: NSLocalizedString("ID: %@...", comment: ""), String(userId.prefix(8))))
                     .font(.caption2)
                     .foregroundColor(ApocalypseTheme.textMuted)
             }
@@ -168,7 +168,7 @@ struct ProfileTabView: View {
             .padding(.leading, 56)
     }
 
-    private func menuItem(icon: String, title: String, subtitle: String, color: Color) -> some View {
+    private func menuItem(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, color: Color) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.body)
@@ -278,11 +278,27 @@ struct ProfileTabView: View {
 
                     // 确认输入框
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("请输入「删除」以确认")
-                            .font(.subheadline)
-                            .foregroundColor(ApocalypseTheme.textSecondary)
+                        HStack {
+                            Text("请输入「删除」以确认")
+                                .font(.subheadline)
+                                .foregroundColor(ApocalypseTheme.textSecondary)
 
-                        TextField("输入：删除", text: $deleteConfirmationText)
+                            Spacer()
+
+                            // 显示匹配状态
+                            if !deleteConfirmationText.isEmpty {
+                                let trimmed = deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if trimmed == "删除" {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(ApocalypseTheme.success)
+                                } else {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(ApocalypseTheme.danger)
+                                }
+                            }
+                        }
+
+                        TextField("删除", text: $deleteConfirmationText)
                             .font(.body)
                             .foregroundColor(ApocalypseTheme.textPrimary)
                             .padding()
@@ -302,6 +318,7 @@ struct ProfileTabView: View {
                                 }
 
                                 print("   匹配结果: \(trimmed == "删除")")
+                                print("   按钮状态: \(isDeleteButtonEnabled ? "启用" : "禁用")")
                             }
                     }
 

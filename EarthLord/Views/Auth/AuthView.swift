@@ -291,7 +291,7 @@ struct AuthView: View {
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("验证码已发送至 \(registerEmail)")
+            Text(String(format: NSLocalizedString("验证码已发送至 %@", comment: ""), registerEmail))
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -540,7 +540,7 @@ struct AuthView: View {
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("验证码已发送至 \(forgotEmail)")
+            Text(String(format: NSLocalizedString("验证码已发送至 %@", comment: ""), forgotEmail))
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 

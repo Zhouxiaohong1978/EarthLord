@@ -8,11 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		2B02DE172EFEBFE700D675DA /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2B02DE162EFEBFE700D675DA /* Supabase */; };
+		2B578DB82F054FC3009F1577 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 2B578DB72F054FC3009F1577 /* Localizable.xcstrings */; };
 		2BC9C0282F04455D00333A94 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2BC9C0272F04455D00333A94 /* GoogleSignIn */; };
 		2BC9C02A2F04455D00333A94 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 2BC9C0292F04455D00333A94 /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		2B578DB72F054FC3009F1577 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		2B5C55C92EFACCA5008CAE02 /* EarthLord.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EarthLord.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -41,6 +43,7 @@
 		2B5C55C02EFACCA5008CAE02 = {
 			isa = PBXGroup;
 			children = (
+				2B578DB72F054FC3009F1577 /* Localizable.xcstrings */,
 				2B5C55CB2EFACCA5008CAE02 /* EarthLord */,
 				2B5C55CA2EFACCA5008CAE02 /* Products */,
 			);
@@ -98,11 +101,12 @@
 				};
 			};
 			buildConfigurationList = 2B5C55C42EFACCA5008CAE02 /* Build configuration list for PBXProject "EarthLord" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
 				Base,
+				"zh-Hans",
+				en,
 			);
 			mainGroup = 2B5C55C02EFACCA5008CAE02;
 			minimizedProjectReferenceProxies = 1;
@@ -125,6 +129,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B578DB82F054FC3009F1577 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,6 +207,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -260,6 +266,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

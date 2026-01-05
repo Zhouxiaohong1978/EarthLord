@@ -78,6 +78,10 @@ struct AuthView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 60)
             }
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture {
+                hideKeyboard()
+            }
 
             // 加载遮罩
             if authManager.isLoading {
@@ -422,6 +426,8 @@ struct AuthView: View {
         VStack(spacing: 12) {
             // Apple 登录按钮
             Button {
+                // 收起键盘
+                hideKeyboard()
                 showToastMessage("Apple 登录即将开放")
             } label: {
                 HStack {
@@ -439,8 +445,15 @@ struct AuthView: View {
 
             // Google 登录按钮
             Button {
+                // 先收起键盘，避免 Siri 建议拦截
+                hideKeyboard()
+                print("🔵 Google 登录按钮被点击")
                 Task {
+                    // 等待键盘和 Siri 建议完全收起（500ms）
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    print("🔵 开始执行 Google 登录")
                     await authManager.signInWithGoogle()
+                    print("🔵 Google 登录完成")
                 }
             } label: {
                 HStack {
@@ -454,8 +467,15 @@ struct AuthView: View {
                 .padding(.vertical, 14)
                 .background(Color.white)
                 .cornerRadius(12)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
+    }
+
+    /// 收起键盘
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     // MARK: - 忘记密码弹窗
@@ -740,6 +760,7 @@ struct CustomTextField: View {
                 .keyboardType(keyboardType)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .textContentType(.none)
         }
         .padding()
         .background(ApocalypseTheme.cardBackground)
@@ -767,9 +788,11 @@ struct CustomSecureField: View {
             if isSecure {
                 SecureField(placeholder, text: $text)
                     .foregroundColor(ApocalypseTheme.textPrimary)
+                    .textContentType(.none)
             } else {
                 TextField(placeholder, text: $text)
                     .foregroundColor(ApocalypseTheme.textPrimary)
+                    .textContentType(.none)
             }
 
             Button {

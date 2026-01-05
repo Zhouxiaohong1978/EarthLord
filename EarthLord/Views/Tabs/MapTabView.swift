@@ -29,7 +29,10 @@ struct MapTabView: View {
             // MARK: 底层地图
             MapViewRepresentable(
                 userLocation: $userLocation,
-                hasLocatedUser: $hasLocatedUser
+                hasLocatedUser: $hasLocatedUser,
+                trackingPath: $locationManager.pathCoordinates,
+                pathUpdateVersion: locationManager.pathUpdateVersion,
+                isTracking: locationManager.isTracking
             )
             .ignoresSafeArea()
 
@@ -109,26 +112,92 @@ struct MapTabView: View {
     // MARK: - 底部控制栏
 
     private var bottomControlBar: some View {
-        HStack {
+        HStack(alignment: .bottom) {
             Spacer()
 
-            // 定位按钮
-            Button(action: {
-                centerToUserLocation()
-            }) {
-                Image(systemName: hasLocatedUser ? "location.fill" : "location")
-                    .font(.system(size: 20))
-                    .foregroundColor(hasLocatedUser ? ApocalypseTheme.primary : ApocalypseTheme.textPrimary)
-                    .frame(width: 44, height: 44)
-                    .background(ApocalypseTheme.cardBackground.opacity(0.9))
-                    .cornerRadius(22)
-                    .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+            VStack(spacing: 12) {
+                // 圈地按钮
+                trackingButton
+
+                // 定位按钮
+                Button(action: {
+                    centerToUserLocation()
+                }) {
+                    Image(systemName: hasLocatedUser ? "location.fill" : "location")
+                        .font(.system(size: 20))
+                        .foregroundColor(hasLocatedUser ? ApocalypseTheme.primary : ApocalypseTheme.textPrimary)
+                        .frame(width: 44, height: 44)
+                        .background(ApocalypseTheme.cardBackground.opacity(0.9))
+                        .cornerRadius(22)
+                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                }
+                .disabled(!locationManager.isAuthorized)
+                .opacity(locationManager.isAuthorized ? 1 : 0.5)
             }
-            .disabled(!locationManager.isAuthorized)
-            .opacity(locationManager.isAuthorized ? 1 : 0.5)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 24)
+    }
+
+    // MARK: - 圈地按钮
+
+    /// 圈地追踪按钮
+    private var trackingButton: some View {
+        Button(action: {
+            toggleTracking()
+        }) {
+            HStack(spacing: 8) {
+                // 图标
+                Image(systemName: locationManager.isTracking ? "stop.fill" : "flag.fill")
+                    .font(.system(size: 16))
+
+                // 文字
+                if locationManager.isTracking {
+                    Text("停止圈地")
+                        .font(.subheadline.bold())
+
+                    // 显示当前点数
+                    Text("(\(locationManager.pathPointCount))")
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.white.opacity(0.8))
+                } else {
+                    Text("开始圈地")
+                        .font(.subheadline.bold())
+                }
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(locationManager.isTracking ? Color.red : ApocalypseTheme.primary)
+            )
+            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+        }
+        .disabled(!locationManager.isAuthorized)
+        .opacity(locationManager.isAuthorized ? 1 : 0.5)
+        // 追踪时添加脉冲动画
+        .overlay(
+            Capsule()
+                .stroke(Color.red, lineWidth: 2)
+                .scaleEffect(locationManager.isTracking ? 1.2 : 1.0)
+                .opacity(locationManager.isTracking ? 0 : 1)
+                .animation(
+                    locationManager.isTracking ?
+                        Animation.easeOut(duration: 1.0).repeatForever(autoreverses: false) :
+                        .default,
+                    value: locationManager.isTracking
+                )
+        )
+    }
+
+    /// 切换追踪状态
+    private func toggleTracking() {
+        if locationManager.isTracking {
+            locationManager.stopPathTracking()
+        } else {
+            locationManager.startPathTracking()
+        }
     }
 
     /// 居中到用户位置

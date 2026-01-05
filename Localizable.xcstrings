@@ -169,23 +169,6 @@
         }
       }
     },
-    "切换语言后立即生效，无需重启应用" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Language changes take effect immediately"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "切换语言后立即生效，无需重启应用"
-          }
-        }
-      }
-    },
     "删除" : {
       "localizations" : {
         "en" : {
@@ -432,23 +415,6 @@
         }
       }
     },
-    "探索和圈占领地" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explore and claim territories"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "探索和圈占领地"
-          }
-        }
-      }
-    },
     "无法获取位置" : {
 
     },
@@ -464,23 +430,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更多"
-          }
-        }
-      }
-    },
-    "未设置邮箱" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No email set"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未设置邮箱"
           }
         }
       }
@@ -1060,40 +1009,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "验证成功！请设置您的登录密码"
-          }
-        }
-      }
-    },
-    "验证码已发送至 \\(forgotEmail)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verification code sent to \\(forgotEmail)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证码已发送至 \\(forgotEmail)"
-          }
-        }
-      }
-    },
-    "验证码已发送至 \\(registerEmail)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verification code sent to \\(registerEmail)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证码已发送至 \\(registerEmail)"
           }
         }
       }

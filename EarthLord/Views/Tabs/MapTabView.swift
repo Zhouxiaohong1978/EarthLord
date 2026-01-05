@@ -13,8 +13,8 @@ struct MapTabView: View {
 
     // MARK: - State
 
-    /// 定位管理器
-    @StateObject private var locationManager = LocationManager()
+    /// 定位管理器（全局共享）
+    @EnvironmentObject var locationManager: LocationManager
 
     /// 用户位置坐标
     @State private var userLocation: CLLocationCoordinate2D?
@@ -32,7 +32,8 @@ struct MapTabView: View {
                 hasLocatedUser: $hasLocatedUser,
                 trackingPath: $locationManager.pathCoordinates,
                 pathUpdateVersion: locationManager.pathUpdateVersion,
-                isTracking: locationManager.isTracking
+                isTracking: locationManager.isTracking,
+                isPathClosed: locationManager.isPathClosed
             )
             .ignoresSafeArea()
 
@@ -40,6 +41,11 @@ struct MapTabView: View {
             VStack {
                 // 顶部状态栏
                 topStatusBar
+
+                // 速度警告横幅
+                if locationManager.speedWarning != nil {
+                    speedWarningBanner
+                }
 
                 Spacer()
 
@@ -106,6 +112,48 @@ struct MapTabView: View {
             return hasLocatedUser ? "已定位" : "定位中..."
         } else {
             return "等待授权"
+        }
+    }
+
+    // MARK: - 速度警告横幅
+
+    /// 速度警告横幅
+    private var speedWarningBanner: some View {
+        HStack(spacing: 12) {
+            // 警告图标
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 20))
+                .foregroundColor(.white)
+
+            // 警告文字
+            if let warning = locationManager.speedWarning {
+                Text(warning)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            // 根据是否还在追踪选择颜色
+            (locationManager.isTracking ? Color.yellow : Color.red)
+                .opacity(0.9)
+        )
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .onAppear {
+            // 3 秒后自动消失
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation {
+                    locationManager.speedWarning = nil
+                }
+            }
         }
     }
 
@@ -267,4 +315,5 @@ struct MapTabView: View {
 
 #Preview {
     MapTabView()
+        .environmentObject(LocationManager())
 }

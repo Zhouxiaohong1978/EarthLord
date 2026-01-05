@@ -47,13 +47,13 @@ struct MoreTabView: View {
                     // 开发者工具部分
                     Section {
                         NavigationLink {
-                            SupabaseTestView()
+                            TestMenuView()
                         } label: {
                             HStack {
-                                Image(systemName: "server.rack")
+                                Image(systemName: "wrench.and.screwdriver")
                                     .foregroundColor(ApocalypseTheme.primary)
                                     .frame(width: 30)
-                                Text("Supabase 连接测试")
+                                Text("开发测试")
                                     .foregroundColor(ApocalypseTheme.textPrimary)
                             }
                         }

@@ -13,6 +13,26 @@ struct MainTabView: View {
     /// 全局定位管理器 - 供所有 Tab 共享
     @StateObject private var locationManager = LocationManager()
 
+    init() {
+        // 设置 TabBar 外观
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(ApocalypseTheme.cardBackground)
+
+        // 未选中状态：使用较亮的灰白色，确保可见
+        let normalColor = UIColor(white: 0.7, alpha: 1.0)
+        appearance.stackedLayoutAppearance.normal.iconColor = normalColor
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: normalColor]
+
+        // 选中状态：使用主题橙色
+        let selectedColor = UIColor(ApocalypseTheme.primary)
+        appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: selectedColor]
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             MapTabView()

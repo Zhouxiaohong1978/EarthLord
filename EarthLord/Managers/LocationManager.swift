@@ -329,6 +329,9 @@ final class LocationManager: NSObject, ObservableObject {
             // 添加日志 - 闭环成功
             TerritoryLogger.shared.log("闭环成功！距起点 \(String(format: "%.1f", distanceToStart))m", type: .success)
 
+            // ⭐ 闭环成功后自动停止追踪
+            stopPathTracking()
+
             // ⭐ 闭环成功后自动进行领地验证
             let result = validateTerritory()
             territoryValidationPassed = result.isValid
@@ -500,9 +503,12 @@ final class LocationManager: NSObject, ObservableObject {
         // ✅ 防御性检查：确保有足够的线段
         guard segmentCount >= 2 else { return false }
 
-        // ✅ 闭环时需要跳过的首尾线段数量（防止正常圈地被误判）
-        let skipHeadCount = 2
-        let skipTailCount = 2
+        // ✅ 只跳过第一条和最后一条线段的比较（它们在闭环时会靠近）
+        // 减少跳过数量以确保检测到中间的交叉
+        let skipHeadCount = 1
+        let skipTailCount = 1
+
+        TerritoryLogger.shared.log("自交检测: 共 \(segmentCount) 条线段", type: .info)
 
         for i in 0..<segmentCount {
             // ✅ 循环内索引检查
@@ -511,7 +517,7 @@ final class LocationManager: NSObject, ObservableObject {
             let p1 = pathSnapshot[i]
             let p2 = pathSnapshot[i + 1]
 
-            // 从 i+2 开始，跳过相邻线段
+            // 从 i+2 开始，跳过相邻线段（相邻线段共享一个顶点，必然"相交"）
             let startJ = i + 2
             guard startJ < segmentCount else { continue }
 
@@ -519,11 +525,11 @@ final class LocationManager: NSObject, ObservableObject {
                 // ✅ 循环内索引检查
                 guard j < pathSnapshot.count - 1 else { break }
 
-                // ✅ 跳过首尾附近线段的比较（防止正常圈地被误判为自交）
-                let isHeadSegment = i < skipHeadCount
-                let isTailSegment = j >= segmentCount - skipTailCount
+                // ✅ 只跳过首尾线段的比较（闭环时起点终点靠近是正常的）
+                let isFirstSegment = i < skipHeadCount
+                let isLastSegment = j >= segmentCount - skipTailCount
 
-                if isHeadSegment && isTailSegment {
+                if isFirstSegment && isLastSegment {
                     continue
                 }
 

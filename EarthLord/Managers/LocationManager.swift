@@ -430,29 +430,50 @@ final class LocationManager: NSObject, ObservableObject {
         return totalDistance
     }
 
-    /// 使用鞋带公式计算多边形面积（考虑地球曲率）
+    /// 使用鞋带公式计算多边形面积（平面近似，适用于小区域）
     /// - Returns: 面积（平方米）
     private func calculatePolygonArea() -> Double {
         guard pathCoordinates.count >= 3 else { return 0 }
 
-        let earthRadius: Double = 6371000  // 地球半径（米）
-        var area: Double = 0
+        // 1. 计算多边形质心（中心点）
+        var sumLat: Double = 0
+        var sumLon: Double = 0
+        for coord in pathCoordinates {
+            sumLat += coord.latitude
+            sumLon += coord.longitude
+        }
+        let centroidLat = sumLat / Double(pathCoordinates.count)
+        let centroidLon = sumLon / Double(pathCoordinates.count)
 
-        for i in 0..<pathCoordinates.count {
-            let current = pathCoordinates[i]
-            let next = pathCoordinates[(i + 1) % pathCoordinates.count]  // 循环取点
+        // 2. 经纬度转米的换算系数
+        // 1度纬度 ≈ 111,320 米
+        // 1度经度 ≈ 111,320 * cos(纬度) 米
+        let metersPerDegreeLat: Double = 111320.0
+        let metersPerDegreeLon: Double = 111320.0 * cos(centroidLat * .pi / 180)
 
-            // 经纬度转弧度
-            let lat1 = current.latitude * .pi / 180
-            let lon1 = current.longitude * .pi / 180
-            let lat2 = next.latitude * .pi / 180
-            let lon2 = next.longitude * .pi / 180
-
-            // 鞋带公式（球面修正）
-            area += (lon2 - lon1) * (2 + sin(lat1) + sin(lat2))
+        // 3. 将所有点转换为相对于质心的本地坐标（米）
+        var localCoords: [(x: Double, y: Double)] = []
+        for coord in pathCoordinates {
+            let x = (coord.longitude - centroidLon) * metersPerDegreeLon
+            let y = (coord.latitude - centroidLat) * metersPerDegreeLat
+            localCoords.append((x: x, y: y))
         }
 
-        area = abs(area * earthRadius * earthRadius / 2.0)
+        // 4. 使用标准鞋带公式计算面积
+        // Area = 0.5 * |Σ (x_i * y_{i+1} - x_{i+1} * y_i)|
+        var area: Double = 0
+        let n = localCoords.count
+
+        for i in 0..<n {
+            let current = localCoords[i]
+            let next = localCoords[(i + 1) % n]
+            area += current.x * next.y - next.x * current.y
+        }
+
+        area = abs(area) / 2.0
+
+        TerritoryLogger.shared.log("面积计算: 质心(\(String(format: "%.4f", centroidLat)), \(String(format: "%.4f", centroidLon)))", type: .info)
+
         return area
     }
 

@@ -433,46 +433,101 @@ final class LocationManager: NSObject, ObservableObject {
     /// 使用鞋带公式计算多边形面积（平面近似，适用于小区域）
     /// - Returns: 面积（平方米）
     private func calculatePolygonArea() -> Double {
-        guard pathCoordinates.count >= 3 else { return 0 }
+        // 检查点数是否足够
+        let pointCount = pathCoordinates.count
+        guard pointCount >= 3 else {
+            TerritoryLogger.shared.log("面积计算: 点数不足 (\(pointCount)个)，返回0", type: .warning)
+            return 0
+        }
 
-        // 1. 计算多边形质心（中心点）
+        // ⭐ 关键修复：创建闭合路径（将起点添加到末尾）
+        // 这样鞋带公式不需要用"虚拟边"连接最后一点到起点
+        var closedPath = pathCoordinates
+        if let firstPoint = pathCoordinates.first,
+           let lastPoint = pathCoordinates.last {
+            // 计算最后一点到起点的距离
+            let lastLoc = CLLocation(latitude: lastPoint.latitude, longitude: lastPoint.longitude)
+            let firstLoc = CLLocation(latitude: firstPoint.latitude, longitude: firstPoint.longitude)
+            let gapDistance = lastLoc.distance(from: firstLoc)
+
+            // 如果最后一点不在起点附近（距离 > 1米），添加起点到末尾形成闭合
+            if gapDistance > 1.0 {
+                closedPath.append(firstPoint)
+                TerritoryLogger.shared.log("面积计算: 路径未闭合(缺口\(String(format: "%.1f", gapDistance))m)，已添加起点闭合", type: .info)
+            }
+        }
+
+        TerritoryLogger.shared.log("面积计算: 开始，原始\(pointCount)个点，闭合后\(closedPath.count)个点", type: .info)
+
+        // 1. 计算多边形质心（中心点）- 使用闭合路径（不含重复的起点）
         var sumLat: Double = 0
         var sumLon: Double = 0
-        for coord in pathCoordinates {
+        for coord in pathCoordinates {  // 使用原始路径计算质心
             sumLat += coord.latitude
             sumLon += coord.longitude
         }
-        let centroidLat = sumLat / Double(pathCoordinates.count)
-        let centroidLon = sumLon / Double(pathCoordinates.count)
+        let centroidLat = sumLat / Double(pointCount)
+        let centroidLon = sumLon / Double(pointCount)
+
+        // 打印质心信息
+        TerritoryLogger.shared.log("面积计算: 质心(\(String(format: "%.6f", centroidLat)), \(String(format: "%.6f", centroidLon)))", type: .info)
 
         // 2. 经纬度转米的换算系数
         // 1度纬度 ≈ 111,320 米
-        // 1度经度 ≈ 111,320 * cos(纬度) 米
+        // 1度经度 ≈ 111,320 * cos(纬度) 米（纬度需转为弧度）
         let metersPerDegreeLat: Double = 111320.0
-        let metersPerDegreeLon: Double = 111320.0 * cos(centroidLat * .pi / 180)
+        let latRadians = centroidLat * .pi / 180.0
+        let metersPerDegreeLon: Double = 111320.0 * cos(latRadians)
 
-        // 3. 将所有点转换为相对于质心的本地坐标（米）
+        TerritoryLogger.shared.log("面积计算: 纬度弧度=\(String(format: "%.6f", latRadians)), 经度系数=\(String(format: "%.2f", metersPerDegreeLon))m/度", type: .info)
+
+        // 3. 将闭合路径的所有点转换为相对于质心的本地坐标（米）
         var localCoords: [(x: Double, y: Double)] = []
-        for coord in pathCoordinates {
+        var minX = Double.infinity, maxX = -Double.infinity
+        var minY = Double.infinity, maxY = -Double.infinity
+
+        for coord in closedPath {  // ⭐ 使用闭合路径
             let x = (coord.longitude - centroidLon) * metersPerDegreeLon
             let y = (coord.latitude - centroidLat) * metersPerDegreeLat
             localCoords.append((x: x, y: y))
+
+            // 记录边界
+            minX = min(minX, x)
+            maxX = max(maxX, x)
+            minY = min(minY, y)
+            maxY = max(maxY, y)
         }
+
+        // 打印边界信息
+        let width = maxX - minX
+        let height = maxY - minY
+        TerritoryLogger.shared.log("面积计算: 边界 X[\(String(format: "%.1f", minX))~\(String(format: "%.1f", maxX))]m, Y[\(String(format: "%.1f", minY))~\(String(format: "%.1f", maxY))]m", type: .info)
+        TerritoryLogger.shared.log("面积计算: 边界框 \(String(format: "%.1f", width))m × \(String(format: "%.1f", height))m", type: .info)
 
         // 4. 使用标准鞋带公式计算面积
         // Area = 0.5 * |Σ (x_i * y_{i+1} - x_{i+1} * y_i)|
-        var area: Double = 0
+        var signedArea: Double = 0
         let n = localCoords.count
 
-        for i in 0..<n {
+        for i in 0..<(n - 1) {  // ⭐ 修改：遍历到 n-1（因为路径已闭合，不需要 % n）
             let current = localCoords[i]
-            let next = localCoords[(i + 1) % n]
-            area += current.x * next.y - next.x * current.y
+            let next = localCoords[i + 1]
+            signedArea += current.x * next.y - next.x * current.y
         }
 
-        area = abs(area) / 2.0
+        let area = abs(signedArea) / 2.0
 
-        TerritoryLogger.shared.log("面积计算: 质心(\(String(format: "%.4f", centroidLat)), \(String(format: "%.4f", centroidLon)))", type: .info)
+        // 打印最终面积
+        TerritoryLogger.shared.log("面积计算: 鞋带公式有符号面积=\(String(format: "%.2f", signedArea)), 最终面积=\(String(format: "%.2f", area))m²", type: .info)
+
+        // 合理性检查：面积应该在边界框面积的合理范围内
+        let boundingBoxArea = width * height
+        let areaRatio = area / boundingBoxArea * 100
+        TerritoryLogger.shared.log("面积计算: 占边界框\(String(format: "%.1f", areaRatio))%", type: .info)
+
+        if areaRatio < 20 {
+            TerritoryLogger.shared.log("面积计算: 警告！面积占比过低，路径可能不够饱满", type: .warning)
+        }
 
         return area
     }
@@ -524,12 +579,15 @@ final class LocationManager: NSObject, ObservableObject {
         // ✅ 防御性检查：确保有足够的线段
         guard segmentCount >= 2 else { return false }
 
-        // ✅ 只跳过第一条和最后一条线段的比较（它们在闭环时会靠近）
-        // 减少跳过数量以确保检测到中间的交叉
+        // ✅ 只跳过首尾各1条线段的比较（闭环时首尾线段端点靠近是正常的）
+        // 注意：跳过太多会导致漏检中间的交叉！
         let skipHeadCount = 1
         let skipTailCount = 1
 
-        TerritoryLogger.shared.log("自交检测: 共 \(segmentCount) 条线段", type: .info)
+        TerritoryLogger.shared.log("自交检测: 共 \(segmentCount) 条线段，跳过首\(skipHeadCount)尾\(skipTailCount)", type: .info)
+
+        var checkedCount = 0
+        var skippedCount = 0
 
         for i in 0..<segmentCount {
             // ✅ 循环内索引检查
@@ -546,25 +604,28 @@ final class LocationManager: NSObject, ObservableObject {
                 // ✅ 循环内索引检查
                 guard j < pathSnapshot.count - 1 else { break }
 
-                // ✅ 只跳过首尾线段的比较（闭环时起点终点靠近是正常的）
-                let isFirstSegment = i < skipHeadCount
-                let isLastSegment = j >= segmentCount - skipTailCount
+                // ✅ 只跳过第一条线段与最后一条线段的比较（闭环时端点靠近）
+                let isFirstSegment = (i == 0)
+                let isLastSegment = (j == segmentCount - 1)
 
                 if isFirstSegment && isLastSegment {
+                    skippedCount += 1
                     continue
                 }
 
                 let p3 = pathSnapshot[j]
                 let p4 = pathSnapshot[j + 1]
 
+                checkedCount += 1
+
                 if segmentsIntersect(p1: p1, p2: p2, p3: p3, p4: p4) {
-                    TerritoryLogger.shared.log("自交检测: 线段\(i)-\(i+1) 与 线段\(j)-\(j+1) 相交", type: .error)
+                    TerritoryLogger.shared.log("自交检测: 线段\(i)-\(i+1) 与 线段\(j)-\(j+1) 相交 ✗", type: .error)
                     return true
                 }
             }
         }
 
-        TerritoryLogger.shared.log("自交检测: 无交叉 ✓", type: .info)
+        TerritoryLogger.shared.log("自交检测: 检查了\(checkedCount)对，跳过\(skippedCount)对，无交叉 ✓", type: .info)
         return false
     }
 

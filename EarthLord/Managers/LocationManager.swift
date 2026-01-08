@@ -94,6 +94,11 @@ final class LocationManager: NSObject, ObservableObject {
     /// 最小领地面积（平方米）
     private let minimumEnclosedArea: Double = 100.0
 
+    /// 最小紧凑度（面积/边界框面积的百分比）
+    /// 用于检测「原路返回」等细长形状
+    /// 正常多边形应 > 25%，圆形约 78.5%，正方形 100%
+    private let minimumCompactnessRatio: Double = 25.0
+
     /// 速度警告阈值（km/h）
     private let speedWarningThreshold: Double = 15.0
 
@@ -547,6 +552,57 @@ final class LocationManager: NSObject, ObservableObject {
         return area
     }
 
+    /// 计算多边形的紧凑度（面积 / 边界框面积）
+    /// - Returns: (紧凑度百分比, 边界框宽度, 边界框高度)
+    private func calculatePolygonCompactness() -> (ratio: Double, width: Double, height: Double) {
+        let pointCount = pathCoordinates.count
+        guard pointCount >= 3 else {
+            return (0, 0, 0)
+        }
+
+        // 计算质心
+        var sumLat: Double = 0
+        var sumLon: Double = 0
+        for coord in pathCoordinates {
+            sumLat += coord.latitude
+            sumLon += coord.longitude
+        }
+        let centroidLat = sumLat / Double(pointCount)
+        let centroidLon = sumLon / Double(pointCount)
+
+        // 经纬度转米的换算系数
+        let metersPerDegreeLat: Double = 111320.0
+        let latRadians = centroidLat * .pi / 180.0
+        let metersPerDegreeLon: Double = 111320.0 * cos(latRadians)
+
+        // 计算边界
+        var minX = Double.infinity, maxX = -Double.infinity
+        var minY = Double.infinity, maxY = -Double.infinity
+
+        for coord in pathCoordinates {
+            let x = (coord.longitude - centroidLon) * metersPerDegreeLon
+            let y = (coord.latitude - centroidLat) * metersPerDegreeLat
+            minX = min(minX, x)
+            maxX = max(maxX, x)
+            minY = min(minY, y)
+            maxY = max(maxY, y)
+        }
+
+        let width = maxX - minX
+        let height = maxY - minY
+        let boundingBoxArea = width * height
+
+        guard boundingBoxArea > 0 else {
+            return (0, width, height)
+        }
+
+        // 计算面积（简化版，使用已计算的 calculatedArea）
+        let area = calculatedArea > 0 ? calculatedArea : calculatePolygonArea()
+        let ratio = (area / boundingBoxArea) * 100
+
+        return (ratio, width, height)
+    }
+
     // MARK: - 自相交检测
 
     /// 判断两线段是否相交（使用 CCW 算法）
@@ -688,6 +744,18 @@ final class LocationManager: NSObject, ObservableObject {
             return (false, error)
         }
         TerritoryLogger.shared.log("面积检查: \(String(format: "%.0f", area))m² ✓", type: .info)
+
+        // 5. 形状紧凑度检查（检测「原路返回」等细长形状）
+        let compactness = calculatePolygonCompactness()
+        TerritoryLogger.shared.log("紧凑度检查: \(String(format: "%.1f", compactness.ratio))% (边界框 \(String(format: "%.1f", compactness.width))m × \(String(format: "%.1f", compactness.height))m)", type: .info)
+
+        if compactness.ratio < minimumCompactnessRatio {
+            let error = "形状过于细长（紧凑度 \(String(format: "%.0f", compactness.ratio))%），请勿原路返回"
+            TerritoryLogger.shared.log("紧凑度检查: \(String(format: "%.1f", compactness.ratio))% ✗ (需≥\(Int(minimumCompactnessRatio))%)", type: .error)
+            TerritoryLogger.shared.log("领地验证失败: \(error)", type: .error)
+            return (false, error)
+        }
+        TerritoryLogger.shared.log("紧凑度检查: \(String(format: "%.1f", compactness.ratio))% ✓", type: .info)
 
         // 全部通过
         TerritoryLogger.shared.log("领地验证通过！面积: \(String(format: "%.0f", area))m²", type: .success)

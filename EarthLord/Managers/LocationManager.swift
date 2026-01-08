@@ -224,7 +224,8 @@ final class LocationManager: NSObject, ObservableObject {
     }
 
     /// 停止路径追踪
-    func stopPathTracking() {
+    /// - Parameter clearAllState: 是否清除所有状态（上传成功后应设为 true）
+    func stopPathTracking(clearAllState: Bool = false) {
         // 停止定时器
         pathUpdateTimer?.invalidate()
         pathUpdateTimer = nil
@@ -236,6 +237,20 @@ final class LocationManager: NSObject, ObservableObject {
 
         // 添加日志
         TerritoryLogger.shared.log("停止追踪，共 \(pathCoordinates.count) 个点", type: .info)
+
+        // 如果需要清除所有状态（上传成功后）
+        if clearAllState {
+            pathCoordinates.removeAll()
+            pathUpdateVersion += 1
+            isPathClosed = false
+            speedWarning = nil
+            isOverSpeed = false
+            lastLocationTimestamp = nil
+            territoryValidationPassed = false
+            territoryValidationError = nil
+            calculatedArea = 0
+            TerritoryLogger.shared.log("已重置所有圈地状态", type: .info)
+        }
     }
 
     /// 清除路径

@@ -44,8 +44,8 @@ struct MainTabView: View {
 
             ExplorationTabView()
                 .tabItem {
-                    Image(systemName: "binoculars.fill")
-                    Text("探索")
+                    Image(systemName: "shippingbox.fill")
+                    Text("资源")
                 }
                 .tag(1)
 

@@ -56,6 +56,14 @@ struct MapTabView: View {
     /// 碰撞警告级别
     @State private var collisionWarningLevel: WarningLevel = .safe
 
+    // MARK: - 探索功能状态
+
+    /// 是否正在探索（加载状态）
+    @State private var isExploring = false
+
+    /// 是否显示探索结果弹窗
+    @State private var showExplorationResult = false
+
     // MARK: - 计算属性
 
     /// 当前用户 ID
@@ -155,6 +163,10 @@ struct MapTabView: View {
                     }
                 }
             }
+        }
+        // 探索结果弹窗
+        .sheet(isPresented: $showExplorationResult) {
+            ExplorationResultView(result: MockExplorationData.sampleExplorationResult)
         }
     }
 
@@ -281,28 +293,27 @@ struct MapTabView: View {
     // MARK: - 底部控制栏
 
     private var bottomControlBar: some View {
-        HStack(alignment: .bottom) {
-            Spacer()
+        HStack(alignment: .bottom, spacing: 12) {
+            // 左侧：圈地按钮
+            trackingButton
 
-            VStack(spacing: 12) {
-                // 圈地按钮
-                trackingButton
-
-                // 定位按钮
-                Button(action: {
-                    centerToUserLocation()
-                }) {
-                    Image(systemName: hasLocatedUser ? "location.fill" : "location")
-                        .font(.system(size: 20))
-                        .foregroundColor(hasLocatedUser ? ApocalypseTheme.primary : ApocalypseTheme.textPrimary)
-                        .frame(width: 44, height: 44)
-                        .background(ApocalypseTheme.cardBackground.opacity(0.9))
-                        .cornerRadius(22)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                }
-                .disabled(!locationManager.isAuthorized)
-                .opacity(locationManager.isAuthorized ? 1 : 0.5)
+            // 中间：定位按钮
+            Button(action: {
+                centerToUserLocation()
+            }) {
+                Image(systemName: hasLocatedUser ? "location.fill" : "location")
+                    .font(.system(size: 20))
+                    .foregroundColor(hasLocatedUser ? ApocalypseTheme.primary : ApocalypseTheme.textPrimary)
+                    .frame(width: 44, height: 44)
+                    .background(ApocalypseTheme.cardBackground.opacity(0.9))
+                    .cornerRadius(22)
+                    .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
             }
+            .disabled(!locationManager.isAuthorized)
+            .opacity(locationManager.isAuthorized ? 1 : 0.5)
+
+            // 右侧：探索按钮
+            exploreButton
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 24)
@@ -358,6 +369,58 @@ struct MapTabView: View {
                     value: locationManager.isTracking
                 )
         )
+    }
+
+    // MARK: - 探索按钮
+
+    /// 探索按钮
+    private var exploreButton: some View {
+        Button(action: {
+            startExploration()
+        }) {
+            HStack(spacing: 8) {
+                if isExploring {
+                    // 加载状态
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.8)
+
+                    Text("探索中...")
+                        .font(.subheadline.bold())
+                } else {
+                    // 正常状态
+                    Image(systemName: "binoculars.fill")
+                        .font(.system(size: 16))
+
+                    Text("探索")
+                        .font(.subheadline.bold())
+                }
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(isExploring ? Color.gray : ApocalypseTheme.primary)
+            )
+            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+        }
+        .disabled(isExploring)
+    }
+
+    /// 开始探索
+    private func startExploration() {
+        guard !isExploring else { return }
+
+        // 进入加载状态
+        isExploring = true
+
+        // 模拟1.5秒搜索过程
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            // 结束加载，显示结果
+            isExploring = false
+            showExplorationResult = true
+        }
     }
 
     /// 切换追踪状态

@@ -198,6 +198,38 @@
         }
       }
     },
+    "上传失败: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upload failed: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上传失败: %@"
+          }
+        }
+      }
+    },
+    "不能在他人领地内开始圈地！" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot start claiming inside someone else's territory!"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不能在他人领地内开始圈地！"
+          }
+        }
+      }
+    },
     "两次输入的密码不一致" : {
       "localizations" : {
         "en" : {
@@ -326,6 +358,22 @@
         }
       }
     },
+    "删除失败: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete failed: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除失败: %@"
+          }
+        }
+      }
+    },
     "删除账户" : {
       "localizations" : {
         "en" : {
@@ -418,6 +466,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "加载中..."
+          }
+        }
+      }
+    },
+    "加载失败: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load failed: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加载失败: %@"
+          }
+        }
+      }
+    },
+    "危险：即将进入他人领地！（%dm）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danger: About to enter others' territory! (%dm)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "危险：即将进入他人领地！（%dm）"
           }
         }
       }
@@ -550,6 +630,22 @@
         }
       }
     },
+    "坐标点数量不足（至少需要3个点）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insufficient coordinate points (at least 3 required)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "坐标点数量不足（至少需要3个点）"
+          }
+        }
+      }
+    },
     "基本信息" : {
       "localizations" : {
         "en" : {
@@ -582,40 +678,6 @@
         }
       }
     },
-    "定位中..." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Locating..."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "定位中..."
-          }
-        }
-      }
-    },
-    "定位已禁用" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Location Disabled"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "定位已禁用"
-          }
-        }
-      }
-    },
     "密码与登录安全" : {
       "localizations" : {
         "en" : {
@@ -644,23 +706,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "导出日志"
-          }
-        }
-      }
-    },
-    "已定位" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Located"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已定位"
           }
         }
       }
@@ -857,6 +902,22 @@
         }
       }
     },
+    "无效的坐标数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid coordinate data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无效的坐标数据"
+          }
+        }
+      }
+    },
     "无法获取位置" : {
       "localizations" : {
         "en" : {
@@ -969,6 +1030,22 @@
         }
       }
     },
+    "注意：距离他人领地 %dm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caution: %dm from others' territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注意：距离他人领地 %dm"
+          }
+        }
+      }
+    },
     "测试中..." : {
       "localizations" : {
         "en" : {
@@ -1045,6 +1122,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "版本信息"
+          }
+        }
+      }
+    },
+    "用户未登录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "User not signed in"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用户未登录"
           }
         }
       }
@@ -1225,23 +1318,6 @@
         }
       }
     },
-    "等待授权" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Awaiting Authorization"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "等待授权"
-          }
-        }
-      }
-    },
     "简体中文" : {
       "localizations" : {
         "en" : {
@@ -1254,23 +1330,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "简体中文"
-          }
-        }
-      }
-    },
-    "管理你的领地" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Manage your territories"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "管理你的领地"
           }
         }
       }
@@ -1355,6 +1414,38 @@
         }
       }
     },
+    "请先登录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please sign in first"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先登录"
+          }
+        }
+      }
+    },
+    "请先登录后再登记领地" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please sign in before registering a territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先登录后再登记领地"
+          }
+        }
+      }
+    },
     "请稍候..." : {
       "localizations" : {
         "en" : {
@@ -1387,6 +1478,22 @@
         }
       }
     },
+    "警告：正在靠近他人领地（%dm）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warning: Approaching others' territory (%dm)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "警告：正在靠近他人领地（%dm）"
+          }
+        }
+      }
+    },
     "账号与隐私设置" : {
       "localizations" : {
         "en" : {
@@ -1415,6 +1522,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "跟随系统"
+          }
+        }
+      }
+    },
+    "轨迹不能穿越他人领地！" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Path cannot cross others' territory!"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轨迹不能穿越他人领地！"
+          }
+        }
+      }
+    },
+    "轨迹不能进入他人领地！" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Path cannot enter others' territory!"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轨迹不能进入他人领地！"
           }
         }
       }
@@ -1579,86 +1718,6 @@
         }
       }
     },
-    "总面积" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Total Area"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "总面积"
-          }
-        }
-      }
-    },
-    "未命名领地" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unnamed Territory"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未命名领地"
-          }
-        }
-      }
-    },
-    "请先登录" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Please sign in first"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请先登录"
-          }
-        }
-      }
-    },
-    "加载失败: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Load failed: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加载失败: %@"
-          }
-        }
-      }
-    },
-    "删除失败: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delete failed: %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除失败: %@"
-          }
-        }
-      }
-    },
     "领地" : {
       "localizations" : {
         "en" : {
@@ -1671,262 +1730,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地"
-          }
-        }
-      }
-    },
-    "领地详情" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Details"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地详情"
-          }
-        }
-      }
-    },
-    "领地面积" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Area"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地面积"
-          }
-        }
-      }
-    },
-    "边界点数" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Boundary Points"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "边界点数"
-          }
-        }
-      }
-    },
-    "个" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ""
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "个"
-          }
-        }
-      }
-    },
-    "占领时间" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claimed At"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "占领时间"
-          }
-        }
-      }
-    },
-    "完成圈地" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claim Completed"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成圈地"
-          }
-        }
-      }
-    },
-    "重命名" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rename"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重命名"
-          }
-        }
-      }
-    },
-    "建筑" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buildings"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "建筑"
-          }
-        }
-      }
-    },
-    "建筑系统" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Building System"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "建筑系统"
-          }
-        }
-      }
-    },
-    "交易" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trade"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "交易"
-          }
-        }
-      }
-    },
-    "领地交易" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Trade"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地交易"
-          }
-        }
-      }
-    },
-    "领地数量" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Count"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地数量"
-          }
-        }
-      }
-    },
-    "领地管理" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Management"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地管理"
-          }
-        }
-      }
-    },
-    "验证失败" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verification Failed"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证失败"
-          }
-        }
-      }
-    },
-    "领地验证未通过，无法上传" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory validation failed, cannot upload"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地验证未通过，无法上传"
-          }
-        }
-      }
-    },
-    "请先登录后再登记领地" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Please sign in before registering a territory"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请先登录后再登记领地"
           }
         }
       }
@@ -1947,162 +1750,34 @@
         }
       }
     },
-    "上传失败: %@" : {
+    "领地管理" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upload failed: %@"
+            "value" : "Territory Management"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "上传失败: %@"
+            "value" : "领地管理"
           }
         }
       }
     },
-    "不能在他人领地内开始圈地！" : {
+    "领地验证未通过，无法上传" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cannot start claiming inside someone else's territory!"
+            "value" : "Territory validation failed, cannot upload"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不能在他人领地内开始圈地！"
-          }
-        }
-      }
-    },
-    "轨迹不能穿越他人领地！" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Path cannot cross others' territory!"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轨迹不能穿越他人领地！"
-          }
-        }
-      }
-    },
-    "轨迹不能进入他人领地！" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Path cannot enter others' territory!"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轨迹不能进入他人领地！"
-          }
-        }
-      }
-    },
-    "注意：距离他人领地 %dm" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Caution: %dm from others' territory"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "注意：距离他人领地 %dm"
-          }
-        }
-      }
-    },
-    "警告：正在靠近他人领地（%dm）" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Warning: Approaching others' territory (%dm)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "警告：正在靠近他人领地（%dm）"
-          }
-        }
-      }
-    },
-    "危险：即将进入他人领地！（%dm）" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Danger: About to enter others' territory! (%dm)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "危险：即将进入他人领地！（%dm）"
-          }
-        }
-      }
-    },
-    "用户未登录" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "User not signed in"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用户未登录"
-          }
-        }
-      }
-    },
-    "坐标点数量不足（至少需要3个点）" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Insufficient coordinate points (at least 3 required)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "坐标点数量不足（至少需要3个点）"
-          }
-        }
-      }
-    },
-    "无效的坐标数据" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invalid coordinate data"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无效的坐标数据"
+            "value" : "领地验证未通过，无法上传"
           }
         }
       }

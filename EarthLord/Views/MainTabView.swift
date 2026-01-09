@@ -42,26 +42,33 @@ struct MainTabView: View {
                 }
                 .tag(0)
 
+            ExplorationTabView()
+                .tabItem {
+                    Image(systemName: "binoculars.fill")
+                    Text("探索")
+                }
+                .tag(1)
+
             TerritoryTabView()
                 .tabItem {
                     Image(systemName: "flag.fill")
                     Text("领地")
                 }
-                .tag(1)
+                .tag(2)
 
             ProfileTabView()
                 .tabItem {
                     Image(systemName: "person.fill")
                     Text("个人")
                 }
-                .tag(2)
+                .tag(3)
 
             MoreTabView()
                 .tabItem {
                     Image(systemName: "ellipsis")
                     Text("更多")
                 }
-                .tag(3)
+                .tag(4)
         }
         .tint(ApocalypseTheme.primary)
         .environmentObject(locationManager)  // 注入全局定位管理器

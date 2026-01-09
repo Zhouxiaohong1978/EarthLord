@@ -123,7 +123,7 @@ struct MapViewRepresentable: UIViewRepresentable {
         guard trackingPath.count >= 2 else { return }
 
         // ⭐ 关键：将 WGS-84 坐标转换为 GCJ-02 坐标
-        // 否则轨迹会偏移 100-500 米！
+        // GPS 返回 WGS-84 坐标，高德底图使用 GCJ-02 坐标系
         let convertedCoordinates = CoordinateConverter.wgs84ToGcj02(trackingPath)
 
         // 创建轨迹线
@@ -165,6 +165,7 @@ struct MapViewRepresentable: UIViewRepresentable {
             var coords = territory.toCoordinates()
 
             // ⚠️ 中国大陆需要坐标转换（WGS-84 → GCJ-02）
+            // GPS 返回 WGS-84 坐标，高德底图使用 GCJ-02 坐标系
             coords = CoordinateConverter.wgs84ToGcj02(coords)
 
             guard coords.count >= 3 else { continue }

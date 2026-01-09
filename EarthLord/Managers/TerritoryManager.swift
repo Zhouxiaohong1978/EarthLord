@@ -275,7 +275,7 @@ final class TerritoryManager {
                 return CollisionResult(
                     hasCollision: true,
                     collisionType: .pointInTerritory,
-                    message: "不能在他人领地内开始圈地！",
+                    message: String(localized: "不能在他人领地内开始圈地！"),
                     closestDistance: 0,
                     warningLevel: .violation
                 )
@@ -334,7 +334,7 @@ final class TerritoryManager {
                         return CollisionResult(
                             hasCollision: true,
                             collisionType: .pathCrossTerritory,
-                            message: "轨迹不能穿越他人领地！",
+                            message: String(localized: "轨迹不能穿越他人领地！"),
                             closestDistance: 0,
                             warningLevel: .violation
                         )
@@ -347,7 +347,7 @@ final class TerritoryManager {
                     return CollisionResult(
                         hasCollision: true,
                         collisionType: .pointInTerritory,
-                        message: "轨迹不能进入他人领地！",
+                        message: String(localized: "轨迹不能进入他人领地！"),
                         closestDistance: 0,
                         warningLevel: .violation
                     )
@@ -407,19 +407,20 @@ final class TerritoryManager {
         // 3. 根据距离确定预警级别和消息
         let warningLevel: WarningLevel
         let message: String?
+        let distance = Int(minDistance)
 
         if minDistance > 100 {
             warningLevel = .safe
             message = nil
         } else if minDistance > 50 {
             warningLevel = .caution
-            message = "注意：距离他人领地 \(Int(minDistance))m"
+            message = String(format: String(localized: "注意：距离他人领地 %dm"), distance)
         } else if minDistance > 25 {
             warningLevel = .warning
-            message = "警告：正在靠近他人领地（\(Int(minDistance))m）"
+            message = String(format: String(localized: "警告：正在靠近他人领地（%dm）"), distance)
         } else {
             warningLevel = .danger
-            message = "危险：即将进入他人领地！（\(Int(minDistance))m）"
+            message = String(format: String(localized: "危险：即将进入他人领地！（%dm）"), distance)
         }
 
         if warningLevel != .safe {
@@ -447,13 +448,13 @@ enum TerritoryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notAuthenticated:
-            return "用户未登录"
+            return String(localized: "用户未登录")
         case .insufficientPoints:
-            return "坐标点数量不足（至少需要3个点）"
+            return String(localized: "坐标点数量不足（至少需要3个点）")
         case .invalidCoordinates:
-            return "无效的坐标数据"
+            return String(localized: "无效的坐标数据")
         case .uploadFailed(let message):
-            return "上传失败: \(message)"
+            return String(format: String(localized: "上传失败: %@"), message)
         }
     }
 }

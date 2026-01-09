@@ -232,7 +232,7 @@ struct TerritoryTabView: View {
     private func loadMyTerritories() async {
         // 检查登录状态
         guard AuthManager.shared.isAuthenticated else {
-            errorMessage = "请先登录"
+            errorMessage = String(localized: "请先登录")
             showError = true
             return
         }
@@ -244,7 +244,7 @@ struct TerritoryTabView: View {
             // 按创建时间降序排列
             myTerritories.sort { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
         } catch {
-            errorMessage = "加载失败: \(error.localizedDescription)"
+            errorMessage = String(format: String(localized: "加载失败: %@"), error.localizedDescription)
             showError = true
         }
 
@@ -265,7 +265,7 @@ struct TerritoryTabView: View {
             }
         } catch {
             await MainActor.run {
-                errorMessage = "删除失败: \(error.localizedDescription)"
+                errorMessage = String(format: String(localized: "删除失败: %@"), error.localizedDescription)
                 showError = true
             }
         }

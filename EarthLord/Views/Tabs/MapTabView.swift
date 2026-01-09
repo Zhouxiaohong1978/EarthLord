@@ -743,13 +743,13 @@ struct MapTabView: View {
     private func uploadCurrentTerritory() async {
         // 再次检查验证状态
         guard locationManager.territoryValidationPassed else {
-            showUploadError("领地验证未通过，无法上传")
+            showUploadError(String(localized: "领地验证未通过，无法上传"))
             return
         }
 
         // 检查是否已登录
         guard AuthManager.shared.isAuthenticated else {
-            showUploadError("请先登录后再登记领地")
+            showUploadError(String(localized: "请先登录后再登记领地"))
             return
         }
 
@@ -765,7 +765,7 @@ struct MapTabView: View {
             // 上传成功
             await MainActor.run {
                 isUploading = false
-                showUploadSuccess("领地登记成功！")
+                showUploadSuccess(String(localized: "领地登记成功！"))
 
                 // Day 19: 停止碰撞监控
                 stopCollisionMonitoring()
@@ -783,7 +783,7 @@ struct MapTabView: View {
         } catch {
             await MainActor.run {
                 isUploading = false
-                showUploadError("上传失败: \(error.localizedDescription)")
+                showUploadError(String(format: String(localized: "上传失败: %@"), error.localizedDescription))
             }
         }
     }

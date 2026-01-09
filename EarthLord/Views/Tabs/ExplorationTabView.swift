@@ -29,23 +29,26 @@ struct ExplorationTabView: View {
     // MARK: - Body
 
     var body: some View {
-        ZStack {
-            // 背景
-            ApocalypseTheme.background
-                .ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                // 背景
+                ApocalypseTheme.background
+                    .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // 顶部标题区域
-                headerView
+                VStack(spacing: 0) {
+                    // 顶部标题区域
+                    headerView
 
-                // 分段选择器
-                segmentedPicker
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    // 分段选择器
+                    segmentedPicker
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
 
-                // 内容区域
-                contentView
+                    // 内容区域
+                    contentView
+                }
             }
+            .navigationBarHidden(true)
         }
     }
 

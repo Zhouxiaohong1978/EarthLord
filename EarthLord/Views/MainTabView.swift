@@ -42,17 +42,17 @@ struct MainTabView: View {
                 }
                 .tag(0)
 
-            ExplorationTabView()
-                .tabItem {
-                    Image(systemName: "shippingbox.fill")
-                    Text("资源")
-                }
-                .tag(1)
-
             TerritoryTabView()
                 .tabItem {
                     Image(systemName: "flag.fill")
                     Text("领地")
+                }
+                .tag(1)
+
+            ExplorationTabView()
+                .tabItem {
+                    Image(systemName: "shippingbox.fill")
+                    Text("资源")
                 }
                 .tag(2)
 

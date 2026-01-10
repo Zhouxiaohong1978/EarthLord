@@ -184,44 +184,57 @@ struct POIDetailView: View {
     // MARK: - 信息区域
 
     private var infoSection: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                // 距离
-                InfoCard(
-                    icon: "location.fill",
-                    title: "距离",
-                    value: "\(distance)米",
-                    valueColor: ApocalypseTheme.textPrimary
-                )
+        VStack(spacing: 0) {
+            // 距离
+            InfoRowView(
+                icon: "location.fill",
+                iconColor: ApocalypseTheme.primary,
+                title: "距离",
+                value: "\(distance) 米",
+                valueColor: ApocalypseTheme.textPrimary
+            )
 
-                // 物资状态
-                InfoCard(
-                    icon: "shippingbox.fill",
-                    title: "物资状态",
-                    value: resourceStatusText,
-                    valueColor: resourceStatusColor
-                )
-            }
+            Divider()
+                .background(ApocalypseTheme.textMuted.opacity(0.3))
 
-            HStack(spacing: 12) {
-                // 危险等级
-                let dangerConfig = DangerLevelConfig.from(level: poi.dangerLevel)
-                InfoCard(
-                    icon: "exclamationmark.shield.fill",
-                    title: "危险等级",
-                    value: dangerConfig.text,
-                    valueColor: dangerConfig.color
-                )
+            // 物资状态
+            InfoRowView(
+                icon: "shippingbox.fill",
+                iconColor: ApocalypseTheme.warning,
+                title: "物资状态",
+                value: resourceStatusText,
+                valueColor: resourceStatusColor
+            )
 
-                // 数据来源
-                InfoCard(
-                    icon: "doc.text.fill",
-                    title: "来源",
-                    value: dataSource,
-                    valueColor: ApocalypseTheme.textSecondary
-                )
-            }
+            Divider()
+                .background(ApocalypseTheme.textMuted.opacity(0.3))
+
+            // 危险等级
+            let dangerConfig = DangerLevelConfig.from(level: poi.dangerLevel)
+            InfoRowView(
+                icon: "exclamationmark.circle.fill",
+                iconColor: dangerConfig.color,
+                title: "危险等级",
+                value: dangerConfig.text,
+                valueColor: dangerConfig.color
+            )
+
+            Divider()
+                .background(ApocalypseTheme.textMuted.opacity(0.3))
+
+            // 数据来源
+            InfoRowView(
+                icon: "doc.text.fill",
+                iconColor: ApocalypseTheme.textSecondary,
+                title: "来源",
+                value: dataSource,
+                valueColor: ApocalypseTheme.textPrimary
+            )
         }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(ApocalypseTheme.cardBackground)
+        )
     }
 
     /// 物资状态文字
@@ -380,36 +393,37 @@ struct POIDetailView: View {
     }
 }
 
-// MARK: - 信息卡片组件
+// MARK: - 信息行组件
 
-struct InfoCard: View {
+struct InfoRowView: View {
     let icon: String
+    let iconColor: Color
     let title: String
     let value: String
     let valueColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundColor(ApocalypseTheme.textMuted)
+        HStack(spacing: 12) {
+            // 图标
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(iconColor)
+                .frame(width: 24)
 
-                Text(title)
-                    .font(.system(size: 13))
-                    .foregroundColor(ApocalypseTheme.textMuted)
-            }
+            // 标题
+            Text(title)
+                .font(.system(size: 15))
+                .foregroundColor(ApocalypseTheme.textSecondary)
 
+            Spacer()
+
+            // 数值
             Text(value)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(valueColor)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(ApocalypseTheme.cardBackground)
-        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 

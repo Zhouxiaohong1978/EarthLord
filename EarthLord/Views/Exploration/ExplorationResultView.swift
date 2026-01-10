@@ -206,7 +206,7 @@ struct ExplorationResultView: View {
     // MARK: - 成就标题
 
     private var achievementHeader: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             // 大图标 - 带光晕效果
             ZStack {
                 // 光晕背景
@@ -244,96 +244,72 @@ struct ExplorationResultView: View {
                 .scaleEffect(showContent ? 1 : 0.8)
                 .opacity(showContent ? 1 : 0)
 
-            // 经验值
-            if (result?.experienceGained ?? 0) > 0 {
-                HStack(spacing: 6) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.yellow)
-
-                    Text("+\(animatedExperience) 经验值")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.yellow)
-                        .contentTransition(.numericText())
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(Color.yellow.opacity(0.15))
-                )
+            // 副标题
+            Text("你发现了新的区域和物资")
+                .font(.system(size: 15))
+                .foregroundColor(ApocalypseTheme.textSecondary)
                 .opacity(showContent ? 1 : 0)
-                .scaleEffect(showContent ? 1 : 0.8)
-            }
         }
     }
 
     // MARK: - 统计数据卡片
 
     private var statsCard: some View {
-        VStack(spacing: 16) {
-            // 标题
-            HStack {
-                Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(ApocalypseTheme.info)
+        VStack(spacing: 0) {
+            // 行走距离
+            StatRowNew(
+                icon: "figure.walk",
+                iconColor: .blue,
+                title: "行走距离",
+                currentValue: formatDistance(animatedDistanceCurrent),
+                totalValue: formatDistance(animatedDistanceTotal),
+                rank: result?.distanceStats.rank ?? 0
+            )
 
-                Text("探索数据")
-                    .font(.system(size: 15, weight: .semibold))
+            Divider()
+                .background(ApocalypseTheme.textMuted.opacity(0.3))
+
+            // 探索面积
+            StatRowNew(
+                icon: "square.dashed",
+                iconColor: .green,
+                title: "探索面积",
+                currentValue: formatArea(animatedAreaCurrent),
+                totalValue: formatArea(animatedAreaTotal),
+                rank: result?.areaStats.rank ?? 0
+            )
+
+            Divider()
+                .background(ApocalypseTheme.textMuted.opacity(0.3))
+
+            // 探索时长
+            HStack(spacing: 12) {
+                // 图标
+                ZStack {
+                    Circle()
+                        .fill(Color.yellow.opacity(0.2))
+                        .frame(width: 36, height: 36)
+
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.yellow)
+                }
+
+                // 标题
+                Text("探索时长")
+                    .font(.system(size: 15))
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 Spacer()
+
+                // 时长值
+                Text(formatDuration(animatedDuration))
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                    .contentTransition(.numericText())
             }
-
-            // 统计项
-            VStack(spacing: 14) {
-                // 行走距离
-                StatRow(
-                    icon: "figure.walk",
-                    title: "行走距离",
-                    current: formatDistance(animatedDistanceCurrent),
-                    total: formatDistance(animatedDistanceTotal),
-                    rank: result?.distanceStats.rank ?? 0
-                )
-
-                Divider()
-                    .background(ApocalypseTheme.textMuted.opacity(0.3))
-
-                // 探索面积
-                StatRow(
-                    icon: "square.dashed",
-                    title: "探索面积",
-                    current: formatArea(animatedAreaCurrent),
-                    total: formatArea(animatedAreaTotal),
-                    rank: result?.areaStats.rank ?? 0
-                )
-
-                Divider()
-                    .background(ApocalypseTheme.textMuted.opacity(0.3))
-
-                // 探索时长
-                HStack {
-                    HStack(spacing: 8) {
-                        Image(systemName: "clock.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(ApocalypseTheme.textMuted)
-                            .frame(width: 20)
-
-                        Text("探索时长")
-                            .font(.system(size: 14))
-                            .foregroundColor(ApocalypseTheme.textSecondary)
-                    }
-
-                    Spacer()
-
-                    Text(formatDuration(animatedDuration))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(ApocalypseTheme.textPrimary)
-                        .contentTransition(.numericText())
-                }
-            }
+            .padding(16)
         }
-        .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(ApocalypseTheme.cardBackground)
@@ -490,63 +466,70 @@ struct ExplorationResultView: View {
     }
 }
 
-// MARK: - 统计行组件
+// MARK: - 新版统计行组件
 
-struct StatRow: View {
+struct StatRowNew: View {
     let icon: String
+    let iconColor: Color
     let title: String
-    let current: String
-    let total: String
+    let currentValue: String
+    let totalValue: String
     let rank: Int
 
     var body: some View {
-        HStack(alignment: .top) {
-            // 图标和标题
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(ApocalypseTheme.textMuted)
-                    .frame(width: 20)
+        HStack(spacing: 12) {
+            // 图标
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.2))
+                    .frame(width: 36, height: 36)
 
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(iconColor)
+            }
+
+            // 标题和数值
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 14))
-                    .foregroundColor(ApocalypseTheme.textSecondary)
+                    .font(.system(size: 15))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                HStack(spacing: 16) {
+                    HStack(spacing: 4) {
+                        Text("本次")
+                            .font(.system(size: 12))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        Text(currentValue)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                    }
+
+                    HStack(spacing: 4) {
+                        Text("累计")
+                            .font(.system(size: 12))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        Text(totalValue)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
+                }
             }
 
             Spacer()
 
-            // 数据
-            VStack(alignment: .trailing, spacing: 4) {
-                // 本次
-                HStack(spacing: 4) {
-                    Text("本次")
-                        .font(.system(size: 12))
-                        .foregroundColor(ApocalypseTheme.textMuted)
+            // 排名
+            VStack(spacing: 2) {
+                Text("排名")
+                    .font(.system(size: 11))
+                    .foregroundColor(ApocalypseTheme.textMuted)
 
-                    Text(current)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(ApocalypseTheme.primary)
-                }
-
-                // 累计和排名
-                HStack(spacing: 8) {
-                    Text("累计 \(total)")
-                        .font(.system(size: 12))
-                        .foregroundColor(ApocalypseTheme.textMuted)
-
-                    // 排名徽章
-                    Text("#\(rank)")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(ApocalypseTheme.success)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(ApocalypseTheme.success.opacity(0.15))
-                        )
-                }
+                Text("#\(rank)")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(ApocalypseTheme.primary)
             }
         }
+        .padding(16)
     }
 }
 

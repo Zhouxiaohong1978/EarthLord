@@ -44,12 +44,6 @@ struct ExplorationResultView: View {
     private var animatedDistanceTotal: Double {
         (result?.distanceStats.total ?? 0) * numberAnimationProgress
     }
-    private var animatedAreaCurrent: Double {
-        (result?.areaStats.current ?? 0) * numberAnimationProgress
-    }
-    private var animatedAreaTotal: Double {
-        (result?.areaStats.total ?? 0) * numberAnimationProgress
-    }
     private var animatedDuration: TimeInterval {
         (result?.duration ?? 0) * numberAnimationProgress
     }
@@ -269,19 +263,6 @@ struct ExplorationResultView: View {
             Divider()
                 .background(ApocalypseTheme.textMuted.opacity(0.3))
 
-            // 探索面积
-            StatRowNew(
-                icon: "square.dashed",
-                iconColor: .green,
-                title: "探索面积",
-                currentValue: formatArea(animatedAreaCurrent),
-                totalValue: formatArea(animatedAreaTotal),
-                rank: result?.areaStats.rank ?? 0
-            )
-
-            Divider()
-                .background(ApocalypseTheme.textMuted.opacity(0.3))
-
             // 探索时长
             HStack(spacing: 12) {
                 // 图标
@@ -437,15 +418,6 @@ struct ExplorationResultView: View {
             return String(format: "%.1fkm", meters / 1000)
         } else {
             return "\(Int(meters))m"
-        }
-    }
-
-    /// 格式化面积
-    private func formatArea(_ squareMeters: Double) -> String {
-        if squareMeters >= 10000 {
-            return String(format: "%.1f万m²", squareMeters / 10000)
-        } else {
-            return "\(Int(squareMeters))m²"
         }
     }
 
@@ -615,7 +587,6 @@ struct RewardItemRow: View {
         startTime: Date().addingTimeInterval(-600),
         endTime: Date(),
         distanceStats: DistanceStats(current: 800, total: 5000, rank: 156),
-        areaStats: AreaStats(current: 15000, total: 80000, rank: 203),
         obtainedItems: [],
         experienceGained: 50
     )

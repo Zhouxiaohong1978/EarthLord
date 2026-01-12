@@ -58,11 +58,17 @@ struct MapTabView: View {
 
     // MARK: - 探索功能状态
 
-    /// 是否正在探索（加载状态）
-    @State private var isExploring = false
+    /// 探索管理器
+    @StateObject private var explorationManager = ExplorationManager.shared
 
     /// 是否显示探索结果弹窗
     @State private var showExplorationResult = false
+
+    /// 探索失败弹窗
+    @State private var showExplorationFailed = false
+
+    /// 探索失败原因
+    @State private var explorationFailReason: String = ""
 
     // MARK: - 计算属性
 
@@ -93,9 +99,19 @@ struct MapTabView: View {
                 // 顶部状态栏
                 topStatusBar
 
-                // 速度警告横幅
+                // 速度警告横幅（圈地）
                 if locationManager.speedWarning != nil {
                     speedWarningBanner
+                }
+
+                // 探索超速警告横幅
+                if case .overSpeedWarning(let seconds) = explorationManager.explorationState {
+                    explorationSpeedWarningBanner(countdown: seconds)
+                }
+
+                // 探索状态覆盖层
+                if explorationManager.isExploring {
+                    explorationStatusOverlay
                 }
 
                 // 验证结果横幅
@@ -166,7 +182,23 @@ struct MapTabView: View {
         }
         // 探索结果弹窗
         .sheet(isPresented: $showExplorationResult) {
-            ExplorationResultView(result: MockExplorationData.sampleExplorationResult)
+            if let result = explorationManager.explorationResult {
+                // 转换为 Mock 模型以兼容现有 UI
+                let mockResult = convertToMockResult(result)
+                ExplorationResultView(result: mockResult)
+            }
+        }
+        // 探索失败弹窗
+        .alert("探索失败", isPresented: $showExplorationFailed) {
+            Button("确定", role: .cancel) {
+                explorationManager.resetExplorationState()
+            }
+        } message: {
+            Text(explorationFailReason)
+        }
+        // 监听探索状态变化
+        .onReceive(explorationManager.$explorationState) { state in
+            handleExplorationStateChange(state)
         }
     }
 
@@ -376,20 +408,19 @@ struct MapTabView: View {
     /// 探索按钮
     private var exploreButton: some View {
         Button(action: {
-            startExploration()
+            toggleExploration()
         }) {
             HStack(spacing: 8) {
-                if isExploring {
-                    // 加载状态
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.8)
+                if explorationManager.isExploring {
+                    // 探索中状态
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 16))
 
-                    Text("探索中...")
+                    Text("结束探索")
                         .font(.subheadline.bold())
                 } else {
                     // 正常状态
-                    Image(systemName: "binoculars.fill")
+                    Image(systemName: "figure.walk")
                         .font(.system(size: 16))
 
                     Text("探索")
@@ -401,25 +432,22 @@ struct MapTabView: View {
             .padding(.vertical, 10)
             .background(
                 Capsule()
-                    .fill(isExploring ? Color.gray : ApocalypseTheme.primary)
+                    .fill(explorationManager.isExploring ? Color.orange : ApocalypseTheme.primary)
             )
             .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
         }
-        .disabled(isExploring)
+        .disabled(!locationManager.isAuthorized)
+        .opacity(locationManager.isAuthorized ? 1 : 0.5)
     }
 
-    /// 开始探索
-    private func startExploration() {
-        guard !isExploring else { return }
-
-        // 进入加载状态
-        isExploring = true
-
-        // 模拟1.5秒搜索过程
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // 结束加载，显示结果
-            isExploring = false
-            showExplorationResult = true
+    /// 切换探索状态
+    private func toggleExploration() {
+        if explorationManager.isExploring {
+            // 结束探索
+            explorationManager.stopExploration()
+        } else {
+            // 开始探索
+            explorationManager.startExploration()
         }
     }
 
@@ -894,6 +922,197 @@ struct MapTabView: View {
         } catch {
             TerritoryLogger.shared.log("加载领地失败: \(error.localizedDescription)", type: .error)
         }
+    }
+
+    // MARK: - 探索状态覆盖层
+
+    /// 探索状态覆盖层
+    private var explorationStatusOverlay: some View {
+        HStack(spacing: 16) {
+            // 行走距离
+            VStack(spacing: 2) {
+                Image(systemName: "figure.walk")
+                    .font(.system(size: 14))
+                    .foregroundColor(ApocalypseTheme.primary)
+                Text(formatExplorationDistance(explorationManager.totalDistance))
+                    .font(.system(size: 14, weight: .bold).monospacedDigit())
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+            }
+
+            Divider()
+                .frame(height: 30)
+                .background(ApocalypseTheme.textMuted)
+
+            // 当前速度
+            VStack(spacing: 2) {
+                Image(systemName: "speedometer")
+                    .font(.system(size: 14))
+                    .foregroundColor(explorationSpeedColor)
+                Text(String(format: "%.1f km/h", explorationManager.currentSpeed))
+                    .font(.system(size: 14, weight: .bold).monospacedDigit())
+                    .foregroundColor(explorationSpeedColor)
+            }
+
+            Divider()
+                .frame(height: 30)
+                .background(ApocalypseTheme.textMuted)
+
+            // 探索时长
+            VStack(spacing: 2) {
+                Image(systemName: "clock")
+                    .font(.system(size: 14))
+                    .foregroundColor(ApocalypseTheme.info)
+                Text(formatExplorationDuration(explorationManager.explorationDuration))
+                    .font(.system(size: 14, weight: .bold).monospacedDigit())
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(ApocalypseTheme.cardBackground.opacity(0.95))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    /// 探索速度颜色
+    private var explorationSpeedColor: Color {
+        if explorationManager.currentSpeed > 30 {
+            return .red
+        } else if explorationManager.currentSpeed > 20 {
+            return .orange
+        } else {
+            return ApocalypseTheme.success
+        }
+    }
+
+    /// 探索超速警告横幅
+    private func explorationSpeedWarningBanner(countdown: Int) -> some View {
+        HStack(spacing: 12) {
+            // 警告图标
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 24))
+                .foregroundColor(.white)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("速度过快！请降低速度")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+
+                HStack(spacing: 4) {
+                    Text("当前速度:")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.8))
+                    Text(String(format: "%.1f km/h", explorationManager.currentSpeed))
+                        .font(.system(size: 13, weight: .bold).monospacedDigit())
+                        .foregroundColor(.white)
+
+                    Text("· 剩余")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.8))
+                    Text("\(countdown)秒")
+                        .font(.system(size: 13, weight: .bold).monospacedDigit())
+                        .foregroundColor(.yellow)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.red.opacity(0.95))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    // MARK: - 探索状态处理
+
+    /// 处理探索状态变化
+    private func handleExplorationStateChange(_ state: ExplorationState) {
+        switch state {
+        case .idle:
+            // 空闲状态，不需要处理
+            break
+
+        case .exploring:
+            // 探索中，不需要特殊处理
+            break
+
+        case .overSpeedWarning:
+            // 超速警告，触发震动
+            let generator = UINotificationFeedbackGenerator()
+            generator.prepare()
+            generator.notificationOccurred(.warning)
+
+        case .completed:
+            // 探索完成，显示结果
+            showExplorationResult = true
+
+        case .failed(let reason):
+            // 探索失败，显示失败弹窗
+            explorationFailReason = reason.description
+            showExplorationFailed = true
+
+            // 错误震动
+            let generator = UINotificationFeedbackGenerator()
+            generator.prepare()
+            generator.notificationOccurred(.error)
+        }
+    }
+
+    /// 格式化探索距离
+    private func formatExplorationDistance(_ meters: Double) -> String {
+        if meters >= 1000 {
+            return String(format: "%.2f km", meters / 1000)
+        } else {
+            return String(format: "%.0f m", meters)
+        }
+    }
+
+    /// 格式化探索时长
+    private func formatExplorationDuration(_ seconds: TimeInterval) -> String {
+        let totalSeconds = Int(seconds)
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let secs = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+        } else {
+            return String(format: "%02d:%02d", minutes, secs)
+        }
+    }
+
+    /// 转换探索结果为 Mock 模型
+    private func convertToMockResult(_ result: ExplorationSessionResult) -> ExplorationResult {
+        // 转换物品列表
+        let obtainedItems = result.obtainedItems.map { item in
+            ObtainedItem(
+                itemId: item.itemId,
+                quantity: item.quantity,
+                quality: item.quality
+            )
+        }
+
+        return ExplorationResult(
+            id: result.id,
+            startTime: result.startTime,
+            endTime: result.endTime,
+            distanceStats: DistanceStats(
+                current: result.distanceWalked,
+                total: result.distanceWalked,  // TODO: 从数据库获取累计值
+                rank: 1  // TODO: 从数据库获取排名
+            ),
+            discoveredPOIs: [],
+            obtainedItems: obtainedItems,
+            experienceGained: Int(result.distanceWalked / 10),  // 每10米1经验
+            rewardTier: result.rewardTier.rawValue
+        )
     }
 }
 

@@ -185,19 +185,7 @@ struct DistanceStats {
     let rank: Int                   // 排名
 }
 
-/// 面积统计数据
-struct AreaStats {
-    let current: Double             // 本次探索面积（平方米）
-    let total: Double               // 累计探索面积（平方米）
-    let rank: Int                   // 排名
-}
-
-/// 获得的物品记录
-struct ObtainedItem {
-    let itemId: String              // 物品ID
-    let quantity: Int               // 数量
-    let quality: ItemQuality?       // 品质
-}
+// ObtainedItem 已移至 ExplorationModels.swift
 
 /// 探索结果模型
 /// 记录一次探索活动的完整结果
@@ -207,30 +195,30 @@ struct ExplorationResult: Identifiable {
     let endTime: Date               // 结束时间
     let duration: TimeInterval      // 探索时长（秒）
     let distanceStats: DistanceStats    // 距离统计
-    let areaStats: AreaStats            // 面积统计
     let discoveredPOIs: [POI]           // 本次发现的POI
     let obtainedItems: [ObtainedItem]   // 获得的物品
     let experienceGained: Int           // 获得的经验值
+    let rewardTier: String?             // 奖励等级
 
     init(
         id: UUID = UUID(),
         startTime: Date,
         endTime: Date,
         distanceStats: DistanceStats,
-        areaStats: AreaStats,
         discoveredPOIs: [POI] = [],
         obtainedItems: [ObtainedItem] = [],
-        experienceGained: Int = 0
+        experienceGained: Int = 0,
+        rewardTier: String? = nil
     ) {
         self.id = id
         self.startTime = startTime
         self.endTime = endTime
         self.duration = endTime.timeIntervalSince(startTime)
         self.distanceStats = distanceStats
-        self.areaStats = areaStats
         self.discoveredPOIs = discoveredPOIs
         self.obtainedItems = obtainedItems
         self.experienceGained = experienceGained
+        self.rewardTier = rewardTier
     }
 }
 
@@ -493,11 +481,6 @@ struct MockExplorationData {
                 total: 15000,           // 累计行走 15000 米
                 rank: 42                // 排名第 42
             ),
-            areaStats: AreaStats(
-                current: 50000,         // 本次探索 5 万平方米
-                total: 250000,          // 累计探索 25 万平方米
-                rank: 38                // 排名第 38
-            ),
             discoveredPOIs: [poiList[2]],  // 发现了加油站
             obtainedItems: [
                 // 木材 x 5
@@ -507,7 +490,8 @@ struct MockExplorationData {
                 // 罐头 x 2
                 ObtainedItem(itemId: "canned_food", quantity: 2, quality: .normal)
             ],
-            experienceGained: 150       // 获得 150 经验值
+            experienceGained: 150,       // 获得 150 经验值
+            rewardTier: "gold"           // 金级奖励
         )
     }()
 

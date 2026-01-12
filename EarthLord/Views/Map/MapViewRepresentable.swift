@@ -144,6 +144,9 @@ struct MapViewRepresentable: UIViewRepresentable {
 
     // MARK: - 领地绘制
 
+    /// 测试领地名称前缀
+    private static let testTerritoryPrefix = "[TEST]"
+
     /// 绘制领地多边形
     private func drawTerritories(on mapView: MKMapView, context: Context) {
         // 检查领地数量是否变化
@@ -175,7 +178,13 @@ struct MapViewRepresentable: UIViewRepresentable {
             // ⚠️ 关键：比较 userId 时必须统一大小写！
             // 数据库存的是小写 UUID，但 iOS 的 uuidString 返回大写
             let isMine = territory.userId.lowercased() == currentUserId?.lowercased()
-            polygon.title = isMine ? "mine" : "others"
+
+            // ⭐ 特殊处理：名称带 [TEST] 前缀的领地显示为"他人领地"（橙色）
+            // 这样可以用于测试碰撞检测等功能
+            let isTestTerritory = territory.name?.hasPrefix(Self.testTerritoryPrefix) ?? false
+
+            // 如果是测试领地，即使是自己的也显示为橙色（模拟他人领地）
+            polygon.title = (isMine && !isTestTerritory) ? "mine" : "others"
 
             mapView.addOverlay(polygon, level: .aboveRoads)
         }

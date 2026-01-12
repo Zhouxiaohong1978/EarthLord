@@ -158,6 +158,9 @@ final class TerritoryManager {
 
     // MARK: - 拉取方法
 
+    /// 需要过滤掉的假用户ID（旧的测试数据）
+    private static let fakeTestUserId = "00000000-0000-0000-0000-000000000001"
+
     /// 加载所有激活的领地
     /// - Returns: Territory 数组
     func loadAllTerritories() async throws -> [Territory] {
@@ -170,12 +173,17 @@ final class TerritoryManager {
             .execute()
             .value
 
+        // 过滤掉旧的假用户ID测试数据（漂移9000米的那些）
+        let filteredResponse = response.filter { territory in
+            territory.userId.lowercased() != Self.fakeTestUserId.lowercased()
+        }
+
         // 更新本地缓存（用于碰撞检测）
-        self.territories = response
+        self.territories = filteredResponse
 
-        print("✅ 加载完成，共 \(response.count) 个领地")
+        print("✅ 加载完成，共 \(filteredResponse.count) 个领地（已过滤旧测试数据）")
 
-        return response
+        return filteredResponse
     }
 
     /// 加载当前用户的领地
@@ -219,6 +227,126 @@ final class TerritoryManager {
         print("✅ 领地已删除")
     }
 
+    // MARK: - 测试数据方法
+
+    /// 测试领地名称前缀（用于标识测试数据）
+    private static let testTerritoryPrefix = "[TEST]"
+
+    /// 在指定位置附近创建测试第三方领地
+    /// - Parameters:
+    ///   - center: 中心点坐标（通常是用户当前位置）
+    ///   - distanceMeters: 距离中心点的距离（米）
+    ///   - sizeMeters: 领地边长（米）
+    /// - Returns: 创建的测试领地坐标
+    /// - Note: 使用当前用户 ID 创建（绕过 RLS），但用特殊前缀标记为测试数据
+    func createTestTerritoryNearby(
+        center: CLLocationCoordinate2D,
+        distanceMeters: Double = 200,
+        sizeMeters: Double = 50
+    ) async throws -> [CLLocationCoordinate2D] {
+        // 获取当前用户 ID（必须登录才能创建）
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            throw TerritoryError.notAuthenticated
+        }
+
+        // 计算偏移量（在东偏北方向创建）
+        // 纬度：1度 ≈ 111公里
+        // 经度：1度 ≈ 111 * cos(纬度) 公里
+        let latOffset = distanceMeters / 111000.0
+        let lonOffset = distanceMeters / (111000.0 * cos(center.latitude * .pi / 180))
+
+        // 测试领地中心点（在用户位置的东北方向）
+        let testCenter = CLLocationCoordinate2D(
+            latitude: center.latitude + latOffset * 0.7,  // 偏北
+            longitude: center.longitude + lonOffset * 0.7  // 偏东
+        )
+
+        // 计算领地边长的一半对应的经纬度偏移
+        let halfSizeLat = (sizeMeters / 2) / 111000.0
+        let halfSizeLon = (sizeMeters / 2) / (111000.0 * cos(testCenter.latitude * .pi / 180))
+
+        // 创建正方形领地的四个角点
+        let coordinates = [
+            CLLocationCoordinate2D(latitude: testCenter.latitude - halfSizeLat, longitude: testCenter.longitude - halfSizeLon),
+            CLLocationCoordinate2D(latitude: testCenter.latitude - halfSizeLat, longitude: testCenter.longitude + halfSizeLon),
+            CLLocationCoordinate2D(latitude: testCenter.latitude + halfSizeLat, longitude: testCenter.longitude + halfSizeLon),
+            CLLocationCoordinate2D(latitude: testCenter.latitude + halfSizeLat, longitude: testCenter.longitude - halfSizeLon)
+        ]
+
+        // 计算面积
+        let area = sizeMeters * sizeMeters
+
+        // 准备数据
+        let pathJSON = coordinatesToPathJSON(coordinates)
+        let wktPolygon = coordinatesToWKT(coordinates)
+
+        guard let bbox = calculateBoundingBox(coordinates) else {
+            throw TerritoryError.invalidCoordinates
+        }
+
+        // 构建上传数据（使用当前用户 ID，但名称带测试前缀）
+        let territoryData: [String: AnyJSON] = [
+            "user_id": .string(userId.uuidString),
+            "name": .string("\(Self.testTerritoryPrefix) 测试第三方领地"),
+            "path": .array(pathJSON.map { point in
+                .object([
+                    "lat": .double(point["lat"] ?? 0),
+                    "lon": .double(point["lon"] ?? 0)
+                ])
+            }),
+            "polygon": .string(wktPolygon),
+            "bbox_min_lat": .double(bbox.minLat),
+            "bbox_max_lat": .double(bbox.maxLat),
+            "bbox_min_lon": .double(bbox.minLon),
+            "bbox_max_lon": .double(bbox.maxLon),
+            "area": .double(area),
+            "point_count": .integer(4),
+            "started_at": .string(Date().ISO8601Format()),
+            "completed_at": .string(Date().ISO8601Format()),
+            "is_active": .bool(true)
+        ]
+
+        print("📤 创建测试第三方领地...")
+        print("   中心点: \(testCenter.latitude), \(testCenter.longitude)")
+        print("   距离用户: \(distanceMeters)米")
+        print("   领地大小: \(sizeMeters)米 x \(sizeMeters)米")
+
+        do {
+            try await supabase
+                .from("territories")
+                .insert(territoryData)
+                .execute()
+
+            print("✅ 测试领地创建成功")
+            TerritoryLogger.shared.log("测试第三方领地创建成功，距离: \(Int(distanceMeters))米", type: .success)
+
+            return coordinates
+        } catch {
+            TerritoryLogger.shared.log("测试领地创建失败: \(error.localizedDescription)", type: .error)
+            throw error
+        }
+    }
+
+    /// 删除所有测试领地（根据名称前缀识别）
+    func deleteAllTestTerritories() async throws {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            throw TerritoryError.notAuthenticated
+        }
+
+        print("🗑️ 删除所有测试领地...")
+
+        // 删除当前用户的、名称以 [TEST] 开头的领地
+        try await supabase
+            .from("territories")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .like("name", pattern: "\(Self.testTerritoryPrefix)%")
+            .execute()
+
+        print("✅ 所有测试领地已删除")
+        TerritoryLogger.shared.log("所有测试领地已删除", type: .info)
+    }
+
     // MARK: - 碰撞检测算法
 
     /// 射线法判断点是否在多边形内
@@ -258,8 +386,11 @@ final class TerritoryManager {
     ///   - currentUserId: 当前用户 ID
     /// - Returns: 碰撞检测结果
     func checkPointCollision(location: CLLocationCoordinate2D, currentUserId: String) -> CollisionResult {
+        // 过滤出"他人领地"：不是当前用户的，或者是测试领地（名称以 [TEST] 开头）
         let otherTerritories = territories.filter { territory in
-            territory.userId.lowercased() != currentUserId.lowercased()
+            let isOtherUser = territory.userId.lowercased() != currentUserId.lowercased()
+            let isTestTerritory = territory.name?.hasPrefix(Self.testTerritoryPrefix) ?? false
+            return isOtherUser || isTestTerritory
         }
 
         guard !otherTerritories.isEmpty else {
@@ -310,8 +441,11 @@ final class TerritoryManager {
     func checkPathCrossTerritory(path: [CLLocationCoordinate2D], currentUserId: String) -> CollisionResult {
         guard path.count >= 2 else { return .safe }
 
+        // 过滤出"他人领地"：不是当前用户的，或者是测试领地（名称以 [TEST] 开头）
         let otherTerritories = territories.filter { territory in
-            territory.userId.lowercased() != currentUserId.lowercased()
+            let isOtherUser = territory.userId.lowercased() != currentUserId.lowercased()
+            let isTestTerritory = territory.name?.hasPrefix(Self.testTerritoryPrefix) ?? false
+            return isOtherUser || isTestTerritory
         }
 
         guard !otherTerritories.isEmpty else { return .safe }
@@ -364,8 +498,11 @@ final class TerritoryManager {
     ///   - currentUserId: 当前用户 ID
     /// - Returns: 最近距离（米），无他人领地时返回无穷大
     func calculateMinDistanceToTerritories(location: CLLocationCoordinate2D, currentUserId: String) -> Double {
+        // 过滤出"他人领地"：不是当前用户的，或者是测试领地（名称以 [TEST] 开头）
         let otherTerritories = territories.filter { territory in
-            territory.userId.lowercased() != currentUserId.lowercased()
+            let isOtherUser = territory.userId.lowercased() != currentUserId.lowercased()
+            let isTestTerritory = territory.name?.hasPrefix(Self.testTerritoryPrefix) ?? false
+            return isOtherUser || isTestTerritory
         }
 
         guard !otherTerritories.isEmpty else { return Double.infinity }

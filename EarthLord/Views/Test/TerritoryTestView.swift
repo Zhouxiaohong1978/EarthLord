@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct TerritoryTestView: View {
 
@@ -17,12 +18,33 @@ struct TerritoryTestView: View {
     /// 日志管理器（监听日志更新）
     @ObservedObject var logger = TerritoryLogger.shared
 
+    // MARK: - State
+
+    /// 是否正在创建测试领地
+    @State private var isCreatingTestTerritory = false
+
+    /// 是否正在删除测试领地
+    @State private var isDeletingTestTerritories = false
+
+    /// 测试领地距离（米）
+    @State private var testDistance: Double = 200
+
+    /// 测试领地大小（米）
+    @State private var testSize: Double = 50
+
     // MARK: - Body
 
     var body: some View {
         VStack(spacing: 0) {
             // 状态指示器
             statusIndicator
+                .padding()
+                .background(ApocalypseTheme.cardBackground)
+
+            Divider()
+
+            // 测试领地控制区域
+            testTerritorySection
                 .padding()
                 .background(ApocalypseTheme.cardBackground)
 
@@ -131,6 +153,152 @@ struct TerritoryTestView: View {
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
             Spacer()
+        }
+    }
+
+    // MARK: - 测试领地控制区域
+
+    /// 测试领地控制区域
+    private var testTerritorySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 标题
+            Text("测试第三方领地")
+                .font(.headline)
+                .foregroundColor(ApocalypseTheme.textPrimary)
+
+            // 当前位置显示
+            if let location = locationManager.userLocation {
+                Text("当前位置: \(String(format: "%.4f, %.4f", location.latitude, location.longitude))")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            } else {
+                Text("等待定位...")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.warning)
+            }
+
+            // 距离滑块
+            VStack(alignment: .leading, spacing: 4) {
+                Text("距离: \(Int(testDistance)) 米")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+
+                Slider(value: $testDistance, in: 50...500, step: 10)
+                    .tint(ApocalypseTheme.primary)
+            }
+
+            // 大小滑块
+            VStack(alignment: .leading, spacing: 4) {
+                Text("领地大小: \(Int(testSize)) 米")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+
+                Slider(value: $testSize, in: 20...100, step: 5)
+                    .tint(ApocalypseTheme.primary)
+            }
+
+            // 按钮行
+            HStack(spacing: 12) {
+                // 创建测试领地按钮
+                Button(action: {
+                    Task {
+                        await createTestTerritory()
+                    }
+                }) {
+                    HStack {
+                        if isCreatingTestTerritory {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "plus.square.fill")
+                        }
+                        Text(isCreatingTestTerritory ? "创建中..." : "创建测试领地")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(ApocalypseTheme.primary)
+                    .cornerRadius(8)
+                }
+                .disabled(locationManager.userLocation == nil || isCreatingTestTerritory)
+                .opacity(locationManager.userLocation == nil ? 0.5 : 1)
+
+                // 删除所有测试领地按钮
+                Button(action: {
+                    Task {
+                        await deleteAllTestTerritories()
+                    }
+                }) {
+                    HStack {
+                        if isDeletingTestTerritories {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "trash.fill")
+                        }
+                        Text(isDeletingTestTerritories ? "删除中..." : "清除测试领地")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(ApocalypseTheme.danger)
+                    .cornerRadius(8)
+                }
+                .disabled(isDeletingTestTerritories)
+            }
+
+        }
+    }
+
+    /// 创建测试领地
+    private func createTestTerritory() async {
+        guard let location = locationManager.userLocation else {
+            TerritoryLogger.shared.log("无法创建测试领地：未获取到位置", type: .error)
+            return
+        }
+
+        isCreatingTestTerritory = true
+        TerritoryLogger.shared.log("开始创建测试领地，距离: \(Int(testDistance))米", type: .info)
+
+        do {
+            let coords = try await TerritoryManager.shared.createTestTerritoryNearby(
+                center: location,
+                distanceMeters: testDistance,
+                sizeMeters: testSize
+            )
+
+            await MainActor.run {
+                isCreatingTestTerritory = false
+                TerritoryLogger.shared.log("测试领地创建成功！共 \(coords.count) 个顶点", type: .success)
+            }
+        } catch {
+            await MainActor.run {
+                isCreatingTestTerritory = false
+                TerritoryLogger.shared.log("创建失败: \(error.localizedDescription)", type: .error)
+            }
+        }
+    }
+
+    /// 删除所有测试领地
+    private func deleteAllTestTerritories() async {
+        isDeletingTestTerritories = true
+        TerritoryLogger.shared.log("开始删除所有测试领地...", type: .info)
+
+        do {
+            try await TerritoryManager.shared.deleteAllTestTerritories()
+
+            await MainActor.run {
+                isDeletingTestTerritories = false
+            }
+        } catch {
+            await MainActor.run {
+                isDeletingTestTerritories = false
+                TerritoryLogger.shared.log("删除失败: \(error.localizedDescription)", type: .error)
+            }
         }
     }
 

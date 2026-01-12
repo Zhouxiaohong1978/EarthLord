@@ -58,8 +58,8 @@ struct MapTabView: View {
 
     // MARK: - 探索功能状态
 
-    /// 探索管理器
-    @StateObject private var explorationManager = ExplorationManager.shared
+    /// 探索管理器（单例，使用 ObservedObject 观察）
+    @ObservedObject private var explorationManager = ExplorationManager.shared
 
     /// 是否显示探索结果弹窗
     @State private var showExplorationResult = false

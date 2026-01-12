@@ -152,6 +152,8 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 开始探索
     func startExploration() {
+        logger.log("========== 开始探索请求 ==========", type: .info)
+
         guard !isExploring else {
             logger.logError("探索已在进行中，无法重复开始")
             return
@@ -164,6 +166,8 @@ final class ExplorationManager: NSObject, ObservableObject {
         }
 
         let authStatus = locationManager.authorizationStatus
+        logger.log("定位权限状态: \(authStatus.rawValue)", type: .info)
+
         guard authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways else {
             logger.logError("定位权限未授权，当前状态: \(authStatus.rawValue)")
             return
@@ -179,12 +183,15 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         // 开始位置更新
         locationManager.startUpdatingLocation()
+        logger.log("已启动位置更新服务", type: .info)
 
         // 开始时长计时
         startDurationTimer()
+        logger.log("已启动探索计时器", type: .info)
 
         logger.logExplorationStart()
         logger.logStateChange(from: "idle", to: "exploring")
+        logger.log("速度限制: \(speedLimit) km/h, 超速警告时间: \(warningDuration) 秒", type: .info)
     }
 
     /// 停止探索并返回结果
@@ -192,6 +199,9 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// - Returns: 探索会话结果
     @discardableResult
     func stopExploration(cancelled: Bool = false) -> ExplorationSessionResult? {
+        logger.log("========== 停止探索请求 ==========", type: .info)
+        logger.log("是否取消: \(cancelled)", type: .info)
+
         guard isExploring else {
             logger.logError("没有正在进行的探索")
             return nil
@@ -199,6 +209,7 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         // 停止位置更新
         locationManager?.stopUpdatingLocation()
+        logger.log("已停止位置更新服务", type: .info)
 
         // 停止计时器
         stopDurationTimer()
@@ -273,12 +284,15 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 处理位置更新
     private func handleLocationUpdate(_ location: CLLocation) {
-        guard isExploring else { return }
+        guard isExploring else {
+            logger.log("收到位置更新但探索未进行，忽略", type: .warning)
+            return
+        }
 
         // 检查精度
         if location.horizontalAccuracy > accuracyThreshold || location.horizontalAccuracy < 0 {
             logger.log(
-                String(format: "忽略低精度位置: 精度 %.1fm > %.1fm", location.horizontalAccuracy, accuracyThreshold),
+                String(format: "忽略低精度位置: 精度 %.1fm > 阈值 %.1fm", location.horizontalAccuracy, accuracyThreshold),
                 type: .warning
             )
             return
@@ -295,13 +309,19 @@ final class ExplorationManager: NSObject, ObservableObject {
         // 计算速度
         let speedKmh = calculateSpeed(from: location)
         currentSpeed = speedKmh
-        maxRecordedSpeed = max(maxRecordedSpeed, speedKmh)
+
+        // 记录最高速度
+        if speedKmh > maxRecordedSpeed {
+            maxRecordedSpeed = speedKmh
+            logger.log(String(format: "新最高速度记录: %.1f km/h", speedKmh), type: .info)
+        }
 
         // 速度检测
         let isOverSpeed = speedKmh > speedLimit
         logger.logSpeed(speedKmh, isOverSpeed: isOverSpeed, countdown: overSpeedCountdown)
 
         if isOverSpeed {
+            logger.log(String(format: "⚠️ 检测到超速: %.1f km/h > %.1f km/h", speedKmh, speedLimit), type: .warning)
             handleOverSpeed()
         } else {
             handleNormalSpeed(location: location)
@@ -386,6 +406,13 @@ final class ExplorationManager: NSObject, ObservableObject {
         if let lastLocation = lastValidLocation {
             segmentDistance = location.distance(from: lastLocation)
             totalDistance += segmentDistance
+            logger.log(
+                String(format: "📍 记录新位置点: 本段 +%.1fm, 累计 %.1fm, 路径点数: %d",
+                       segmentDistance, totalDistance, pathPoints.count + 1),
+                type: .distance
+            )
+        } else {
+            logger.log("📍 记录首个位置点", type: .distance)
         }
 
         // 记录点
@@ -404,10 +431,12 @@ final class ExplorationManager: NSObject, ObservableObject {
         overSpeedCountdown = countdownValue
         explorationState = .overSpeedWarning(secondsRemaining: countdownValue)
 
+        logger.log("🚨 ========== 超速警告开始 ==========", type: .warning)
         logger.log(
-            String(format: "⚠️ 超速警告！当前速度 %.1f km/h，开始 %d 秒倒计时", currentSpeed, warningDuration),
+            String(format: "当前速度: %.1f km/h, 限制: %.1f km/h", currentSpeed, speedLimit),
             type: .warning
         )
+        logger.log("倒计时: \(warningDuration) 秒内需降低速度，否则探索将失败", type: .warning)
         logger.logStateChange(from: "exploring", to: "overSpeedWarning(\(countdownValue))")
 
         overSpeedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -423,15 +452,27 @@ final class ExplorationManager: NSObject, ObservableObject {
         overSpeedCountdown = countdownValue
         explorationState = .overSpeedWarning(secondsRemaining: countdownValue)
 
-        logger.log("超速倒计时: \(countdownValue) 秒", type: .warning)
+        logger.log(
+            String(format: "⏱️ 超速倒计时: %d 秒, 当前速度: %.1f km/h", countdownValue, currentSpeed),
+            type: .warning
+        )
 
         if countdownValue <= 0 {
+            logger.log("⏱️ 倒计时结束，检查当前速度...", type: .warning)
             // 倒计时结束，检查当前速度
             if currentSpeed > speedLimit {
                 // 仍然超速，探索失败
+                logger.log(
+                    String(format: "❌ 速度仍超限 (%.1f > %.1f)，探索失败！", currentSpeed, speedLimit),
+                    type: .error
+                )
                 failExploration()
             } else {
                 // 速度已恢复，取消倒计时
+                logger.log(
+                    String(format: "✅ 速度已恢复正常 (%.1f km/h)，继续探索", currentSpeed),
+                    type: .success
+                )
                 cancelOverSpeedCountdown()
             }
         }
@@ -452,11 +493,23 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 探索失败（超速）
     private func failExploration() {
+        logger.log("🛑 ========== 探索失败处理 ==========", type: .error)
+        logger.log(
+            String(format: "失败原因: 超速时间过长 (持续超过 %d 秒)", warningDuration),
+            type: .error
+        )
+        logger.log(
+            String(format: "最终速度: %.1f km/h, 行走距离: %.1fm, 路径点: %d",
+                   currentSpeed, totalDistance, pathPoints.count),
+            type: .error
+        )
+
         overSpeedTimer?.invalidate()
         overSpeedTimer = nil
 
         // 停止位置更新
         locationManager?.stopUpdatingLocation()
+        logger.log("已停止位置更新服务", type: .info)
 
         // 停止计时器
         stopDurationTimer()

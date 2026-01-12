@@ -148,6 +148,9 @@ enum BackpackFilterType: CaseIterable, Identifiable {
 struct BackpackView: View {
     // MARK: - 状态
 
+    /// 背包管理器
+    @ObservedObject private var inventoryManager = InventoryManager.shared
+
     /// 搜索文字
     @State private var searchText = ""
 
@@ -160,10 +163,17 @@ struct BackpackView: View {
     /// 列表动画ID（用于切换分类时刷新动画）
     @State private var listAnimationID = UUID()
 
-    // MARK: - 容量配置（假数据）
+    /// 是否首次加载
+    @State private var isFirstLoad = true
 
-    private let currentCapacity: Double = 64
+    // MARK: - 容量配置
+
     private let maxCapacity: Double = 100
+
+    /// 当前容量（从背包管理器获取）
+    private var currentCapacity: Double {
+        Double(inventoryManager.totalItemCount)
+    }
 
     /// 容量使用百分比
     private var capacityPercentage: Double {
@@ -185,7 +195,7 @@ struct BackpackView: View {
 
     /// 筛选后的物品列表
     private var filteredItems: [BackpackItem] {
-        var items = MockExplorationData.backpackItems
+        var items = inventoryManager.items
 
         // 分类筛选
         if let category = selectedFilter.category {
@@ -229,7 +239,10 @@ struct BackpackView: View {
                     .padding(.top, 16)
 
                 // 物品列表或空状态
-                if MockExplorationData.backpackItems.isEmpty {
+                if inventoryManager.isLoading && isFirstLoad {
+                    // 首次加载中
+                    loadingState
+                } else if inventoryManager.items.isEmpty {
                     // 背包完全为空
                     emptyStateEmpty
                 } else if filteredItems.isEmpty {
@@ -243,9 +256,40 @@ struct BackpackView: View {
         }
         .navigationTitle("背包")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    Task {
+                        await inventoryManager.refreshInventory()
+                    }
+                } label: {
+                    if inventoryManager.isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 16))
+                    }
+                }
+                .disabled(inventoryManager.isLoading)
+            }
+        }
         .onAppear {
+            // 首次加载背包数据
+            if isFirstLoad {
+                Task {
+                    await inventoryManager.refreshInventory()
+                    isFirstLoad = false
+                }
+            }
             // 进度条动画
             withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+                animatedCapacity = currentCapacity
+            }
+        }
+        .onChange(of: inventoryManager.items) { _ in
+            // 物品变化时更新容量动画
+            withAnimation(.easeOut(duration: 0.5)) {
                 animatedCapacity = currentCapacity
             }
         }
@@ -389,6 +433,24 @@ struct BackpackView: View {
             .padding(.bottom, 20)
             .id(listAnimationID)
         }
+    }
+
+    // MARK: - 加载状态
+
+    private var loadingState: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            ProgressView()
+                .scaleEffect(1.5)
+
+            Text("加载背包数据...")
+                .font(.system(size: 15))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - 空状态：背包为空

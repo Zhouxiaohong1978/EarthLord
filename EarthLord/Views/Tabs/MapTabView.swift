@@ -70,6 +70,9 @@ struct MapTabView: View {
     /// 探索失败原因
     @State private var explorationFailReason: String = ""
 
+    /// 探索统计数据（累计距离、排名）
+    @State private var explorationStats: ExplorationStats?
+
     // MARK: - 计算属性
 
     /// 当前用户 ID
@@ -1050,8 +1053,19 @@ struct MapTabView: View {
             generator.notificationOccurred(.warning)
 
         case .completed:
-            // 探索完成，显示结果
-            showExplorationResult = true
+            // 探索完成，先获取统计数据再显示结果
+            Task {
+                do {
+                    // 清除缓存以获取最新数据
+                    ExplorationStatsManager.shared.clearCache()
+                    explorationStats = try await ExplorationStatsManager.shared.getStats()
+                } catch {
+                    // 获取统计失败，使用默认值
+                    explorationStats = nil
+                }
+                // 显示结果弹窗
+                showExplorationResult = true
+            }
 
         case .failed(let reason):
             // 探索失败，显示失败弹窗
@@ -1099,14 +1113,18 @@ struct MapTabView: View {
             )
         }
 
+        // 使用真实统计数据（如果有的话）
+        let totalDistance = explorationStats?.totalDistance ?? result.distanceWalked
+        let rank = explorationStats?.distanceRank ?? 1
+
         return ExplorationResult(
             id: result.id,
             startTime: result.startTime,
             endTime: result.endTime,
             distanceStats: DistanceStats(
                 current: result.distanceWalked,
-                total: result.distanceWalked,  // TODO: 从数据库获取累计值
-                rank: 1  // TODO: 从数据库获取排名
+                total: totalDistance,
+                rank: rank
             ),
             discoveredPOIs: [],
             obtainedItems: obtainedItems,

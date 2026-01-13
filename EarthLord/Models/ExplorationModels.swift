@@ -204,6 +204,63 @@ enum RewardTier: String, Codable {
             return .diamond
         }
     }
+
+    /// 获取等级颜色
+    var color: String {
+        switch self {
+        case .none:
+            return "gray"
+        case .bronze:
+            return "brown"
+        case .silver:
+            return "silver"
+        case .gold:
+            return "gold"
+        case .diamond:
+            return "cyan"
+        }
+    }
+
+    /// 获取下一等级所需的最小距离
+    var nextTierThreshold: Double? {
+        switch self {
+        case .none:
+            return 200
+        case .bronze:
+            return 500
+        case .silver:
+            return 1000
+        case .gold:
+            return 2000
+        case .diamond:
+            return nil  // 已是最高等级
+        }
+    }
+
+    /// 获取下一等级
+    var nextTier: RewardTier? {
+        switch self {
+        case .none:
+            return .bronze
+        case .bronze:
+            return .silver
+        case .silver:
+            return .gold
+        case .gold:
+            return .diamond
+        case .diamond:
+            return nil  // 已是最高等级
+        }
+    }
+
+    /// 计算距离下一等级还需要多少米
+    static func distanceToNextTier(currentDistance: Double) -> Double? {
+        let currentTier = from(distance: currentDistance)
+        guard let threshold = currentTier.nextTierThreshold else {
+            return nil  // 已是最高等级
+        }
+        return threshold - currentDistance
+    }
 }
 
 // MARK: - 探索会话结果

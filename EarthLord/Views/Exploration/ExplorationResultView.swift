@@ -199,6 +199,28 @@ struct ExplorationResultView: View {
 
     // MARK: - 成就标题
 
+    /// 获取奖励等级
+    private var rewardTier: RewardTier {
+        guard let tierString = result?.rewardTier else { return .none }
+        return RewardTier(rawValue: tierString) ?? .none
+    }
+
+    /// 奖励等级颜色
+    private var tierColor: Color {
+        switch rewardTier {
+        case .none:
+            return .gray
+        case .bronze:
+            return Color(red: 0.8, green: 0.5, blue: 0.2)
+        case .silver:
+            return Color(red: 0.75, green: 0.75, blue: 0.8)
+        case .gold:
+            return Color(red: 1.0, green: 0.84, blue: 0.0)
+        case .diamond:
+            return Color(red: 0.0, green: 0.9, blue: 1.0)
+        }
+    }
+
     private var achievementHeader: some View {
         VStack(spacing: 12) {
             // 大图标 - 带光晕效果
@@ -208,8 +230,8 @@ struct ExplorationResultView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                ApocalypseTheme.primary.opacity(0.4),
-                                ApocalypseTheme.primary.opacity(0)
+                                tierColor.opacity(0.4),
+                                tierColor.opacity(0)
                             ],
                             center: .center,
                             startRadius: 30,
@@ -222,13 +244,13 @@ struct ExplorationResultView: View {
 
                 // 图标背景圆
                 Circle()
-                    .fill(ApocalypseTheme.primary.opacity(0.2))
+                    .fill(tierColor.opacity(0.2))
                     .frame(width: 100, height: 100)
 
-                // 图标
-                Image(systemName: "map.fill")
+                // 等级图标
+                Image(systemName: rewardTier.icon)
                     .font(.system(size: 44))
-                    .foregroundColor(ApocalypseTheme.primary)
+                    .foregroundColor(tierColor)
             }
 
             // 大标题
@@ -238,12 +260,49 @@ struct ExplorationResultView: View {
                 .scaleEffect(showContent ? 1 : 0.8)
                 .opacity(showContent ? 1 : 0)
 
+            // 奖励等级徽章
+            if rewardTier != .none {
+                rewardTierBadge
+                    .scaleEffect(showContent ? 1 : 0.5)
+                    .opacity(showContent ? 1 : 0)
+            }
+
             // 副标题
-            Text("你发现了新的区域和物资")
+            Text(rewardTier == .none ? "距离不足，未获得奖励" : "你发现了新的区域和物资")
                 .font(.system(size: 15))
                 .foregroundColor(ApocalypseTheme.textSecondary)
                 .opacity(showContent ? 1 : 0)
         }
+    }
+
+    // MARK: - 奖励等级徽章
+
+    private var rewardTierBadge: some View {
+        HStack(spacing: 8) {
+            Image(systemName: rewardTier.icon)
+                .font(.system(size: 16, weight: .semibold))
+
+            Text(rewardTier.displayName)
+                .font(.system(size: 16, weight: .bold))
+
+            Text("奖励")
+                .font(.system(size: 14, weight: .medium))
+                .opacity(0.8)
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [tierColor, tierColor.opacity(0.7)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+        )
+        .shadow(color: tierColor.opacity(0.5), radius: 8, x: 0, y: 4)
     }
 
     // MARK: - 统计数据卡片

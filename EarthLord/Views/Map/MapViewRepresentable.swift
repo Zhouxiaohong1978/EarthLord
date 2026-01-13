@@ -41,6 +41,17 @@ struct MapViewRepresentable: UIViewRepresentable {
     /// 当前用户 ID（用于区分我的领地和他人领地）
     var currentUserId: String?
 
+    // MARK: - 探索轨迹属性
+
+    /// 探索路径坐标
+    var explorationPath: [CLLocationCoordinate2D]
+
+    /// 探索路径版本号
+    var explorationPathVersion: Int
+
+    /// 是否正在探索
+    var isExploring: Bool
+
     // MARK: - UIViewRepresentable
 
     /// 创建 MKMapView
@@ -88,8 +99,11 @@ struct MapViewRepresentable: UIViewRepresentable {
 
     /// 更新视图
     func updateUIView(_ uiView: MKMapView, context: Context) {
-        // 更新轨迹显示
+        // 更新圈地轨迹显示
         updateTrackingPath(on: uiView, context: context)
+
+        // 更新探索轨迹显示
+        updateExplorationPath(on: uiView, context: context)
 
         // 绘制领地
         drawTerritories(on: uiView, context: context)
@@ -140,6 +154,37 @@ struct MapViewRepresentable: UIViewRepresentable {
         } else {
             print("🗺️ 更新轨迹显示: \(trackingPath.count) 个点")
         }
+    }
+
+    // MARK: - 探索轨迹绘制
+
+    /// 更新探索轨迹显示
+    private func updateExplorationPath(on mapView: MKMapView, context: Context) {
+        // 检查版本号是否变化
+        guard context.coordinator.lastExplorationPathVersion != explorationPathVersion else { return }
+        context.coordinator.lastExplorationPathVersion = explorationPathVersion
+
+        // 移除旧的探索轨迹
+        let explorationOverlays = mapView.overlays.filter { overlay in
+            if let polyline = overlay as? MKPolyline {
+                return polyline.title == "exploration"
+            }
+            return false
+        }
+        mapView.removeOverlays(explorationOverlays)
+
+        // 如果不在探索或路径少于2个点，不绘制
+        guard isExploring && explorationPath.count >= 2 else { return }
+
+        // 将 WGS-84 坐标转换为 GCJ-02
+        let convertedCoordinates = CoordinateConverter.wgs84ToGcj02(explorationPath)
+
+        // 创建探索轨迹线
+        let polyline = MKPolyline(coordinates: convertedCoordinates, count: convertedCoordinates.count)
+        polyline.title = "exploration"
+        mapView.addOverlay(polyline)
+
+        print("🚶 更新探索轨迹: \(explorationPath.count) 个点")
     }
 
     // MARK: - 领地绘制
@@ -232,6 +277,9 @@ struct MapViewRepresentable: UIViewRepresentable {
         /// 上次路径版本号 - 避免重复更新
         var lastPathVersion: Int = -1
 
+        /// 上次探索轨迹版本号
+        var lastExplorationPathVersion: Int = -1
+
         /// 上次领地数量 - 避免重复绘制
         var lastTerritoriesCount: Int = -1
 
@@ -281,14 +329,21 @@ struct MapViewRepresentable: UIViewRepresentable {
             if let polyline = overlay as? MKPolyline {
                 let renderer = MKPolylineRenderer(polyline: polyline)
 
-                // ⭐ 轨迹变色：闭环后从青色变成绿色
-                if parent.isPathClosed {
-                    renderer.strokeColor = UIColor.systemGreen
+                // 根据轨迹类型设置颜色
+                if polyline.title == "exploration" {
+                    // 🚶 探索轨迹：橙色
+                    renderer.strokeColor = UIColor.systemOrange
+                    renderer.lineWidth = 5.0
                 } else {
-                    renderer.strokeColor = UIColor.systemCyan
+                    // 🗺️ 圈地轨迹：闭环后从青色变成绿色
+                    if parent.isPathClosed {
+                        renderer.strokeColor = UIColor.systemGreen
+                    } else {
+                        renderer.strokeColor = UIColor.systemCyan
+                    }
+                    renderer.lineWidth = 4.0
                 }
 
-                renderer.lineWidth = 4.0
                 renderer.lineCap = .round
                 renderer.lineJoin = .round
 
@@ -352,6 +407,9 @@ struct MapViewRepresentable: UIViewRepresentable {
         isTracking: false,
         isPathClosed: false,
         territories: [],
-        currentUserId: nil
+        currentUserId: nil,
+        explorationPath: [],
+        explorationPathVersion: 0,
+        isExploring: false
     )
 }

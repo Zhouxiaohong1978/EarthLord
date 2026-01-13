@@ -50,7 +50,7 @@ final class ExplorationManager: NSObject, ObservableObject {
     // MARK: - Constants
 
     /// 速度限制 (km/h)
-    private let speedLimit: Double = 30.0
+    private let speedLimit: Double = 20.0
 
     /// 超速警告倒计时 (秒)
     private let warningDuration: Int = 10
@@ -92,6 +92,12 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 探索结果 (探索结束后设置)
     @Published var explorationResult: ExplorationSessionResult?
+
+    /// 探索路径坐标（用于地图显示）
+    @Published var explorationPathCoordinates: [CLLocationCoordinate2D] = []
+
+    /// 路径更新版本号（用于触发地图刷新）
+    @Published var explorationPathVersion: Int = 0
 
     // MARK: - Private Properties
 
@@ -142,7 +148,10 @@ final class ExplorationManager: NSObject, ObservableObject {
         locationManager?.delegate = self
         locationManager?.desiredAccuracy = kCLLocationAccuracyBest
         locationManager?.distanceFilter = minimumRecordDistance
-        locationManager?.allowsBackgroundLocationUpdates = true
+        // 注意: allowsBackgroundLocationUpdates 需要在 Info.plist 中配置 UIBackgroundModes 包含 "location"
+        // 以及 NSLocationAlwaysAndWhenInUseUsageDescription 权限描述
+        // 目前只使用前台定位，暂不启用后台定位
+        // locationManager?.allowsBackgroundLocationUpdates = true
         locationManager?.pausesLocationUpdatesAutomatically = false
 
         logger.log("位置管理器初始化完成", type: .info)
@@ -273,6 +282,8 @@ final class ExplorationManager: NSObject, ObservableObject {
         lastValidLocation = nil
         lastRecordTime = nil
         pathPoints.removeAll()
+        explorationPathCoordinates.removeAll()
+        explorationPathVersion += 1
 
         cancelOverSpeedCountdown()
         stopDurationTimer()
@@ -420,6 +431,10 @@ final class ExplorationManager: NSObject, ObservableObject {
         lastValidLocation = location
         lastRecordTime = location.timestamp
 
+        // 同步更新用于地图显示的路径坐标
+        explorationPathCoordinates.append(location.coordinate)
+        explorationPathVersion += 1
+
         logger.logDistance(segmentDistance: segmentDistance, totalDistance: totalDistance)
     }
 
@@ -484,7 +499,7 @@ final class ExplorationManager: NSObject, ObservableObject {
         overSpeedTimer = nil
         overSpeedCountdown = nil
 
-        if isExploring && case .overSpeedWarning = explorationState {
+        if isExploring, case .overSpeedWarning = explorationState {
             explorationState = .exploring
             logger.log("✓ 速度恢复正常，取消超速倒计时", type: .success)
             logger.logStateChange(from: "overSpeedWarning", to: "exploring")

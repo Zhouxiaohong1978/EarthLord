@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import os.log
 
 // MARK: - ExplorationLogType 探索日志类型
 
@@ -97,6 +98,11 @@ final class ExplorationLogger: ObservableObject {
     /// 全局单例
     static let shared = ExplorationLogger()
 
+    // MARK: - OS Logger
+
+    /// 系统日志器（用于 Xcode 控制台）
+    private let osLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "EarthLord", category: "Exploration")
+
     // MARK: - Published Properties
 
     /// 日志数组
@@ -131,6 +137,9 @@ final class ExplorationLogger: ObservableObject {
 
     private init() {
         // 私有初始化，确保单例
+        NSLog("🚀 [探索] ExplorationLogger 初始化完成")
+        osLogger.notice("🚀 ExplorationLogger 初始化完成")
+        print("🚀 [探索] ExplorationLogger 初始化完成")
     }
 
     // MARK: - Public Methods
@@ -157,9 +166,27 @@ final class ExplorationLogger: ObservableObject {
         // 控制台输出
         if enableConsoleOutput {
             let timestamp = displayDateFormatter.string(from: entry.timestamp)
-            print("[\(timestamp)] [探索] [\(entry.type.rawValue)] \(entry.message)")
+            let logMessage = "[\(timestamp)] [探索] [\(entry.type.rawValue)] \(entry.message)"
+
+            // 使用 print（Xcode 控制台）
+            print(logMessage)
             if let details = details {
                 print("  详情: \(details)")
+            }
+
+            // 使用 NSLog（更可靠，会写入系统日志）
+            NSLog("[探索] [%@] %@", entry.type.rawValue, entry.message)
+
+            // 同时使用 os.log（结构化日志）
+            switch entry.type {
+            case .error:
+                osLogger.error("[\(entry.type.rawValue)] \(entry.message)")
+            case .warning:
+                osLogger.warning("[\(entry.type.rawValue)] \(entry.message)")
+            case .success:
+                osLogger.notice("[\(entry.type.rawValue)] \(entry.message)")
+            default:
+                osLogger.info("[\(entry.type.rawValue)] \(entry.message)")
             }
         }
     }

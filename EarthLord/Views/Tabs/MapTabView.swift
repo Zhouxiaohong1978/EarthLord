@@ -73,6 +73,9 @@ struct MapTabView: View {
     /// 探索统计数据（累计距离、排名）
     @State private var explorationStats: ExplorationStats?
 
+    /// 是否显示日志查看器
+    @State private var showLogViewer = false
+
     // MARK: - 计算属性
 
     /// 当前用户 ID
@@ -93,7 +96,10 @@ struct MapTabView: View {
                 isTracking: locationManager.isTracking,
                 isPathClosed: locationManager.isPathClosed,
                 territories: territories,
-                currentUserId: AuthManager.shared.currentUser?.id.uuidString
+                currentUserId: AuthManager.shared.currentUser?.id.uuidString,
+                explorationPath: explorationManager.explorationPathCoordinates,
+                explorationPathVersion: explorationManager.explorationPathVersion,
+                isExploring: explorationManager.isExploring
             )
             .ignoresSafeArea()
 
@@ -203,6 +209,10 @@ struct MapTabView: View {
         .onReceive(explorationManager.$explorationState) { state in
             handleExplorationStateChange(state)
         }
+        // 日志查看器
+        .sheet(isPresented: $showLogViewer) {
+            ExplorationLogView()
+        }
     }
 
     // MARK: - 顶部状态栏
@@ -225,6 +235,21 @@ struct MapTabView: View {
             .cornerRadius(20)
 
             Spacer()
+
+            // 调试日志按钮
+            Button(action: { showLogViewer = true }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.caption)
+                    Text("日志")
+                        .font(.caption)
+                }
+                .foregroundColor(ApocalypseTheme.textPrimary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(ApocalypseTheme.cardBackground.opacity(0.9))
+                .cornerRadius(12)
+            }
 
             // 坐标显示
             if let location = userLocation {
@@ -445,13 +470,21 @@ struct MapTabView: View {
 
     /// 切换探索状态
     private func toggleExploration() {
+        print("🔘 [MapTabView] toggleExploration 被调用")
+        print("  - 当前探索状态: \(explorationManager.isExploring)")
+        print("  - 定位授权状态: \(locationManager.isAuthorized)")
+
         if explorationManager.isExploring {
             // 结束探索
+            print("  - 执行: 停止探索")
             explorationManager.stopExploration()
         } else {
             // 开始探索
+            print("  - 执行: 开始探索")
             explorationManager.startExploration()
         }
+
+        print("  - 新探索状态: \(explorationManager.isExploring)")
     }
 
     /// 切换追踪状态
@@ -929,45 +962,116 @@ struct MapTabView: View {
 
     // MARK: - 探索状态覆盖层
 
+    /// 当前奖励等级
+    private var currentRewardTier: RewardTier {
+        RewardTier.from(distance: explorationManager.totalDistance)
+    }
+
+    /// 距离下一等级还需要多少米
+    private var distanceToNextTier: Double? {
+        RewardTier.distanceToNextTier(currentDistance: explorationManager.totalDistance)
+    }
+
+    /// 奖励等级颜色
+    private var rewardTierColor: Color {
+        switch currentRewardTier {
+        case .none:
+            return .gray
+        case .bronze:
+            return Color(red: 0.8, green: 0.5, blue: 0.2)  // 铜色
+        case .silver:
+            return Color(red: 0.75, green: 0.75, blue: 0.8)  // 银色
+        case .gold:
+            return Color(red: 1.0, green: 0.84, blue: 0.0)  // 金色
+        case .diamond:
+            return Color(red: 0.0, green: 0.9, blue: 1.0)  // 钻石蓝
+        }
+    }
+
     /// 探索状态覆盖层
     private var explorationStatusOverlay: some View {
-        HStack(spacing: 16) {
-            // 行走距离
-            VStack(spacing: 2) {
-                Image(systemName: "figure.walk")
-                    .font(.system(size: 14))
-                    .foregroundColor(ApocalypseTheme.primary)
-                Text(formatExplorationDistance(explorationManager.totalDistance))
-                    .font(.system(size: 14, weight: .bold).monospacedDigit())
-                    .foregroundColor(ApocalypseTheme.textPrimary)
+        VStack(spacing: 8) {
+            // 第一行：距离、速度、时长
+            HStack(spacing: 16) {
+                // 行走距离
+                VStack(spacing: 2) {
+                    Image(systemName: "figure.walk")
+                        .font(.system(size: 14))
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Text(formatExplorationDistance(explorationManager.totalDistance))
+                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                }
+
+                Divider()
+                    .frame(height: 30)
+                    .background(ApocalypseTheme.textMuted)
+
+                // 当前速度
+                VStack(spacing: 2) {
+                    Image(systemName: "speedometer")
+                        .font(.system(size: 14))
+                        .foregroundColor(explorationSpeedColor)
+                    Text(String(format: "%.1f km/h", explorationManager.currentSpeed))
+                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                        .foregroundColor(explorationSpeedColor)
+                }
+
+                Divider()
+                    .frame(height: 30)
+                    .background(ApocalypseTheme.textMuted)
+
+                // 探索时长
+                VStack(spacing: 2) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 14))
+                        .foregroundColor(ApocalypseTheme.info)
+                    Text(formatExplorationDuration(explorationManager.explorationDuration))
+                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                }
             }
 
-            Divider()
-                .frame(height: 30)
-                .background(ApocalypseTheme.textMuted)
+            // 第二行：奖励等级和距离下一等级
+            HStack(spacing: 8) {
+                // 当前奖励等级
+                HStack(spacing: 4) {
+                    Image(systemName: currentRewardTier.icon)
+                        .font(.system(size: 12))
+                        .foregroundColor(rewardTierColor)
+                    Text(currentRewardTier.displayName)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(rewardTierColor)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(rewardTierColor.opacity(0.15))
+                .cornerRadius(8)
 
-            // 当前速度
-            VStack(spacing: 2) {
-                Image(systemName: "speedometer")
-                    .font(.system(size: 14))
-                    .foregroundColor(explorationSpeedColor)
-                Text(String(format: "%.1f km/h", explorationManager.currentSpeed))
-                    .font(.system(size: 14, weight: .bold).monospacedDigit())
-                    .foregroundColor(explorationSpeedColor)
-            }
-
-            Divider()
-                .frame(height: 30)
-                .background(ApocalypseTheme.textMuted)
-
-            // 探索时长
-            VStack(spacing: 2) {
-                Image(systemName: "clock")
-                    .font(.system(size: 14))
-                    .foregroundColor(ApocalypseTheme.info)
-                Text(formatExplorationDuration(explorationManager.explorationDuration))
-                    .font(.system(size: 14, weight: .bold).monospacedDigit())
-                    .foregroundColor(ApocalypseTheme.textPrimary)
+                // 距离下一等级
+                if let distance = distanceToNextTier, let nextTier = currentRewardTier.nextTier {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.circle")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                        Text("距\(nextTier.displayName)还需")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                        Text(formatExplorationDistance(distance))
+                            .font(.system(size: 11, weight: .bold).monospacedDigit())
+                            .foregroundColor(ApocalypseTheme.primary)
+                    }
+                } else {
+                    // 已达到最高等级
+                    HStack(spacing: 4) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(rewardTierColor)
+                        Text("已达最高等级!")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(rewardTierColor)
+                    }
+                }
             }
         }
         .padding(.horizontal, 20)
@@ -982,12 +1086,12 @@ struct MapTabView: View {
 
     /// 探索速度颜色
     private var explorationSpeedColor: Color {
-        if explorationManager.currentSpeed > 30 {
-            return .red
-        } else if explorationManager.currentSpeed > 20 {
-            return .orange
+        if explorationManager.currentSpeed > 20 {
+            return .red  // 超速
+        } else if explorationManager.currentSpeed > 15 {
+            return .orange  // 接近限速
         } else {
-            return ApocalypseTheme.success
+            return ApocalypseTheme.success  // 安全
         }
     }
 

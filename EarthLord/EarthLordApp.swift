@@ -6,9 +6,44 @@
 //
 
 import SwiftUI
+import os.log
 
 @main
 struct EarthLordApp: App {
+    /// 系统日志器
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "EarthLord", category: "App")
+
+    init() {
+        NSLog("🌍 ========== EarthLord 应用启动 ==========")
+        print("🌍 ========== EarthLord 应用启动 ==========")
+        logger.notice("🌍 EarthLord 应用启动")
+
+        // 初始化探索日志器和管理器（在主线程上执行）
+        Task { @MainActor in
+            // 初始化探索日志器
+            _ = ExplorationLogger.shared
+            NSLog("✅ [App] ExplorationLogger 已初始化")
+            print("✅ [App] ExplorationLogger 已初始化")
+
+            // 初始化探索管理器
+            _ = ExplorationManager.shared
+            NSLog("✅ [App] ExplorationManager 已初始化")
+            print("✅ [App] ExplorationManager 已初始化")
+
+            // 初始化背包管理器
+            _ = InventoryManager.shared
+            NSLog("✅ [App] InventoryManager 已初始化")
+            print("✅ [App] InventoryManager 已初始化")
+
+            // 初始化统计管理器
+            _ = ExplorationStatsManager.shared
+            NSLog("✅ [App] ExplorationStatsManager 已初始化")
+            print("✅ [App] ExplorationStatsManager 已初始化")
+
+            NSLog("🚀 [App] 所有管理器初始化完成")
+            print("🚀 [App] 所有管理器初始化完成")
+        }
+    }
     /// 认证管理器 - 使用 lazy 初始化避免启动时的问题
     @StateObject private var authManager = AuthManager.shared
 

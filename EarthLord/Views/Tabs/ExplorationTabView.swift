@@ -503,12 +503,22 @@ struct POICardNew: View {
 struct BackpackContentView: View {
     // MARK: - 状态
 
+    /// 背包管理器
+    @ObservedObject private var inventoryManager = InventoryManager.shared
+
+    /// 是否首次加载
+    @State private var isFirstLoad = true
+
     @State private var searchText = ""
     @State private var selectedFilter: BackpackFilterType = .all
     @State private var animatedCapacity: Double = 0
 
-    private let currentCapacity: Double = 47.5
     private let maxCapacity: Double = 100
+
+    /// 当前容量（从背包管理器动态获取）
+    private var currentCapacity: Double {
+        Double(inventoryManager.totalItemCount)
+    }
 
     /// 容量使用百分比
     private var capacityPercentage: Double {
@@ -528,7 +538,7 @@ struct BackpackContentView: View {
 
     /// 筛选后的物品列表
     private var filteredItems: [BackpackItem] {
-        var items = MockExplorationData.backpackItems
+        var items = inventoryManager.items
 
         if let category = selectedFilter.category {
             items = items.filter { item in
@@ -570,7 +580,14 @@ struct BackpackContentView: View {
                 .padding(.top, 12)
 
             // 物品列表
-            if filteredItems.isEmpty {
+            if inventoryManager.isLoading && isFirstLoad {
+                // 首次加载中
+                loadingView
+            } else if inventoryManager.items.isEmpty {
+                // 背包完全为空
+                emptyState
+            } else if filteredItems.isEmpty {
+                // 搜索/筛选无结果
                 emptyState
             } else {
                 itemList
@@ -578,7 +595,22 @@ struct BackpackContentView: View {
             }
         }
         .onAppear {
+            // 首次加载背包数据
+            if isFirstLoad {
+                Task {
+                    await inventoryManager.refreshInventory()
+                    isFirstLoad = false
+                }
+            }
+
+            // 容量动画
             withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+                animatedCapacity = currentCapacity
+            }
+        }
+        .onChange(of: inventoryManager.items) { _ in
+            // 数据变化时更新容量动画
+            withAnimation(.easeOut(duration: 0.5)) {
                 animatedCapacity = currentCapacity
             }
         }

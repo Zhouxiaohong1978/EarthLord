@@ -7,6 +7,7 @@
 
 import Foundation
 import Supabase
+import Combine
 
 // MARK: - InventoryError
 

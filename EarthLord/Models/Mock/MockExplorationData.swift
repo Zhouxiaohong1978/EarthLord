@@ -146,7 +146,7 @@ struct ItemDefinition: Identifiable {
 
 /// 背包物品模型
 /// 代表玩家背包中的一个物品实例
-struct BackpackItem: Identifiable {
+struct BackpackItem: Identifiable, Equatable {
     let id: UUID
     let itemId: String              // 关联的物品定义ID
     var quantity: Int               // 数量

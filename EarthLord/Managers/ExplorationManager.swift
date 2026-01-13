@@ -673,13 +673,31 @@ final class ExplorationManager: NSObject, ObservableObject {
             let sessionId = try await saveExplorationSession(result: result, userId: userId)
             logger.log("探索会话已保存: \(sessionId)", type: .success)
 
-            // 保存奖励物品
+            // 保存奖励物品到背包（使用 InventoryManager 以支持堆叠）
             if !rewards.isEmpty {
-                try await saveInventoryItems(items: rewards, sessionId: sessionId, userId: userId)
+                await saveRewardsToInventory(items: rewards, sessionId: sessionId)
                 logger.log("已保存 \(rewards.count) 件物品到背包", type: .success)
             }
         } catch {
             logger.logError("保存到数据库失败", error: error)
+        }
+    }
+
+    /// 保存奖励物品到背包（使用 InventoryManager 支持堆叠）
+    private func saveRewardsToInventory(items: [ObtainedItem], sessionId: String) async {
+        for item in items {
+            do {
+                try await InventoryManager.shared.addItem(
+                    itemId: item.itemId,
+                    quantity: item.quantity,
+                    quality: item.quality,
+                    obtainedFrom: "探索",
+                    sessionId: sessionId
+                )
+                logger.log("物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
+            } catch {
+                logger.logError("添加物品到背包失败: \(item.itemId)", error: error)
+            }
         }
     }
 
@@ -721,25 +739,6 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         let insertResponse = try JSONDecoder().decode(InsertResponse.self, from: response.data)
         return insertResponse.id
-    }
-
-    /// 保存背包物品
-    private func saveInventoryItems(items: [ObtainedItem], sessionId: String, userId: UUID) async throws {
-        for item in items {
-            let itemData: [String: AnyJSON] = [
-                "user_id": .string(userId.uuidString),
-                "item_id": .string(item.itemId),
-                "quantity": .integer(item.quantity),
-                "quality": item.quality != nil ? .string(item.quality!.rawValue) : .null,
-                "obtained_from": .string("exploration"),
-                "exploration_session_id": .string(sessionId)
-            ]
-
-            try await supabase
-                .from("inventory_items")
-                .insert(itemData)
-                .execute()
-        }
     }
 }
 

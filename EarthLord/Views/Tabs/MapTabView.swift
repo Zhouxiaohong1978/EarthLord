@@ -99,7 +99,8 @@ struct MapTabView: View {
                 currentUserId: AuthManager.shared.currentUser?.id.uuidString,
                 explorationPath: explorationManager.explorationPathCoordinates,
                 explorationPathVersion: explorationManager.explorationPathVersion,
-                isExploring: explorationManager.isExploring
+                isExploring: explorationManager.isExploring,
+                nearbyPOIs: explorationManager.nearbyPOIs
             )
             .ignoresSafeArea()
 
@@ -157,6 +158,30 @@ struct MapTabView: View {
             // MARK: 权限被拒绝时的提示卡片
             if locationManager.isDenied {
                 permissionDeniedCard
+            }
+        }
+        .overlay {
+            // POI接近弹窗
+            if explorationManager.showProximityPopup,
+               let poi = explorationManager.currentProximityPOI {
+                Color.black.opacity(0.5)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        explorationManager.showProximityPopup = false
+                    }
+
+                POIProximityPopup(
+                    poi: poi,
+                    onScavenge: {
+                        Task {
+                            explorationManager.showProximityPopup = false
+                            await explorationManager.scavengePOI(poi)
+                        }
+                    },
+                    onDismiss: {
+                        explorationManager.showProximityPopup = false
+                    }
+                )
             }
         }
         .onAppear {

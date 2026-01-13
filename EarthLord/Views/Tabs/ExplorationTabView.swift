@@ -515,9 +515,9 @@ struct BackpackContentView: View {
 
     private let maxCapacity: Double = 100
 
-    /// 当前容量（从背包管理器动态获取）
+    /// 当前容量（从背包管理器动态获取 - 使用总重量kg）
     private var currentCapacity: Double {
-        Double(inventoryManager.totalItemCount)
+        inventoryManager.totalWeight
     }
 
     /// 容量使用百分比

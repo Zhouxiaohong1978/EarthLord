@@ -9,6 +9,7 @@ import Foundation
 import CoreLocation
 import Combine
 import Supabase
+import MapKit
 
 // MARK: - ExplorationError
 
@@ -50,10 +51,10 @@ final class ExplorationManager: NSObject, ObservableObject {
     // MARK: - Constants
 
     /// 速度限制 (km/h)
-    private let speedLimit: Double = 20.0
+    private let speedLimit: Double = 30.0
 
     /// 超速警告倒计时 (秒)
-    private let warningDuration: Int = 10
+    private let warningDuration: Int = 15
 
     /// 最小记录距离 (米) - GPS 点之间的最小距离
     private let minimumRecordDistance: CLLocationDistance = 5.0
@@ -98,6 +99,20 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 路径更新版本号（用于触发地图刷新）
     @Published var explorationPathVersion: Int = 0
+
+    // MARK: - POI相关属性
+
+    /// 当前探索会话的POI列表
+    @Published var nearbyPOIs: [POI] = []
+
+    /// 当前接近的POI（触发弹窗）
+    @Published var currentProximityPOI: POI?
+
+    /// 是否显示接近弹窗
+    @Published var showProximityPopup: Bool = false
+
+    /// 已搜刮的POI ID集合（本次探索会话）
+    @Published var scavengedPOIIds: Set<UUID> = []
 
     // MARK: - Private Properties
 
@@ -201,6 +216,13 @@ final class ExplorationManager: NSObject, ObservableObject {
         logger.logExplorationStart()
         logger.logStateChange(from: "idle", to: "exploring")
         logger.log("速度限制: \(speedLimit) km/h, 超速警告时间: \(warningDuration) 秒", type: .info)
+
+        // 搜索附近POI
+        Task {
+            guard let location = locationManager.location else { return }
+            await searchNearbyPOIs(center: location.coordinate)
+            setupGeofences()
+        }
     }
 
     /// 停止探索并返回结果
@@ -223,6 +245,12 @@ final class ExplorationManager: NSObject, ObservableObject {
         // 停止计时器
         stopDurationTimer()
         cancelOverSpeedCountdown()
+
+        // 清理POI和地理围栏
+        cleanupGeofences()
+        scavengedPOIIds.removeAll()
+        currentProximityPOI = nil
+        showProximityPopup = false
 
         // 计算结果
         let endTime = Date()
@@ -823,5 +851,155 @@ extension ExplorationManager: CLLocationManagerDelegate {
             let status = manager.authorizationStatus
             logger.log("定位授权状态变化: \(status.rawValue)", type: .info)
         }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+        guard let circularRegion = region as? CLCircularRegion else { return }
+
+        Task { @MainActor in
+            handlePOIProximity(regionId: circularRegion.identifier)
+        }
+    }
+}
+
+// MARK: - POI 搜索和围栏管理
+
+extension ExplorationManager {
+
+    /// 搜索附近真实POI（使用MapKit）
+    private func searchNearbyPOIs(center: CLLocationCoordinate2D) async {
+        let searchTypes: [MKPointOfInterestCategory] = [
+            .store,
+            .hospital,
+            .pharmacy,
+            .gasStation,
+            .restaurant,
+            .cafe
+        ]
+
+        var allResults: [POI] = []
+
+        for category in searchTypes {
+            let request = MKLocalSearch.Request()
+            request.pointOfInterestFilter = MKPointOfInterestFilter(including: [category])
+            request.region = MKCoordinateRegion(
+                center: center,
+                latitudinalMeters: 2000,
+                longitudinalMeters: 2000
+            )
+
+            let search = MKLocalSearch(request: request)
+
+            do {
+                let response = try await search.start()
+                let pois = response.mapItems.map { mapItem in
+                    convertMapItemToPOI(mapItem)
+                }
+                allResults.append(contentsOf: pois)
+            } catch {
+                logger.logError("搜索POI失败: \(category.rawValue)", error: error)
+            }
+        }
+
+        nearbyPOIs = Array(allResults.prefix(20))
+        logger.log("找到 \(nearbyPOIs.count) 个附近POI", type: .success)
+    }
+
+    /// 将MapKit结果转换为POI模型
+    private func convertMapItemToPOI(_ mapItem: MKMapItem) -> POI {
+        let poiType = mapPOICategoryToPOIType(mapItem.pointOfInterestCategory)
+
+        return POI(
+            name: mapItem.name ?? "未知地点",
+            type: poiType,
+            coordinate: mapItem.placemark.coordinate,
+            status: .undiscovered,
+            description: mapItem.placemark.title ?? "",
+            estimatedResources: [],
+            dangerLevel: 1
+        )
+    }
+
+    /// MapKit类型映射到游戏POI类型
+    private func mapPOICategoryToPOIType(_ category: MKPointOfInterestCategory?) -> POIType {
+        guard let category = category else { return .residential }
+
+        switch category {
+        case .store, .foodMarket: return .supermarket
+        case .hospital: return .hospital
+        case .pharmacy: return .pharmacy
+        case .gasStation: return .gasStation
+        default: return .residential
+        }
+    }
+
+    /// 为所有POI创建地理围栏
+    private func setupGeofences() {
+        guard let locationManager = locationManager else { return }
+
+        // 清除旧围栏
+        for region in locationManager.monitoredRegions {
+            locationManager.stopMonitoring(for: region)
+        }
+
+        // 为每个POI创建50米围栏
+        for poi in nearbyPOIs {
+            let region = CLCircularRegion(
+                center: poi.coordinate,
+                radius: 50.0,
+                identifier: poi.id.uuidString
+            )
+            region.notifyOnEntry = true
+            region.notifyOnExit = false
+
+            locationManager.startMonitoring(for: region)
+        }
+
+        logger.log("已创建 \(nearbyPOIs.count) 个地理围栏", type: .info)
+    }
+
+    /// 清理所有地理围栏
+    private func cleanupGeofences() {
+        guard let locationManager = locationManager else { return }
+
+        for region in locationManager.monitoredRegions {
+            locationManager.stopMonitoring(for: region)
+        }
+        nearbyPOIs.removeAll()
+        logger.log("已清理地理围栏", type: .info)
+    }
+
+    /// 处理进入POI范围
+    @MainActor
+    private func handlePOIProximity(regionId: String) {
+        guard let poiId = UUID(uuidString: regionId),
+              let poi = nearbyPOIs.first(where: { $0.id == poiId }),
+              !scavengedPOIIds.contains(poiId) else {
+            return
+        }
+
+        logger.log("进入POI范围: \(poi.name)", type: .info)
+
+        currentProximityPOI = poi
+        showProximityPopup = true
+    }
+
+    /// 搜刮POI获得物品
+    func scavengePOI(_ poi: POI) async {
+        logger.log("开始搜刮: \(poi.name)", type: .info)
+
+        scavengedPOIIds.insert(poi.id)
+
+        let itemCount = Int.random(in: 1...3)
+        var obtainedItems: [ObtainedItem] = []
+
+        for _ in 0..<itemCount {
+            let item = generateRandomItem(tier: .bronze)
+            obtainedItems.append(item)
+        }
+
+        await saveRewardsToInventory(items: obtainedItems, sessionId: "scavenge_\(poi.id.uuidString)")
+
+        logger.log("搜刮完成，获得 \(obtainedItems.count) 件物品", type: .success)
     }
 }

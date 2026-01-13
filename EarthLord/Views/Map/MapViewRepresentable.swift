@@ -52,6 +52,9 @@ struct MapViewRepresentable: UIViewRepresentable {
     /// 是否正在探索
     var isExploring: Bool
 
+    /// 附近的POI列表
+    var nearbyPOIs: [POI] = []
+
     // MARK: - UIViewRepresentable
 
     /// 创建 MKMapView
@@ -107,6 +110,9 @@ struct MapViewRepresentable: UIViewRepresentable {
 
         // 绘制领地
         drawTerritories(on: uiView, context: context)
+
+        // 更新POI标记
+        updatePOIAnnotations(on: uiView)
     }
 
     /// 创建 Coordinator 代理
@@ -393,6 +399,35 @@ struct MapViewRepresentable: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, didFailToLocateUserWithError error: Error) {
             print("地图定位失败: \(error.localizedDescription)")
         }
+    }
+
+    // MARK: - POI标记管理
+
+    /// 更新POI标记
+    private func updatePOIAnnotations(on mapView: MKMapView) {
+        // 移除旧的POI标记
+        let oldPOIAnnotations = mapView.annotations.filter { $0 is POIAnnotation }
+        mapView.removeAnnotations(oldPOIAnnotations)
+
+        // 添加新的POI标记
+        let newAnnotations = nearbyPOIs.map { poi in
+            POIAnnotation(poi: poi)
+        }
+        mapView.addAnnotations(newAnnotations)
+    }
+}
+
+// MARK: - POI Annotation
+
+/// POI标记类
+class POIAnnotation: NSObject, MKAnnotation {
+    let poi: POI
+    var coordinate: CLLocationCoordinate2D { poi.coordinate }
+    var title: String? { poi.name }
+    var subtitle: String? { poi.type.rawValue }
+
+    init(poi: POI) {
+        self.poi = poi
     }
 }
 

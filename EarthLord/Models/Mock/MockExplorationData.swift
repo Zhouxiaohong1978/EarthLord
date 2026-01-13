@@ -71,6 +71,36 @@ struct POI: Identifiable {
     }
 }
 
+// MARK: - POI Type 扩展
+
+import UIKit
+
+extension POIType {
+    /// 获取 UIColor（用于 MKAnnotationView）
+    var uiColor: UIColor {
+        switch self {
+        case .hospital:
+            return .systemRed
+        case .supermarket:
+            return .systemGreen
+        case .factory:
+            return .systemGray
+        case .pharmacy:
+            return .systemPurple
+        case .gasStation:
+            return UIColor(red: 1.0, green: 0.4, blue: 0.1, alpha: 1.0) // #FF6619 - ApocalypseTheme.primary
+        case .warehouse:
+            return .systemBrown
+        case .residential:
+            return .systemCyan
+        case .police:
+            return .systemBlue
+        case .military:
+            return .systemYellow
+        }
+    }
+}
+
 // MARK: - 物品相关模型
 
 /// 物品分类枚举

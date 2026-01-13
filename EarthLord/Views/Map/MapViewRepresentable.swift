@@ -384,6 +384,56 @@ struct MapViewRepresentable: UIViewRepresentable {
             return MKOverlayRenderer(overlay: overlay)
         }
 
+        // MARK: ⭐ 关键方法：自定义 POI 标注视图
+
+        /// 为标注提供自定义视图
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            // 不自定义用户位置蓝点
+            if annotation is MKUserLocation {
+                return nil
+            }
+
+            // 处理 POI 标注
+            if let poiAnnotation = annotation as? POIAnnotation {
+                let identifier = "POIMarker"
+
+                // 复用或创建新的标注视图
+                let annotationView = mapView.dequeueReusableAnnotationView(
+                    withIdentifier: identifier
+                ) as? MKMarkerAnnotationView ?? MKMarkerAnnotationView(
+                    annotation: annotation,
+                    reuseIdentifier: identifier
+                )
+
+                annotationView.annotation = annotation
+                annotationView.canShowCallout = true
+
+                // 应用 POI 类型的颜色
+                annotationView.markerTintColor = poiAnnotation.poi.type.uiColor
+
+                // 设置自定义图标
+                let iconName = poiAnnotation.poi.type.icon
+                let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
+                annotationView.glyphImage = UIImage(systemName: iconName, withConfiguration: config)
+
+                // 根据 POI 状态调整显示优先级
+                switch poiAnnotation.poi.status {
+                case .hasResources:
+                    annotationView.displayPriority = .required
+                case .undiscovered, .discovered:
+                    annotationView.displayPriority = .defaultHigh
+                case .looted:
+                    annotationView.displayPriority = .defaultLow
+                case .dangerous:
+                    annotationView.displayPriority = .required
+                }
+
+                return annotationView
+            }
+
+            return nil
+        }
+
         /// 地图区域变化完成
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
             // 用户手动拖动地图后的处理

@@ -705,15 +705,7 @@ final class ExplorationManager: NSObject, ObservableObject {
     private func saveExplorationSession(result: ExplorationSessionResult, userId: UUID) async throws -> String {
         let dateFormatter = ISO8601DateFormatter()
 
-        // 转换路径为 JSON
-        let pathJSON = result.path.map { point in
-            [
-                "lat": point.coordinate.latitude,
-                "lon": point.coordinate.longitude,
-                "timestamp": dateFormatter.string(from: point.timestamp)
-            ] as [String: Any]
-        }
-
+        // 注：路径数据暂不保存，后续可按需添加
         let sessionData: [String: AnyJSON] = [
             "user_id": .string(userId.uuidString),
             "started_at": .string(dateFormatter.string(from: result.startTime)),

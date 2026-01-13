@@ -726,6 +726,24 @@ struct BackpackContentView: View {
         }
     }
 
+    // MARK: - 加载状态
+
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            ProgressView()
+                .scaleEffect(1.5)
+
+            Text("加载背包数据...")
+                .font(.system(size: 15))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     // MARK: - 空状态
 
     private var emptyState: some View {

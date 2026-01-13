@@ -588,12 +588,31 @@ final class ExplorationManager: NSObject, ObservableObject {
         }
 
         let itemCount = tier.itemCount
-        var rewards: [ObtainedItem] = []
+        var tempRewards: [ObtainedItem] = []
 
+        // 先生成所有物品
         for _ in 0..<itemCount {
             let item = generateRandomItem(tier: tier)
-            rewards.append(item)
+            tempRewards.append(item)
         }
+
+        // 合并相同物品（相同 itemId 和 quality 的物品堆叠）
+        var mergedRewards: [String: ObtainedItem] = [:]
+        for item in tempRewards {
+            let key = "\(item.itemId)_\(item.quality?.rawValue ?? "none")"
+            if let existing = mergedRewards[key] {
+                // 已存在相同物品，增加数量
+                mergedRewards[key] = ObtainedItem(
+                    itemId: existing.itemId,
+                    quantity: existing.quantity + item.quantity,
+                    quality: existing.quality
+                )
+            } else {
+                mergedRewards[key] = item
+            }
+        }
+
+        let rewards = Array(mergedRewards.values)
 
         logger.logReward(tier: tier, itemCount: itemCount, items: rewards)
         return rewards
@@ -668,19 +687,58 @@ final class ExplorationManager: NSObject, ObservableObject {
             return
         }
 
-        do {
-            // 保存探索会话
-            let sessionId = try await saveExplorationSession(result: result, userId: userId)
-            logger.log("探索会话已保存: \(sessionId)", type: .success)
+        // 检查网络状态
+        let isOnline = OfflineSyncManager.shared.isNetworkAvailable
 
-            // 保存奖励物品到背包（使用 InventoryManager 以支持堆叠）
-            if !rewards.isEmpty {
-                await saveRewardsToInventory(items: rewards, sessionId: sessionId)
-                logger.log("已保存 \(rewards.count) 件物品到背包", type: .success)
+        if isOnline {
+            // 在线模式：直接保存到服务器
+            do {
+                // 保存探索会话
+                let sessionId = try await saveExplorationSession(result: result, userId: userId)
+                logger.log("探索会话已保存: \(sessionId)", type: .success)
+
+                // 保存奖励物品到背包（使用 InventoryManager 以支持堆叠）
+                if !rewards.isEmpty {
+                    await saveRewardsToInventory(items: rewards, sessionId: sessionId)
+                    logger.log("已保存 \(rewards.count) 件物品到背包", type: .success)
+                }
+            } catch {
+                logger.logError("保存到数据库失败，转存到离线队列", error: error)
+                // 保存失败，加入离线队列
+                saveToOfflineQueue(result: result, rewards: rewards)
             }
-        } catch {
-            logger.logError("保存到数据库失败", error: error)
+        } else {
+            // 离线模式：保存到本地队列
+            logger.log("⚠️ 网络不可用，保存到离线队列", type: .warning)
+            saveToOfflineQueue(result: result, rewards: rewards)
         }
+    }
+
+    /// 保存到离线队列
+    private func saveToOfflineQueue(result: ExplorationSessionResult, rewards: [ObtainedItem]) {
+        // 保存探索会话到离线队列
+        OfflineSyncManager.shared.addPendingSession(
+            startTime: result.startTime,
+            endTime: result.endTime,
+            distanceWalked: result.distanceWalked,
+            durationSeconds: result.durationSeconds,
+            status: result.status,
+            rewardTier: result.rewardTier.rawValue,
+            maxSpeed: result.maxSpeed
+        )
+
+        // 保存物品到离线队列
+        for item in rewards {
+            OfflineSyncManager.shared.addPendingItem(
+                itemId: item.itemId,
+                quantity: item.quantity,
+                quality: item.quality,
+                obtainedFrom: "探索",
+                sessionId: nil
+            )
+        }
+
+        logger.log("✅ 已保存 \(rewards.count) 件物品到离线队列，网络恢复后自动同步", type: .success)
     }
 
     /// 保存奖励物品到背包（使用 InventoryManager 支持堆叠）
@@ -696,7 +754,15 @@ final class ExplorationManager: NSObject, ObservableObject {
                 )
                 logger.log("物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
             } catch {
-                logger.logError("添加物品到背包失败: \(item.itemId)", error: error)
+                logger.logError("添加物品到背包失败，保存到离线队列: \(item.itemId)", error: error)
+                // 保存失败的物品到离线队列
+                OfflineSyncManager.shared.addPendingItem(
+                    itemId: item.itemId,
+                    quantity: item.quantity,
+                    quality: item.quality,
+                    obtainedFrom: "探索",
+                    sessionId: sessionId
+                )
             }
         }
     }

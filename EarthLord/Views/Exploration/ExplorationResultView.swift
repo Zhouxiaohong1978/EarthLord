@@ -397,7 +397,7 @@ struct ExplorationResultView: View {
                 .padding(.vertical, 20)
             } else {
                 VStack(spacing: 10) {
-                    ForEach(Array(obtainedItems.enumerated()), id: \.element.itemId) { index, item in
+                    ForEach(Array(obtainedItems.enumerated()), id: \.element.id) { index, item in
                         if let definition = MockExplorationData.getItemDefinition(by: item.itemId) {
                             RewardItemRow(
                                 name: definition.name,

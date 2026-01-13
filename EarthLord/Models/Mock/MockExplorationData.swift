@@ -97,7 +97,7 @@ enum ItemRarity: String, CaseIterable {
 
 /// 物品品质枚举
 /// 某些物品有品质区分，影响效果
-enum ItemQuality: String, CaseIterable {
+enum ItemQuality: String, CaseIterable, Codable {
     case broken = "破损"           // 效果大幅降低
     case worn = "磨损"             // 效果略微降低
     case normal = "普通"           // 正常效果
@@ -146,7 +146,7 @@ struct ItemDefinition: Identifiable {
 
 /// 背包物品模型
 /// 代表玩家背包中的一个物品实例
-struct BackpackItem: Identifiable, Equatable {
+struct BackpackItem: Identifiable, Equatable, Codable {
     let id: UUID
     let itemId: String              // 关联的物品定义ID
     var quantity: Int               // 数量

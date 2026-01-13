@@ -117,10 +117,21 @@ final class InventoryManager: ObservableObject {
             self.items = backpackItems
             logger.log("成功加载 \(backpackItems.count) 件背包物品", type: .success)
 
+            // 缓存到本地
+            OfflineSyncManager.shared.cacheInventory(backpackItems)
+
             return backpackItems
 
         } catch {
-            logger.logError("加载背包失败", error: error)
+            logger.logError("加载背包失败，尝试从本地缓存加载", error: error)
+
+            // 网络失败时从本地缓存加载
+            if let cachedItems = OfflineSyncManager.shared.loadCachedInventory() {
+                self.items = cachedItems
+                logger.log("从本地缓存加载 \(cachedItems.count) 件背包物品", type: .info)
+                return cachedItems
+            }
+
             throw InventoryError.loadFailed(error.localizedDescription)
         }
     }
@@ -131,7 +142,12 @@ final class InventoryManager: ObservableObject {
             _ = try await getInventory()
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            // 如果有缓存数据，不显示错误
+            if !items.isEmpty {
+                errorMessage = nil
+            } else {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

@@ -472,7 +472,10 @@ struct MapViewRepresentable: UIViewRepresentable {
 /// POI标记类
 class POIAnnotation: NSObject, MKAnnotation {
     let poi: POI
-    var coordinate: CLLocationCoordinate2D { poi.coordinate }
+    /// 修复：将WGS-84坐标转换为GCJ-02（中国地图坐标系）
+    var coordinate: CLLocationCoordinate2D {
+        CoordinateConverter.wgs84ToGcj02(poi.coordinate)
+    }
     var title: String? { poi.name }
     var subtitle: String? { poi.type.rawValue }
 

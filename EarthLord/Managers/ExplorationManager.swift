@@ -868,6 +868,8 @@ extension ExplorationManager {
 
     /// 搜索附近真实POI（使用MapKit）
     private func searchNearbyPOIs(center: CLLocationCoordinate2D) async {
+        logger.log("🔍 开始搜索POI - 中心坐标: \(center.latitude), \(center.longitude)", type: .info)
+
         let searchTypes: [MKPointOfInterestCategory] = [
             .store,
             .hospital,
@@ -882,18 +884,23 @@ extension ExplorationManager {
         for category in searchTypes {
             let request = MKLocalSearch.Request()
             request.pointOfInterestFilter = MKPointOfInterestFilter(including: [category])
+            // 增加搜索半径到5公里
             request.region = MKCoordinateRegion(
                 center: center,
-                latitudinalMeters: 2000,
-                longitudinalMeters: 2000
+                latitudinalMeters: 5000,
+                longitudinalMeters: 5000
             )
 
             let search = MKLocalSearch(request: request)
 
             do {
                 let response = try await search.start()
+                logger.log("📍 类型 \(category.rawValue) 找到 \(response.mapItems.count) 个结果", type: .info)
+
                 let pois = response.mapItems.map { mapItem in
-                    convertMapItemToPOI(mapItem)
+                    let poi = convertMapItemToPOI(mapItem)
+                    logger.log("  - \(poi.name) (\(poi.type.rawValue))", type: .info)
+                    return poi
                 }
                 allResults.append(contentsOf: pois)
             } catch {
@@ -902,7 +909,14 @@ extension ExplorationManager {
         }
 
         nearbyPOIs = Array(allResults.prefix(20))
-        logger.log("找到 \(nearbyPOIs.count) 个附近POI", type: .success)
+        logger.log("✅ 总共找到 \(nearbyPOIs.count) 个附近POI", type: .success)
+
+        if nearbyPOIs.isEmpty {
+            logger.log("⚠️ 未找到任何POI，可能原因：", type: .warning)
+            logger.log("  1. 当前位置附近5公里内没有MapKit POI数据", type: .warning)
+            logger.log("  2. MapKit在中国大陆的POI数据可能不完整", type: .warning)
+            logger.log("  3. 建议切换到高德地图或百度地图API获取更准确的POI数据", type: .warning)
+        }
     }
 
     /// 将MapKit结果转换为POI模型

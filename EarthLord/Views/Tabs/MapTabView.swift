@@ -516,6 +516,7 @@ struct MapTabView: View {
     private func toggleExploration() {
         print("🔘 [MapTabView] toggleExploration 被调用")
         print("  - 当前探索状态: \(explorationManager.isExploring)")
+        print("  - 当前圈地状态: \(locationManager.isTracking)")
         print("  - 定位授权状态: \(locationManager.isAuthorized)")
 
         if explorationManager.isExploring {
@@ -523,6 +524,12 @@ struct MapTabView: View {
             print("  - 执行: 停止探索")
             explorationManager.stopExploration()
         } else {
+            // 开始探索前，先停止圈地（如果正在进行）
+            if locationManager.isTracking {
+                print("  - 检测到圈地进行中，先停止圈地")
+                stopCollisionMonitoring()
+                locationManager.stopPathTracking()
+            }
             // 开始探索
             print("  - 执行: 开始探索")
             explorationManager.startExploration()
@@ -558,6 +565,12 @@ struct MapTabView: View {
 
     /// Day 19: 带碰撞检测的开始圈地
     private func startClaimingWithCollisionCheck() {
+        // 开始圈地前，先停止探索（如果正在进行）
+        if explorationManager.isExploring {
+            print("🔘 [MapTabView] 检测到探索进行中，先停止探索")
+            explorationManager.stopExploration()
+        }
+
         guard let location = locationManager.userLocation,
               let userId = currentUserId else {
             return

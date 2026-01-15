@@ -357,6 +357,6 @@ struct TerritoryTestView: View {
 #Preview {
     NavigationStack {
         TerritoryTestView()
-            .environmentObject(LocationManager())
+            .environmentObject(LocationManager.shared)
     }
 }

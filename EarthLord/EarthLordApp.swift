@@ -40,6 +40,23 @@ struct EarthLordApp: App {
             NSLog("✅ [App] ExplorationStatsManager 已初始化")
             print("✅ [App] ExplorationStatsManager 已初始化")
 
+            // 初始化玩家密度服务
+            _ = PlayerDensityService.shared
+            NSLog("✅ [App] PlayerDensityService 已初始化")
+            print("✅ [App] PlayerDensityService 已初始化")
+
+            // 初始化位置上报服务
+            _ = LocationReporter.shared
+            NSLog("✅ [App] LocationReporter 已初始化")
+            print("✅ [App] LocationReporter 已初始化")
+
+            // 用户已登录时启动位置上报
+            if AuthManager.shared.isAuthenticated {
+                LocationReporter.shared.startReporting()
+                NSLog("✅ [App] 位置上报已启动")
+                print("✅ [App] 位置上报已启动")
+            }
+
             NSLog("🚀 [App] 所有管理器初始化完成")
             print("🚀 [App] 所有管理器初始化完成")
         }

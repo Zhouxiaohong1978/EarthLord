@@ -115,12 +115,20 @@ final class AuthManager: ObservableObject {
                 // 如果不是通过 OTP 验证登录（需要设置密码），则直接设为已认证
                 if !needsPasswordSetup {
                     isAuthenticated = true
+                    // 登录成功后启动位置上报
+                    LocationReporter.shared.startReporting()
+                    print("📍 位置上报已启动")
                 }
                 print("✅ 用户登录: \(session.user.email ?? "unknown")")
             }
 
         case .signedOut:
-            // 用户登出
+            // 用户登出 - 先标记离线再停止上报
+            Task {
+                await LocationReporter.shared.markOffline()
+                LocationReporter.shared.stopReporting()
+                print("📍 位置上报已停止")
+            }
             isAuthenticated = false
             needsPasswordSetup = false
             currentUser = nil

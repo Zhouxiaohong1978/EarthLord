@@ -1286,5 +1286,5 @@ struct MapTabView: View {
 
 #Preview {
     MapTabView()
-        .environmentObject(LocationManager())
+        .environmentObject(LocationManager.shared)
 }

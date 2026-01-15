@@ -10,8 +10,8 @@ import SwiftUI
 struct MainTabView: View {
     @State private var selectedTab = 0
 
-    /// 全局定位管理器 - 供所有 Tab 共享
-    @StateObject private var locationManager = LocationManager()
+    /// 全局定位管理器 - 供所有 Tab 共享（使用单例）
+    @StateObject private var locationManager = LocationManager.shared
 
     init() {
         // 设置 TabBar 外观

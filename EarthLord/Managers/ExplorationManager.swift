@@ -875,9 +875,31 @@ extension ExplorationManager: CLLocationManagerDelegate {
 
 extension ExplorationManager {
 
-    /// 搜索附近真实POI（使用MapKit）
+    /// 搜索附近真实POI（使用MapKit）- 根据玩家密度动态调整数量
     private func searchNearbyPOIs(center: CLLocationCoordinate2D) async {
         logger.log("🔍 开始搜索POI - 中心坐标: \(center.latitude), \(center.longitude)", type: .info)
+
+        // ====== 查询玩家密度 ======
+        var maxPOICount: Int = -1  // -1 表示不限制
+
+        do {
+            let densityResult = try await PlayerDensityService.shared.queryNearbyPlayers(
+                latitude: center.latitude,
+                longitude: center.longitude
+            )
+
+            let level = densityResult.densityLevel
+            maxPOICount = level.recommendedPOICount
+
+            // 日志格式与样板保持一致
+            logger.log("附近玩家: \(densityResult.nearbyCount) 人, 密度: \(level.rawValue)", type: .info)
+            logger.log("👥 附近玩家: \(densityResult.nearbyCount) 人, 推荐 POI 数量: \(maxPOICount == -1 ? "不限制" : "\(maxPOICount)")", type: .info)
+
+        } catch {
+            logger.logError("玩家密度查询失败，使用默认策略(3个POI)", error: error)
+            maxPOICount = 3  // 查询失败时默认显示3个
+        }
+        // ====== 密度查询结束 ======
 
         // 搜索1公里范围内的POI
         let searchTypes: [MKPointOfInterestCategory] = [
@@ -922,8 +944,24 @@ extension ExplorationManager {
             }
         }
 
-        nearbyPOIs = allResults  // 每种类型5个 × 7种类型 = 最多35个
-        logger.log("✅ 总共找到 \(nearbyPOIs.count) 个附近POI", type: .success)
+        // ====== 根据密度等级限制POI数量 ======
+        if maxPOICount > 0 && allResults.count > maxPOICount {
+            // 按距离排序，优先显示最近的POI
+            let userLocation = CLLocation(latitude: center.latitude, longitude: center.longitude)
+            allResults.sort { poi1, poi2 in
+                let loc1 = CLLocation(latitude: poi1.coordinate.latitude, longitude: poi1.coordinate.longitude)
+                let loc2 = CLLocation(latitude: poi2.coordinate.latitude, longitude: poi2.coordinate.longitude)
+                return userLocation.distance(from: loc1) < userLocation.distance(from: loc2)
+            }
+
+            // 截取指定数量
+            allResults = Array(allResults.prefix(maxPOICount))
+            logger.log("📊 根据密度等级限制，显示最近的 \(maxPOICount) 个POI", type: .info)
+        }
+        // ====== POI数量限制结束 ======
+
+        nearbyPOIs = allResults
+        logger.log("✅ 总共显示 \(nearbyPOIs.count) 个附近POI", type: .success)
 
         if nearbyPOIs.isEmpty {
             logger.log("⚠️ 未找到任何POI，可能原因：", type: .warning)

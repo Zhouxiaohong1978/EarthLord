@@ -19,6 +19,8 @@ extension POIType {
             return Color.red
         case .supermarket:
             return Color.green
+        case .restaurant:
+            return Color.yellow
         case .factory:
             return Color.gray
         case .pharmacy:
@@ -43,6 +45,8 @@ extension POIType {
             return "cross.case.fill"
         case .supermarket:
             return "cart.fill"
+        case .restaurant:
+            return "fork.knife"
         case .factory:
             return "building.2.fill"
         case .pharmacy:

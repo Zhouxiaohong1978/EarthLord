@@ -114,6 +114,12 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 已搜刮的POI ID集合（本次探索会话）
     @Published var scavengedPOIIds: Set<UUID> = []
 
+    /// 搜刮结果（用于展示给用户确认）
+    @Published var scavengeResult: ScavengeResult?
+
+    /// 是否显示搜刮结果弹窗
+    @Published var showScavengeResult: Bool = false
+
     // MARK: - Private Properties
 
     /// 位置管理器
@@ -365,6 +371,9 @@ final class ExplorationManager: NSObject, ObservableObject {
         } else {
             handleNormalSpeed(location: location)
         }
+
+        // 主动检测接近的POI（解决已在范围内不触发的问题）
+        checkPOIProximity(location: location)
     }
 
     /// 计算速度 (km/h)
@@ -870,25 +879,28 @@ extension ExplorationManager {
     private func searchNearbyPOIs(center: CLLocationCoordinate2D) async {
         logger.log("🔍 开始搜索POI - 中心坐标: \(center.latitude), \(center.longitude)", type: .info)
 
+        // 搜索1公里范围内的POI
         let searchTypes: [MKPointOfInterestCategory] = [
-            .store,
-            .hospital,
-            .pharmacy,
-            .gasStation,
-            .restaurant,
-            .cafe
+            .store,           // 商店/超市
+            .hospital,        // 医院
+            .pharmacy,        // 药店
+            .gasStation,      // 加油站
+            .restaurant,      // 餐厅
+            .cafe,            // 咖啡店
+            .foodMarket       // 食品市场
         ]
 
         var allResults: [POI] = []
+        let maxPerCategory = 5  // 每种类型最多取5个，确保多样性
 
         for category in searchTypes {
             let request = MKLocalSearch.Request()
             request.pointOfInterestFilter = MKPointOfInterestFilter(including: [category])
-            // 增加搜索半径到5公里
+            // 搜索1公里范围
             request.region = MKCoordinateRegion(
                 center: center,
-                latitudinalMeters: 5000,
-                longitudinalMeters: 5000
+                latitudinalMeters: 1000,
+                longitudinalMeters: 1000
             )
 
             let search = MKLocalSearch(request: request)
@@ -897,7 +909,9 @@ extension ExplorationManager {
                 let response = try await search.start()
                 logger.log("📍 类型 \(category.rawValue) 找到 \(response.mapItems.count) 个结果", type: .info)
 
-                let pois = response.mapItems.map { mapItem in
+                // 每种类型只取前几个，确保类型多样性
+                let limitedItems = response.mapItems.prefix(maxPerCategory)
+                let pois = limitedItems.map { mapItem in
                     let poi = convertMapItemToPOI(mapItem)
                     logger.log("  - \(poi.name) (\(poi.type.rawValue))", type: .info)
                     return poi
@@ -908,7 +922,7 @@ extension ExplorationManager {
             }
         }
 
-        nearbyPOIs = Array(allResults.prefix(20))
+        nearbyPOIs = allResults  // 每种类型5个 × 7种类型 = 最多35个
         logger.log("✅ 总共找到 \(nearbyPOIs.count) 个附近POI", type: .success)
 
         if nearbyPOIs.isEmpty {
@@ -940,9 +954,12 @@ extension ExplorationManager {
 
         switch category {
         case .store, .foodMarket: return .supermarket
+        case .restaurant, .cafe, .bakery: return .restaurant
         case .hospital: return .hospital
         case .pharmacy: return .pharmacy
         case .gasStation: return .gasStation
+        case .police: return .police
+        case .bank, .atm: return .warehouse
         default: return .residential
         }
     }
@@ -998,7 +1015,31 @@ extension ExplorationManager {
         showProximityPopup = true
     }
 
-    /// 搜刮POI获得物品
+    /// 主动检测是否接近POI（解决地理围栏"已在范围内"不触发的问题）
+    private func checkPOIProximity(location: CLLocation) {
+        // 已有弹窗显示时不检测
+        guard currentProximityPOI == nil, !showProximityPopup else { return }
+
+        // 将GPS坐标（WGS-84）转换为GCJ-02，与MapKit返回的POI坐标对比
+        let gcj02Coord = CoordinateConverter.wgs84ToGcj02(location.coordinate)
+        let userLocationGCJ02 = CLLocation(latitude: gcj02Coord.latitude, longitude: gcj02Coord.longitude)
+
+        for poi in nearbyPOIs {
+            // 跳过已搜刮的POI
+            guard !scavengedPOIIds.contains(poi.id) else { continue }
+
+            let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
+            let distance = userLocationGCJ02.distance(from: poiLocation)
+
+            if distance <= 50.0 {
+                logger.log("📍 主动检测到接近POI: \(poi.name)，距离: \(String(format: "%.1f", distance))m", type: .info)
+                handlePOIProximity(regionId: poi.id.uuidString)
+                break
+            }
+        }
+    }
+
+    /// 搜刮POI获得物品（生成结果，等待用户确认）
     func scavengePOI(_ poi: POI) async {
         logger.log("开始搜刮: \(poi.name)", type: .info)
 
@@ -1012,8 +1053,37 @@ extension ExplorationManager {
             obtainedItems.append(item)
         }
 
-        await saveRewardsToInventory(items: obtainedItems, sessionId: "scavenge_\(poi.id.uuidString)")
+        let sessionId = "scavenge_\(poi.id.uuidString)"
 
-        logger.log("搜刮完成，获得 \(obtainedItems.count) 件物品", type: .success)
+        // 创建搜刮结果，等待用户确认
+        scavengeResult = ScavengeResult(poi: poi, items: obtainedItems, sessionId: sessionId)
+        showScavengeResult = true
+
+        logger.log("搜刮完成，生成 \(obtainedItems.count) 件物品，等待用户确认", type: .info)
+    }
+
+    /// 确认搜刮结果，将物品添加到背包
+    func confirmScavengeResult() async {
+        guard let result = scavengeResult else {
+            logger.logError("没有待确认的搜刮结果")
+            return
+        }
+
+        logger.log("用户确认搜刮结果，保存 \(result.items.count) 件物品到背包", type: .info)
+
+        await saveRewardsToInventory(items: result.items, sessionId: result.sessionId)
+
+        // 清除搜刮结果
+        scavengeResult = nil
+        showScavengeResult = false
+
+        logger.log("物品已保存到背包", type: .success)
+    }
+
+    /// 放弃搜刮结果（用户不想要这些物品）
+    func discardScavengeResult() {
+        logger.log("用户放弃搜刮结果", type: .info)
+        scavengeResult = nil
+        showScavengeResult = false
     }
 }

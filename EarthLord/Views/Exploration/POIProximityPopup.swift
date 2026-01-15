@@ -29,6 +29,18 @@ struct POIProximityPopup: View {
                     Text(poi.name)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(ApocalypseTheme.textPrimary)
+
+                    // 危险等级
+                    HStack(spacing: 4) {
+                        ForEach(0..<5, id: \.self) { index in
+                            Image(systemName: index < poi.dangerLevel ? "exclamationmark.triangle.fill" : "exclamationmark.triangle")
+                                .font(.system(size: 12))
+                                .foregroundColor(index < poi.dangerLevel ? dangerColor : ApocalypseTheme.textMuted)
+                        }
+                        Text(dangerText)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(dangerColor)
+                    }
                 }
 
                 Spacer()
@@ -68,6 +80,31 @@ struct POIProximityPopup: View {
                 .shadow(color: .black.opacity(0.3), radius: 20)
         )
         .padding(.horizontal, 32)
+    }
+
+    // MARK: - 危险等级辅助属性
+
+    /// 危险等级颜色
+    private var dangerColor: Color {
+        switch poi.dangerLevel {
+        case 1: return ApocalypseTheme.success
+        case 2: return ApocalypseTheme.info
+        case 3: return ApocalypseTheme.warning
+        case 4, 5: return ApocalypseTheme.danger
+        default: return ApocalypseTheme.textMuted
+        }
+    }
+
+    /// 危险等级文字
+    private var dangerText: String {
+        switch poi.dangerLevel {
+        case 1: return "安全"
+        case 2: return "低风险"
+        case 3: return "中等风险"
+        case 4: return "高风险"
+        case 5: return "极度危险"
+        default: return "未知"
+        }
     }
 }
 

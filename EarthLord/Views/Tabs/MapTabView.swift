@@ -183,6 +183,25 @@ struct MapTabView: View {
                     }
                 )
             }
+
+            // 搜刮结果弹窗
+            if explorationManager.showScavengeResult,
+               let result = explorationManager.scavengeResult {
+                Color.black.opacity(0.5)
+                    .ignoresSafeArea()
+
+                ScavengeResultView(
+                    result: result,
+                    onConfirm: {
+                        Task {
+                            await explorationManager.confirmScavengeResult()
+                        }
+                    },
+                    onDiscard: {
+                        explorationManager.discardScavengeResult()
+                    }
+                )
+            }
         }
         .onAppear {
             // 首次出现时请求定位权限

@@ -307,6 +307,23 @@ struct ExplorationSessionResult: Identifiable, Equatable {
     }
 }
 
+// MARK: - 搜刮结果
+
+/// POI搜刮结果（用于展示搜刮获得的物品）
+struct ScavengeResult: Identifiable {
+    let id: UUID
+    let poi: POI
+    let items: [ObtainedItem]
+    let sessionId: String
+
+    init(poi: POI, items: [ObtainedItem], sessionId: String) {
+        self.id = UUID()
+        self.poi = poi
+        self.items = items
+        self.sessionId = sessionId
+    }
+}
+
 // MARK: - 获得的物品
 
 /// 获得的物品（用于探索奖励）

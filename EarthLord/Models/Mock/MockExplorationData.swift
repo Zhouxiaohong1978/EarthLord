@@ -25,6 +25,7 @@ enum POIStatus: String, CaseIterable {
 /// 定义不同类型的兴趣点
 enum POIType: String, CaseIterable {
     case supermarket = "超市"
+    case restaurant = "餐厅"
     case hospital = "医院"
     case gasStation = "加油站"
     case pharmacy = "药店"
@@ -83,6 +84,8 @@ extension POIType {
             return .systemRed
         case .supermarket:
             return .systemGreen
+        case .restaurant:
+            return .systemYellow
         case .factory:
             return .systemGray
         case .pharmacy:

@@ -901,24 +901,27 @@ extension ExplorationManager {
         }
         // ====== 密度查询结束 ======
 
-        // 搜索1公里范围内的POI
-        let searchTypes: [MKPointOfInterestCategory] = [
-            .store,           // 商店/超市
-            .hospital,        // 医院
-            .pharmacy,        // 药店
-            .gasStation,      // 加油站
-            .restaurant,      // 餐厅
-            .cafe,            // 咖啡店
-            .foodMarket       // 食品市场
+        // 使用中文关键词搜索POI（MKPointOfInterestFilter在中国大陆支持不好）
+        let searchQueries: [(query: String, type: POIType)] = [
+            ("超市", .supermarket),
+            ("便利店", .supermarket),
+            ("医院", .hospital),
+            ("诊所", .hospital),
+            ("药店", .pharmacy),
+            ("药房", .pharmacy),
+            ("加油站", .gasStation),
+            ("餐厅", .restaurant),
+            ("饭店", .restaurant),
+            ("咖啡厅", .restaurant)
         ]
 
         var allResults: [POI] = []
-        let maxPerCategory = 5  // 每种类型最多取5个，确保多样性
+        let maxPerQuery = 3  // 每个关键词最多取3个，确保多样性
+        var seenCoordinates: Set<String> = []  // 用于去重
 
-        for category in searchTypes {
+        for (query, poiType) in searchQueries {
             let request = MKLocalSearch.Request()
-            request.pointOfInterestFilter = MKPointOfInterestFilter(including: [category])
-            // 搜索1公里范围
+            request.naturalLanguageQuery = query  // 使用中文关键词搜索
             request.region = MKCoordinateRegion(
                 center: center,
                 latitudinalMeters: 1000,
@@ -929,18 +932,27 @@ extension ExplorationManager {
 
             do {
                 let response = try await search.start()
-                logger.log("📍 类型 \(category.rawValue) 找到 \(response.mapItems.count) 个结果", type: .info)
+                logger.log("📍 搜索「\(query)」找到 \(response.mapItems.count) 个结果", type: .info)
 
-                // 每种类型只取前几个，确保类型多样性
-                let limitedItems = response.mapItems.prefix(maxPerCategory)
-                let pois = limitedItems.map { mapItem in
-                    let poi = convertMapItemToPOI(mapItem)
+                // 每个关键词只取前几个，确保类型多样性
+                var addedCount = 0
+                for mapItem in response.mapItems {
+                    guard addedCount < maxPerQuery else { break }
+
+                    // 按坐标去重（精确到小数点后4位，约11米精度）
+                    let coordKey = String(format: "%.4f,%.4f",
+                                         mapItem.placemark.coordinate.latitude,
+                                         mapItem.placemark.coordinate.longitude)
+                    guard !seenCoordinates.contains(coordKey) else { continue }
+                    seenCoordinates.insert(coordKey)
+
+                    let poi = convertMapItemToPOI(mapItem, overrideType: poiType)
                     logger.log("  - \(poi.name) (\(poi.type.rawValue))", type: .info)
-                    return poi
+                    allResults.append(poi)
+                    addedCount += 1
                 }
-                allResults.append(contentsOf: pois)
             } catch {
-                logger.logError("搜索POI失败: \(category.rawValue)", error: error)
+                logger.logError("搜索POI失败: \(query)", error: error)
             }
         }
 
@@ -972,8 +984,11 @@ extension ExplorationManager {
     }
 
     /// 将MapKit结果转换为POI模型
-    private func convertMapItemToPOI(_ mapItem: MKMapItem) -> POI {
-        let poiType = mapPOICategoryToPOIType(mapItem.pointOfInterestCategory)
+    /// - Parameters:
+    ///   - mapItem: MapKit搜索结果
+    ///   - overrideType: 指定POI类型（用于中文关键词搜索时）
+    private func convertMapItemToPOI(_ mapItem: MKMapItem, overrideType: POIType? = nil) -> POI {
+        let poiType = overrideType ?? mapPOICategoryToPOIType(mapItem.pointOfInterestCategory)
 
         return POI(
             name: mapItem.name ?? "未知地点",

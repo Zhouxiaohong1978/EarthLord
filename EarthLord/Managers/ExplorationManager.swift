@@ -1092,27 +1092,135 @@ extension ExplorationManager {
         }
     }
 
-    /// 搜刮POI获得物品（生成结果，等待用户确认）
+    /// 搜刮POI获得物品（AI生成，等待用户确认）
     func scavengePOI(_ poi: POI) async {
-        logger.log("开始搜刮: \(poi.name)", type: .info)
+        logger.log("开始搜刮: \(poi.name), 危险等级: \(poi.dangerLevel)", type: .info)
 
         scavengedPOIIds.insert(poi.id)
 
         let itemCount = Int.random(in: 1...3)
-        var obtainedItems: [ObtainedItem] = []
+        var aiItems: [AIGeneratedItem] = []
+        var generatedByAI = true
 
-        for _ in 0..<itemCount {
-            let item = generateRandomItem(tier: .bronze)
-            obtainedItems.append(item)
+        do {
+            // 尝试使用AI生成物品
+            aiItems = try await AIItemGenerator.shared.generateItems(for: poi, itemCount: itemCount)
+        } catch {
+            // AI生成失败，使用本地预设物品作为降级方案
+            logger.log("⚠️ AI生成失败，使用本地预设物品: \(error.localizedDescription)", type: .warning)
+            aiItems = generateFallbackItems(for: poi, count: itemCount)
+            generatedByAI = false
         }
 
         let sessionId = "scavenge_\(poi.id.uuidString)"
 
         // 创建搜刮结果，等待用户确认
-        scavengeResult = ScavengeResult(poi: poi, items: obtainedItems, sessionId: sessionId)
+        scavengeResult = ScavengeResult(
+            poi: poi,
+            items: aiItems,
+            sessionId: sessionId,
+            generatedByAI: generatedByAI
+        )
         showScavengeResult = true
 
-        logger.log("搜刮完成，生成 \(obtainedItems.count) 件物品，等待用户确认", type: .info)
+        logger.log("搜刮完成，生成 \(aiItems.count) 件物品（AI:\(generatedByAI)），等待用户确认", type: .info)
+    }
+
+    /// 降级方案：生成本地预设物品
+    private func generateFallbackItems(for poi: POI, count: Int) -> [AIGeneratedItem] {
+        var items: [AIGeneratedItem] = []
+
+        for _ in 0..<count {
+            let rarity = determineRarityByDangerLevel(poi.dangerLevel)
+            let fallbackItem = getFallbackItem(for: poi.type, rarity: rarity)
+            items.append(fallbackItem)
+        }
+
+        return items
+    }
+
+    /// 根据危险等级确定稀有度
+    private func determineRarityByDangerLevel(_ dangerLevel: Int) -> String {
+        let randomValue = Double.random(in: 0...1)
+
+        switch dangerLevel {
+        case 1, 2:
+            if randomValue < 0.70 { return "common" }
+            else if randomValue < 0.95 { return "uncommon" }
+            else { return "rare" }
+        case 3:
+            if randomValue < 0.50 { return "common" }
+            else if randomValue < 0.80 { return "uncommon" }
+            else if randomValue < 0.95 { return "rare" }
+            else { return "epic" }
+        case 4:
+            if randomValue < 0.40 { return "uncommon" }
+            else if randomValue < 0.75 { return "rare" }
+            else if randomValue < 0.95 { return "epic" }
+            else { return "legendary" }
+        case 5:
+            if randomValue < 0.30 { return "rare" }
+            else if randomValue < 0.70 { return "epic" }
+            else { return "legendary" }
+        default:
+            return "common"
+        }
+    }
+
+    /// 获取预设降级物品
+    private func getFallbackItem(for poiType: POIType, rarity: String) -> AIGeneratedItem {
+        // 根据POI类型选择物品
+        let fallbackData: [(name: String, story: String, category: String)] = {
+            switch poiType {
+            case .hospital, .pharmacy:
+                return [
+                    ("急救医疗包", "从储物柜中找到的完整急救包，上面还贴着护士的名字。", "medical"),
+                    ("过期止痛药", "虽然已经过期，但在末日中仍是珍贵的资源。", "medical"),
+                    ("消毒纱布", "密封完好的医用纱布，包装上写着\"请勿私自取用\"。", "medical")
+                ]
+            case .supermarket, .restaurant:
+                return [
+                    ("罐头午餐肉", "货架深处发现的未开封罐头，生产日期已模糊不清。", "food"),
+                    ("瓶装矿泉水", "落满灰尘的矿泉水，瓶身上印着\"清凉一夏\"的广告语。", "water"),
+                    ("压缩饼干", "军用压缩饼干，保质期长达十年。", "food")
+                ]
+            case .factory, .warehouse:
+                return [
+                    ("生锈扳手", "一把沾满油污的扳手，手柄处刻着工人的名字缩写。", "tool"),
+                    ("废旧电线", "从墙壁里扯出的电线，还能派上用场。", "material"),
+                    ("破旧安全帽", "裂了一道缝的安全帽，但总比没有强。", "clothing")
+                ]
+            case .gasStation:
+                return [
+                    ("汽油桶残液", "油桶底部还剩一点汽油，珍贵的燃料。", "material"),
+                    ("便利店零食", "收银台后面藏着的零食，店员的私藏。", "food"),
+                    ("打火机", "加油站纪念品打火机，居然还能用。", "tool")
+                ]
+            case .police, .military:
+                return [
+                    ("警用手电", "警察标配的强光手电，电池还有电。", "tool"),
+                    ("防刺手套", "出警时用的防护手套，磨损严重但仍可使用。", "clothing"),
+                    ("对讲机", "已经没有信号的对讲机，也许能拆出有用的零件。", "tool")
+                ]
+            case .residential:
+                return [
+                    ("家庭相册", "封面已经泛黄的相册，记录着某个家庭曾经的幸福时光。", "misc"),
+                    ("厨房刀具", "一把锋利的菜刀，刀柄上刻着\"妈妈的厨房\"。", "weapon"),
+                    ("毛毯", "柔软的毛毯，带着淡淡的洗衣液香味。", "clothing")
+                ]
+            }
+        }()
+
+        let selected = fallbackData.randomElement() ?? ("废墟残骸", "从废墟中捡到的不明物品。", "misc")
+
+        return AIGeneratedItem(
+            name: selected.name,
+            story: selected.story,
+            category: selected.category,
+            rarity: rarity,
+            quantity: 1,
+            quality: generateRandomQuality()
+        )
     }
 
     /// 确认搜刮结果，将物品添加到背包

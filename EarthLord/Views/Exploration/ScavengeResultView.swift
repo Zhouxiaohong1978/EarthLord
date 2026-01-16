@@ -61,7 +61,7 @@ struct ScavengeResultView: View {
             // 物品列表
             VStack(spacing: 12) {
                 ForEach(Array(result.items.enumerated()), id: \.element.id) { index, item in
-                    ItemRow(item: item)
+                    AIItemRow(item: item)
                         .opacity(showItems ? 1 : 0)
                         .offset(y: showItems ? 0 : 20)
                         .animation(
@@ -114,6 +114,133 @@ struct ScavengeResultView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 showItems = true
             }
+        }
+    }
+}
+
+// MARK: - AI物品行组件
+
+struct AIItemRow: View {
+    let item: AIGeneratedItem
+    @State private var showFullStory = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                // 图标和名称
+                ZStack {
+                    Circle()
+                        .fill(rarityColor.opacity(0.2))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: categoryIcon)
+                        .font(.system(size: 18))
+                        .foregroundColor(rarityColor)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+
+                    Text(rarityText)
+                        .font(.system(size: 12))
+                        .foregroundColor(rarityColor)
+                }
+
+                Spacer()
+
+                Text("x\(item.quantity)")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(ApocalypseTheme.primary)
+            }
+
+            // 背景故事（可展开）
+            if !item.story.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(showFullStory ? item.story : shortenedStory)
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                        .lineLimit(showFullStory ? nil : 2)
+
+                    if item.story.count > 50 {
+                        Button {
+                            withAnimation {
+                                showFullStory.toggle()
+                            }
+                        } label: {
+                            Text(showFullStory ? "收起" : "展开")
+                                .font(.system(size: 12))
+                                .foregroundColor(ApocalypseTheme.primary)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(ApocalypseTheme.cardBackground)
+        )
+    }
+
+    private var shortenedStory: String {
+        item.story.count > 50 ? String(item.story.prefix(50)) + "..." : item.story
+    }
+
+    private var rarityColor: Color {
+        switch item.rarity {
+        case "common":
+            return .gray
+        case "uncommon":
+            return .green
+        case "rare":
+            return .blue
+        case "epic":
+            return .purple
+        case "legendary":
+            return .orange
+        default:
+            return ApocalypseTheme.textMuted
+        }
+    }
+
+    private var rarityText: String {
+        switch item.rarity {
+        case "common":
+            return "普通"
+        case "uncommon":
+            return "优秀"
+        case "rare":
+            return "稀有"
+        case "epic":
+            return "史诗"
+        case "legendary":
+            return "传说"
+        default:
+            return "未知"
+        }
+    }
+
+    private var categoryIcon: String {
+        switch item.category {
+        case "water":
+            return "drop.fill"
+        case "food":
+            return "fork.knife"
+        case "medical":
+            return "cross.case.fill"
+        case "material":
+            return "cube.fill"
+        case "tool":
+            return "wrench.fill"
+        case "weapon":
+            return "bolt.fill"
+        case "clothing":
+            return "tshirt.fill"
+        default:
+            return "archivebox.fill"
         }
     }
 }
@@ -254,9 +381,27 @@ struct ItemRow: View {
                     description: "可能有食物和水"
                 ),
                 items: [
-                    ObtainedItem(itemId: "water_bottle", quantity: 2, quality: nil),
-                    ObtainedItem(itemId: "canned_food", quantity: 1, quality: .good),
-                    ObtainedItem(itemId: "bandage", quantity: 3, quality: .normal)
+                    AIGeneratedItem(
+                        name: "生锈的矿泉水",
+                        story: "瓶身已经生锈,但里面的水依然清澈。这可能是废墟中最珍贵的东西了。",
+                        category: "water",
+                        rarity: "common",
+                        quantity: 2
+                    ),
+                    AIGeneratedItem(
+                        name: "过期罐头",
+                        story: "虽然已经过期,但密封还算完好。在末日中,过期食品也是奢侈品。",
+                        category: "food",
+                        rarity: "uncommon",
+                        quantity: 1
+                    ),
+                    AIGeneratedItem(
+                        name: "医用绷带",
+                        story: "一包保存完好的医用绷带,在这个缺医少药的时代,它可以救命。",
+                        category: "medical",
+                        rarity: "rare",
+                        quantity: 3
+                    )
                 ],
                 sessionId: "test"
             ),

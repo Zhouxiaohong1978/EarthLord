@@ -313,14 +313,77 @@ struct ExplorationSessionResult: Identifiable, Equatable {
 struct ScavengeResult: Identifiable {
     let id: UUID
     let poi: POI
-    let items: [ObtainedItem]
+    let items: [AIGeneratedItem]
     let sessionId: String
+    let generatedByAI: Bool
 
-    init(poi: POI, items: [ObtainedItem], sessionId: String) {
+    init(poi: POI, items: [AIGeneratedItem], sessionId: String, generatedByAI: Bool = true) {
         self.id = UUID()
         self.poi = poi
         self.items = items
         self.sessionId = sessionId
+        self.generatedByAI = generatedByAI
+    }
+}
+
+// MARK: - AI生成物品
+
+/// AI生成的物品（包含独特名称和背景故事）
+struct AIGeneratedItem: Identifiable, Codable, Equatable {
+    let id: UUID
+    let name: String           // AI生成的独特名称
+    let story: String          // 背景故事
+    let category: String       // 物品分类 (water/food/medical/material/tool/weapon/clothing/misc)
+    let rarity: String         // 稀有度 (common/uncommon/rare/epic/legendary)
+    let quantity: Int          // 数量
+    let quality: ItemQuality?  // 品质（可选）
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        story: String,
+        category: String,
+        rarity: String,
+        quantity: Int = 1,
+        quality: ItemQuality? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.story = story
+        self.category = category
+        self.rarity = rarity
+        self.quantity = quantity
+        self.quality = quality
+    }
+
+    static func == (lhs: AIGeneratedItem, rhs: AIGeneratedItem) -> Bool {
+        return lhs.id == rhs.id
+    }
+
+    /// 获取物品分类枚举
+    var itemCategory: ItemCategory {
+        switch category {
+        case "water": return .water
+        case "food": return .food
+        case "medical": return .medical
+        case "material": return .material
+        case "tool": return .tool
+        case "weapon": return .weapon
+        case "clothing": return .clothing
+        default: return .misc
+        }
+    }
+
+    /// 获取稀有度枚举
+    var itemRarity: ItemRarity {
+        switch rarity {
+        case "common": return .common
+        case "uncommon": return .uncommon
+        case "rare": return .rare
+        case "epic": return .epic
+        case "legendary": return .legendary
+        default: return .common
+        }
     }
 }
 

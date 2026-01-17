@@ -908,8 +908,22 @@ extension ExplorationManager {
         }
         // ====== 密度查询结束 ======
 
-        // 使用中文关键词搜索POI（MKPointOfInterestFilter在中国大陆支持不好）
-        let searchQueries: [(query: String, type: POIType)] = [
+        // 根据App当前语言设置动态选择搜索关键词
+        let languageManager = LanguageManager.shared
+        let isEnglish = languageManager.currentLocale == "en"
+
+        let searchQueries: [(query: String, type: POIType)] = isEnglish ? [
+            ("supermarket", .supermarket),
+            ("convenience store", .supermarket),
+            ("hospital", .hospital),
+            ("clinic", .hospital),
+            ("pharmacy", .pharmacy),
+            ("drug store", .pharmacy),
+            ("gas station", .gasStation),
+            ("restaurant", .restaurant),
+            ("cafe", .restaurant),
+            ("coffee", .restaurant)
+        ] : [
             ("超市", .supermarket),
             ("便利店", .supermarket),
             ("医院", .hospital),
@@ -928,7 +942,7 @@ extension ExplorationManager {
 
         for (query, poiType) in searchQueries {
             let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = query  // 使用中文关键词搜索
+            request.naturalLanguageQuery = query
             request.region = MKCoordinateRegion(
                 center: center,
                 latitudinalMeters: 1000,
@@ -954,7 +968,7 @@ extension ExplorationManager {
                     seenCoordinates.insert(coordKey)
 
                     let poi = convertMapItemToPOI(mapItem, overrideType: poiType)
-                    logger.log("  - \(poi.name) (\(poi.type.rawValue))", type: .info)
+                    logger.log("  - \(poi.name) (\(poi.type.displayName))", type: .info)
                     allResults.append(poi)
                     addedCount += 1
                 }

@@ -148,7 +148,11 @@ struct ProfileTabView: View {
 
     private var menuSection: some View {
         VStack(spacing: 0) {
-            menuItem(icon: "gearshape.fill", title: "设置", subtitle: "账号与隐私设置", color: ApocalypseTheme.primary)
+            NavigationLink {
+                SettingsDetailView()
+            } label: {
+                menuItemContent(icon: "gearshape.fill", title: "设置", subtitle: "账号与隐私设置", color: ApocalypseTheme.primary)
+            }
             menuDivider
             menuItem(icon: "bell.fill", title: "通知", subtitle: "消息提醒设置", color: ApocalypseTheme.warning)
             menuDivider
@@ -168,7 +172,7 @@ struct ProfileTabView: View {
             .padding(.leading, 56)
     }
 
-    private func menuItem(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, color: Color) -> some View {
+    private func menuItemContent(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, color: Color) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.body)
@@ -193,6 +197,10 @@ struct ProfileTabView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
+    }
+
+    private func menuItem(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, color: Color) -> some View {
+        menuItemContent(icon: icon, title: title, subtitle: subtitle, color: color)
     }
 
     // MARK: - 退出登录按钮

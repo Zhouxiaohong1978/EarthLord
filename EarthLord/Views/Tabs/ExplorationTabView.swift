@@ -414,7 +414,7 @@ struct POICardNew: View {
                 // 状态行
                 HStack(spacing: 10) {
                     // 类型
-                    Text(poi.type.rawValue)
+                    Text(poi.type.displayName)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(isUndiscovered ? ApocalypseTheme.textMuted : poi.type.color)
 

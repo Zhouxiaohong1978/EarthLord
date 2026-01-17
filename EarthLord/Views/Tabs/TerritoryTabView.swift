@@ -190,7 +190,7 @@ struct TerritoryTabView: View {
             // 领地数量
             StatItem(
                 value: "\(myTerritories.count)",
-                label: "领地数量",
+                label: LocalizedStringKey("领地数量"),
                 icon: "flag.fill"
             )
 
@@ -201,7 +201,7 @@ struct TerritoryTabView: View {
             // 总面积
             StatItem(
                 value: formatArea(totalArea),
-                label: "总面积",
+                label: LocalizedStringKey("总面积"),
                 icon: "square.dashed"
             )
         }
@@ -319,7 +319,7 @@ private struct TerritoryCard: View {
             // 顶部：名称和箭头
             HStack {
                 // 领地名称或默认名称
-                Text(territory.name ?? "未命名领地")
+                Text(territory.name ?? String(localized: "未命名领地"))
                     .font(.headline)
                     .foregroundColor(ApocalypseTheme.textPrimary)
 

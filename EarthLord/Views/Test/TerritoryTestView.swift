@@ -142,7 +142,7 @@ struct TerritoryTestView: View {
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
             // 类型标签
-            Text("[\(entry.type.rawValue)]")
+            Text("[\(entry.type.displayName)]")
                 .font(.system(.caption, design: .monospaced))
                 .foregroundColor(entry.type.color)
                 .frame(width: 70, alignment: .leading)

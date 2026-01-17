@@ -101,7 +101,7 @@ struct TerritoryDetailView: View {
             // 面积
             InfoRow(
                 icon: "square.dashed",
-                label: "领地面积",
+                label: String(localized: "领地面积"),
                 value: String(format: "%.0f m²", territory.area)
             )
 
@@ -109,7 +109,7 @@ struct TerritoryDetailView: View {
             if let pointCount = territory.pointCount {
                 InfoRow(
                     icon: "point.topleft.down.curvedto.point.bottomright.up",
-                    label: "边界点数",
+                    label: String(localized: "边界点数"),
                     value: "\(pointCount) 个"
                 )
             }
@@ -118,7 +118,7 @@ struct TerritoryDetailView: View {
             if let createdAt = territory.createdAt {
                 InfoRow(
                     icon: "calendar",
-                    label: "占领时间",
+                    label: String(localized: "占领时间"),
                     value: formatDate(createdAt)
                 )
             }
@@ -127,7 +127,7 @@ struct TerritoryDetailView: View {
             if let startedAt = territory.startedAt {
                 InfoRow(
                     icon: "play.circle",
-                    label: "开始圈地",
+                    label: String(localized: "开始圈地"),
                     value: formatDate(startedAt)
                 )
             }
@@ -136,7 +136,7 @@ struct TerritoryDetailView: View {
             if let completedAt = territory.completedAt {
                 InfoRow(
                     icon: "checkmark.circle",
-                    label: "完成圈地",
+                    label: String(localized: "完成圈地"),
                     value: formatDate(completedAt)
                 )
             }

@@ -77,6 +77,32 @@ struct POI: Identifiable {
 import UIKit
 
 extension POIType {
+    /// 获取本地化显示名称
+    var displayName: String {
+        switch self {
+        case .supermarket:
+            return String(localized: "超市")
+        case .restaurant:
+            return String(localized: "餐厅")
+        case .hospital:
+            return String(localized: "医院")
+        case .gasStation:
+            return String(localized: "加油站")
+        case .pharmacy:
+            return String(localized: "药店")
+        case .factory:
+            return String(localized: "工厂")
+        case .warehouse:
+            return String(localized: "仓库")
+        case .residential:
+            return String(localized: "住宅区")
+        case .police:
+            return String(localized: "警察局")
+        case .military:
+            return String(localized: "军事设施")
+        }
+    }
+
     /// 获取 UIColor（用于 MKAnnotationView）
     var uiColor: UIColor {
         switch self {
@@ -268,7 +294,7 @@ struct MockExplorationData {
     static let poiList: [POI] = [
         // 废弃超市：已发现，有物资
         POI(
-            name: "废弃超市",
+            name: String(localized: "废弃超市"),
             type: .supermarket,
             coordinate: CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737),
             status: .hasResources,
@@ -280,7 +306,7 @@ struct MockExplorationData {
 
         // 医院废墟：已发现，已被搜空
         POI(
-            name: "医院废墟",
+            name: String(localized: "医院废墟"),
             type: .hospital,
             coordinate: CLLocationCoordinate2D(latitude: 31.2354, longitude: 121.4787),
             status: .looted,
@@ -292,7 +318,7 @@ struct MockExplorationData {
 
         // 加油站：未发现
         POI(
-            name: "加油站",
+            name: String(localized: "加油站"),
             type: .gasStation,
             coordinate: CLLocationCoordinate2D(latitude: 31.2254, longitude: 121.4687),
             status: .undiscovered,
@@ -303,7 +329,7 @@ struct MockExplorationData {
 
         // 药店废墟：已发现，有物资
         POI(
-            name: "药店废墟",
+            name: String(localized: "药店废墟"),
             type: .pharmacy,
             coordinate: CLLocationCoordinate2D(latitude: 31.2284, longitude: 121.4817),
             status: .hasResources,
@@ -315,7 +341,7 @@ struct MockExplorationData {
 
         // 工厂废墟：未发现
         POI(
-            name: "工厂废墟",
+            name: String(localized: "工厂废墟"),
             type: .factory,
             coordinate: CLLocationCoordinate2D(latitude: 31.2404, longitude: 121.4637),
             status: .undiscovered,

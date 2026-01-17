@@ -475,7 +475,7 @@ class POIAnnotation: NSObject, MKAnnotation {
     /// MapKit返回的POI坐标在中国已经是GCJ-02，不需要再转换
     var coordinate: CLLocationCoordinate2D { poi.coordinate }
     var title: String? { poi.name }
-    var subtitle: String? { poi.type.rawValue }
+    var subtitle: String? { poi.type.displayName }
 
     init(poi: POI) {
         self.poi = poi

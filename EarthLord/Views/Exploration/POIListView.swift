@@ -398,7 +398,7 @@ struct POICard: View {
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 // 类型
-                Text(poi.type.rawValue)
+                Text(poi.type.displayName)
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textSecondary)
             }

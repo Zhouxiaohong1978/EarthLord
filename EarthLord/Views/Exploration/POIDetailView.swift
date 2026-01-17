@@ -160,7 +160,7 @@ struct POIDetailView: View {
                     Image(systemName: poi.type.icon)
                         .font(.system(size: 14))
 
-                    Text(poi.type.rawValue)
+                    Text(poi.type.displayName)
                         .font(.system(size: 15, weight: .medium))
                 }
                 .foregroundColor(.white.opacity(0.8))

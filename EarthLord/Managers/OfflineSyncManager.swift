@@ -232,7 +232,7 @@ final class OfflineSyncManager: ObservableObject {
 
     /// 同步待处理的探索会话
     private func syncPendingSessions() async {
-        var pendingSessions = loadPendingSessions()
+        let pendingSessions = loadPendingSessions()
         guard !pendingSessions.isEmpty else { return }
 
         logger.log("同步 \(pendingSessions.count) 条待处理探索会话...", type: .info)
@@ -285,7 +285,7 @@ final class OfflineSyncManager: ObservableObject {
 
     /// 同步待处理的物品
     private func syncPendingItems() async {
-        var pendingItems = loadPendingItems()
+        let pendingItems = loadPendingItems()
         guard !pendingItems.isEmpty else { return }
 
         logger.log("同步 \(pendingItems.count) 件待处理物品...", type: .info)

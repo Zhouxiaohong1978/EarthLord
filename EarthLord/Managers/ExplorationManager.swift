@@ -724,29 +724,20 @@ final class ExplorationManager: NSObject, ObservableObject {
             return
         }
 
-        // 检查网络状态
-        let isOnline = OfflineSyncManager.shared.isNetworkAvailable
+        // 尝试直接保存到服务器（不预先检查网络状态，让实际网络请求来判断）
+        do {
+            // 保存探索会话
+            let sessionId = try await saveExplorationSession(result: result, userId: userId)
+            logger.log("✅ 探索会话已保存: \(sessionId)", type: .success)
 
-        if isOnline {
-            // 在线模式：直接保存到服务器
-            do {
-                // 保存探索会话
-                let sessionId = try await saveExplorationSession(result: result, userId: userId)
-                logger.log("探索会话已保存: \(sessionId)", type: .success)
-
-                // 保存奖励物品到背包（使用 InventoryManager 以支持堆叠）
-                if !rewards.isEmpty {
-                    await saveRewardsToInventory(items: rewards, sessionId: sessionId)
-                    logger.log("已保存 \(rewards.count) 件物品到背包", type: .success)
-                }
-            } catch {
-                logger.logError("保存到数据库失败，转存到离线队列", error: error)
-                // 保存失败，加入离线队列
-                saveToOfflineQueue(result: result, rewards: rewards)
+            // 保存奖励物品到背包（使用 InventoryManager 以支持堆叠）
+            if !rewards.isEmpty {
+                await saveRewardsToInventory(items: rewards, sessionId: sessionId)
+                logger.log("✅ 已保存 \(rewards.count) 件物品到背包", type: .success)
             }
-        } else {
-            // 离线模式：保存到本地队列
-            logger.log("⚠️ 网络不可用，保存到离线队列", type: .warning)
+        } catch {
+            logger.logError("⚠️ 离线同步检测失败，保存到待同步包", error: error)
+            // 保存失败（可能是网络问题），加入离线队列
             saveToOfflineQueue(result: result, rewards: rewards)
         }
     }
@@ -780,6 +771,8 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 保存奖励物品到背包（使用 InventoryManager 支持堆叠）
     private func saveRewardsToInventory(items: [ObtainedItem], sessionId: String) async {
+        var failedItems: [ObtainedItem] = []
+
         for item in items {
             do {
                 try await InventoryManager.shared.addItem(
@@ -789,10 +782,17 @@ final class ExplorationManager: NSObject, ObservableObject {
                     obtainedFrom: "探索",
                     sessionId: sessionId
                 )
-                logger.log("物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
+                logger.log("✅ 物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
             } catch {
-                logger.logError("添加物品到背包失败，保存到离线队列: \(item.itemId)", error: error)
-                // 保存失败的物品到离线队列
+                logger.logError("❌ 添加物品到背包失败: \(item.itemId)", error: error)
+                failedItems.append(item)
+            }
+        }
+
+        // 统一处理失败的物品
+        if !failedItems.isEmpty {
+            logger.log("⚠️ 有 \(failedItems.count) 件物品保存失败，加入离线队列", type: .warning)
+            for item in failedItems {
                 OfflineSyncManager.shared.addPendingItem(
                     itemId: item.itemId,
                     quantity: item.quantity,
@@ -879,8 +879,8 @@ extension ExplorationManager {
     private func searchNearbyPOIs(center: CLLocationCoordinate2D) async {
         logger.log("🔍 开始搜索POI - 中心坐标: \(center.latitude), \(center.longitude)", type: .info)
 
-        // ====== 查询玩家密度 ======
-        var maxPOICount: Int = -1  // -1 表示不限制
+        // ====== 查询玩家密度并确定POI数量 ======
+        var targetPOICount: Int = 12  // 默认12个POI（中等密度）
 
         do {
             let densityResult = try await PlayerDensityService.shared.queryNearbyPlayers(
@@ -889,15 +889,22 @@ extension ExplorationManager {
             )
 
             let level = densityResult.densityLevel
-            maxPOICount = level.recommendedPOICount
+            let recommendedCount = level.recommendedPOICount
 
-            // 日志格式与样板保持一致
-            logger.log("附近玩家: \(densityResult.nearbyCount) 人, 密度: \(level.rawValue)", type: .info)
-            logger.log("👥 附近玩家: \(densityResult.nearbyCount) 人, 推荐 POI 数量: \(maxPOICount == -1 ? "不限制" : "\(maxPOICount)")", type: .info)
+            // 根据推荐数量决定实际显示的POI数量
+            if recommendedCount == -1 {
+                // 不限制：低密度区域，显示所有找到的POI（最多20个）
+                targetPOICount = 20
+                logger.log("👥 附近玩家: \(densityResult.nearbyCount) 人, 密度: \(level.rawValue) - 不限制POI数量（最多20个）", type: .info)
+            } else {
+                // 限制数量：按玩家密度动态调整
+                targetPOICount = recommendedCount
+                logger.log("👥 附近玩家: \(densityResult.nearbyCount) 人, 密度: \(level.rawValue) - 限制 \(targetPOICount) 个POI", type: .info)
+            }
 
         } catch {
-            logger.logError("玩家密度查询失败，使用默认策略(3个POI)", error: error)
-            maxPOICount = 3  // 查询失败时默认显示3个
+            logger.logError("玩家密度查询失败，使用默认策略(12个POI)", error: error)
+            targetPOICount = 12  // 查询失败时默认中等密度
         }
         // ====== 密度查询结束 ======
 
@@ -956,21 +963,84 @@ extension ExplorationManager {
             }
         }
 
-        // ====== 根据密度等级限制POI数量 ======
-        if maxPOICount > 0 && allResults.count > maxPOICount {
-            // 按距离排序，优先显示最近的POI
-            let userLocation = CLLocation(latitude: center.latitude, longitude: center.longitude)
-            allResults.sort { poi1, poi2 in
+        // ====== 方位均衡分布算法 ======
+        let userLocation = CLLocation(latitude: center.latitude, longitude: center.longitude)
+
+        // 按方位角度分组（东南西北四个象限）
+        var quadrants: [String: [POI]] = [
+            "东北": [], // 0°-90°
+            "东南": [], // 90°-180°
+            "西南": [], // 180°-270°
+            "西北": []  // 270°-360°
+        ]
+
+        for poi in allResults {
+            let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
+            let distance = userLocation.distance(from: poiLocation)
+
+            // 只保留1000米内的POI
+            guard distance <= 1000 else { continue }
+
+            // 计算方位角（0°=正北，顺时针）
+            let dx = poi.coordinate.longitude - center.longitude
+            let dy = poi.coordinate.latitude - center.latitude
+            var bearing = atan2(dx, dy) * 180 / .pi
+            if bearing < 0 { bearing += 360 }
+
+            // 分配到象限
+            if bearing >= 0 && bearing < 90 {
+                quadrants["东北"]?.append(poi)
+            } else if bearing >= 90 && bearing < 180 {
+                quadrants["东南"]?.append(poi)
+            } else if bearing >= 180 && bearing < 270 {
+                quadrants["西南"]?.append(poi)
+            } else {
+                quadrants["西北"]?.append(poi)
+            }
+        }
+
+        // 每个象限按距离排序
+        for key in quadrants.keys {
+            quadrants[key]?.sort { poi1, poi2 in
                 let loc1 = CLLocation(latitude: poi1.coordinate.latitude, longitude: poi1.coordinate.longitude)
                 let loc2 = CLLocation(latitude: poi2.coordinate.latitude, longitude: poi2.coordinate.longitude)
                 return userLocation.distance(from: loc1) < userLocation.distance(from: loc2)
             }
-
-            // 截取指定数量
-            allResults = Array(allResults.prefix(maxPOICount))
-            logger.log("📊 根据密度等级限制，显示最近的 \(maxPOICount) 个POI", type: .info)
         }
-        // ====== POI数量限制结束 ======
+
+        // 根据玩家密度动态分配：从每个象限均衡选取POI
+        var balancedResults: [POI] = []
+        let perQuadrant = targetPOICount / 4  // 每个象限的基础配额
+
+        logger.log("🧭 1000米范围内POI方位分布:", type: .info)
+        for (direction, pois) in quadrants.sorted(by: { $0.key < $1.key }) {
+            logger.log("  \(direction)象限: 找到 \(pois.count) 个POI", type: .info)
+        }
+
+        // 第一轮：从每个象限均衡选取基础配额
+        for (_, pois) in quadrants {
+            balancedResults.append(contentsOf: pois.prefix(perQuadrant))
+        }
+
+        // 第二轮：如果还有配额，从有POI的象限补充（优先补充POI多的象限）
+        if balancedResults.count < targetPOICount {
+            let remaining = targetPOICount - balancedResults.count
+            let allRemaining = quadrants.values.flatMap { $0 }.filter { poi in
+                !balancedResults.contains(where: { $0.id == poi.id })
+            }
+            // 按距离排序，优先选择最近的
+            let sortedRemaining = allRemaining.sorted { poi1, poi2 in
+                let loc1 = CLLocation(latitude: poi1.coordinate.latitude, longitude: poi1.coordinate.longitude)
+                let loc2 = CLLocation(latitude: poi2.coordinate.latitude, longitude: poi2.coordinate.longitude)
+                return userLocation.distance(from: loc1) < userLocation.distance(from: loc2)
+            }
+            balancedResults.append(contentsOf: sortedRemaining.prefix(remaining))
+            logger.log("📊 基础配额不足，从剩余POI中补充 \(min(remaining, sortedRemaining.count)) 个", type: .info)
+        }
+
+        allResults = balancedResults
+        logger.log("✅ 全方位均衡分配完成：显示 \(allResults.count) 个POI（玩家密度推荐:\(targetPOICount)个）", type: .success)
+        // ====== 方位均衡结束 ======
 
         nearbyPOIs = allResults
         logger.log("✅ 总共显示 \(nearbyPOIs.count) 个附近POI", type: .success)
@@ -1232,7 +1302,9 @@ extension ExplorationManager {
 
         logger.log("用户确认搜刮结果，保存 \(result.items.count) 件物品到背包", type: .info)
 
-        await saveRewardsToInventory(items: result.items, sessionId: result.sessionId)
+        // 将 AIGeneratedItem 转换为 ObtainedItem
+        let obtainedItems = result.items.map { $0.toObtainedItem() }
+        await saveRewardsToInventory(items: obtainedItems, sessionId: result.sessionId)
 
         // 清除搜刮结果
         scavengeResult = nil

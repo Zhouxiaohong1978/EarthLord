@@ -385,6 +385,11 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
         default: return .common
         }
     }
+
+    /// 转换为 ObtainedItem（用于保存到背包）
+    func toObtainedItem() -> ObtainedItem {
+        return ObtainedItem(itemId: name, quantity: quantity, quality: quality)
+    }
 }
 
 // MARK: - 获得的物品

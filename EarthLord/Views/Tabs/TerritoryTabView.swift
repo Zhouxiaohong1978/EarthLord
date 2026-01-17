@@ -190,7 +190,7 @@ struct TerritoryTabView: View {
             // 领地数量
             StatItem(
                 value: "\(myTerritories.count)",
-                label: LocalizedStringKey("领地数量"),
+                label: String(localized: "领地数量"),
                 icon: "flag.fill"
             )
 
@@ -201,7 +201,7 @@ struct TerritoryTabView: View {
             // 总面积
             StatItem(
                 value: formatArea(totalArea),
-                label: LocalizedStringKey("总面积"),
+                label: String(localized: "总面积"),
                 icon: "square.dashed"
             )
         }

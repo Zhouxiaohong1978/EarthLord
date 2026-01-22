@@ -1,0 +1,84 @@
+{
+  "templates": [
+    {
+      "id": "campfire",
+      "template_id": "campfire",
+      "name": "篝火",
+      "category": "survival",
+      "tier": 1,
+      "description": "基础的火源设施，提供照明和取暖功能。可以用来烹饪食物和驱散野兽。",
+      "icon": "flame.fill",
+      "required_resources": {
+        "wood": 30,
+        "stone": 20
+      },
+      "build_time_seconds": 300,
+      "max_per_territory": 3,
+      "max_level": 3
+    },
+    {
+      "id": "shelter",
+      "template_id": "shelter",
+      "name": "庇护所",
+      "category": "survival",
+      "tier": 1,
+      "description": "简易的避难场所，可以遮风挡雨。提供基础的休息功能，恢复体力。",
+      "icon": "house.fill",
+      "required_resources": {
+        "wood": 50,
+        "stone": 30
+      },
+      "build_time_seconds": 600,
+      "max_per_territory": 1,
+      "max_level": 5
+    },
+    {
+      "id": "storage_small",
+      "template_id": "storage_small",
+      "name": "小仓库",
+      "category": "storage",
+      "tier": 1,
+      "description": "小型储物设施，可以安全存放物资。增加领地的物资存储上限。",
+      "icon": "archivebox.fill",
+      "required_resources": {
+        "wood": 40,
+        "scrap_metal": 20
+      },
+      "build_time_seconds": 480,
+      "max_per_territory": 2,
+      "max_level": 3
+    },
+    {
+      "id": "farm_simple",
+      "template_id": "farm_simple",
+      "name": "简易农田",
+      "category": "production",
+      "tier": 1,
+      "description": "基础的农业设施，可以种植蔬菜和粮食。提供稳定的食物来源。",
+      "icon": "leaf.fill",
+      "required_resources": {
+        "wood": 20,
+        "stone": 10
+      },
+      "build_time_seconds": 360,
+      "max_per_territory": 4,
+      "max_level": 3
+    },
+    {
+      "id": "solar_panel",
+      "template_id": "solar_panel",
+      "name": "太阳能板",
+      "category": "energy",
+      "tier": 2,
+      "description": "利用太阳能发电的设备。为其他设施提供电力支持，是进阶建筑的基础。",
+      "icon": "sun.max.fill",
+      "required_resources": {
+        "scrap_metal": 60,
+        "glass": 40
+      },
+      "build_time_seconds": 900,
+      "max_per_territory": 2,
+      "max_level": 3
+    }
+  ]
+}

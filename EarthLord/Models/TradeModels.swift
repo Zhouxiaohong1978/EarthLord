@@ -489,3 +489,89 @@ struct CanAcceptTradeResult {
         return CanAcceptTradeResult(canAccept: false, missingItems: [:], error: error)
     }
 }
+
+// MARK: - AcceptTradeRPCResponse RPC 响应模型
+
+/// 接受交易 RPC 函数的响应模型
+struct AcceptTradeRPCResponse: Codable {
+    let success: Bool
+    let error: String?
+    let message: String?
+    let historyId: UUID?
+    let offerId: UUID?
+    let sellerId: UUID?
+    let buyerId: UUID?
+    let completedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case error
+        case message
+        case historyId = "history_id"
+        case offerId = "offer_id"
+        case sellerId = "seller_id"
+        case buyerId = "buyer_id"
+        case completedAt = "completed_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        success = try container.decode(Bool.self, forKey: .success)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+        message = try container.decodeIfPresent(String.self, forKey: .message)
+
+        // UUID 解析
+        if let historyIdString = try container.decodeIfPresent(String.self, forKey: .historyId) {
+            historyId = UUID(uuidString: historyIdString)
+        } else {
+            historyId = nil
+        }
+
+        if let offerIdString = try container.decodeIfPresent(String.self, forKey: .offerId) {
+            offerId = UUID(uuidString: offerIdString)
+        } else {
+            offerId = nil
+        }
+
+        if let sellerIdString = try container.decodeIfPresent(String.self, forKey: .sellerId) {
+            sellerId = UUID(uuidString: sellerIdString)
+        } else {
+            sellerId = nil
+        }
+
+        if let buyerIdString = try container.decodeIfPresent(String.self, forKey: .buyerId) {
+            buyerId = UUID(uuidString: buyerIdString)
+        } else {
+            buyerId = nil
+        }
+
+        // 日期解析
+        if let completedAtString = try container.decodeIfPresent(String.self, forKey: .completedAt) {
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            completedAt = dateFormatter.date(from: completedAtString)
+        } else {
+            completedAt = nil
+        }
+    }
+
+    /// 转换错误码为 TradeError
+    func toTradeError() -> TradeError? {
+        guard !success, let errorCode = error else { return nil }
+
+        switch errorCode {
+        case "offer_not_found":
+            return .offerNotFound
+        case "invalid_status":
+            return .invalidStatus
+        case "offer_expired":
+            return .offerExpired
+        case "cannot_accept_own_offer":
+            return .cannotAcceptOwnOffer
+        case "transaction_failed":
+            return .saveFailed(message ?? "事务执行失败")
+        default:
+            return .saveFailed(message ?? errorCode)
+        }
+    }
+}

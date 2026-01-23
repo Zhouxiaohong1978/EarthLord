@@ -140,6 +140,9 @@ final class TradeManager: ObservableObject {
             // 更新本地数据
             myOffers.insert(offer, at: 0)
 
+            // 刷新库存数据
+            await inventoryManager.refreshInventory()
+
             logger.log("交易挂单创建成功: \(offer.id)", type: .success)
 
             return offer
@@ -147,10 +150,12 @@ final class TradeManager: ObservableObject {
         } catch let error as TradeError {
             // 发生错误，尝试退还物品
             await returnItems(offeringItems)
+            await inventoryManager.refreshInventory()
             throw error
         } catch {
             // 发生错误，尝试退还物品
             await returnItems(offeringItems)
+            await inventoryManager.refreshInventory()
             logger.logError("创建挂单失败", error: error)
             throw TradeError.saveFailed(error.localizedDescription)
         }
@@ -159,6 +164,7 @@ final class TradeManager: ObservableObject {
     // MARK: - Accept Offer
 
     /// 接受交易挂单
+    /// 使用数据库 RPC 函数实现原子性操作，防止并发问题
     /// - Parameter offerId: 挂单ID
     /// - Returns: 交易历史记录
     @discardableResult
@@ -171,23 +177,21 @@ final class TradeManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        // 获取挂单
+        // 获取挂单（用于本地验证和物品信息）
         guard let offer = availableOffers.first(where: { $0.id == offerId }) ??
                           myOffers.first(where: { $0.id == offerId }) else {
             throw TradeError.offerNotFound
         }
 
-        // 验证状态
+        // 本地预验证（快速失败）
         guard offer.status == .active else {
             throw TradeError.invalidStatus
         }
 
-        // 检查是否过期
         guard !offer.isExpired else {
             throw TradeError.offerExpired
         }
 
-        // 不能接受自己的挂单
         guard offer.ownerId != user.id else {
             throw TradeError.cannotAcceptOwnOffer
         }
@@ -198,89 +202,109 @@ final class TradeManager: ObservableObject {
             throw TradeError.insufficientItems(inventoryCheck.missingItems)
         }
 
-        // 扣除买家物品
-        for item in offer.requestingItems {
-            if let inventoryItem = findInventoryItem(itemId: item.itemId, quality: item.quality) {
-                try await inventoryManager.useItem(inventoryId: inventoryItem.id, quantity: item.quantity)
-                logger.log("扣除买家物品: \(item.itemId) x\(item.quantity)", type: .info)
+        // 扣除买家物品（先扣除，RPC 失败时退还）
+        var deductedItems: [TradeItem] = []
+        do {
+            for item in offer.requestingItems {
+                if let inventoryItem = findInventoryItem(itemId: item.itemId, quality: item.quality) {
+                    try await inventoryManager.useItem(inventoryId: inventoryItem.id, quantity: item.quantity)
+                    deductedItems.append(item)
+                    logger.log("扣除买家物品: \(item.itemId) x\(item.quantity)", type: .info)
+                }
             }
+        } catch {
+            // 扣除失败，退还已扣除的物品
+            await returnItems(deductedItems)
+            throw error
         }
 
-        // 将卖家锁定的物品添加给买家
-        for item in offer.offeringItems {
-            try await inventoryManager.addItem(
-                itemId: item.itemId,
-                quantity: item.quantity,
-                quality: item.quality,
-                obtainedFrom: "交易获得"
-            )
-            logger.log("买家获得物品: \(item.itemId) x\(item.quantity)", type: .info)
-        }
-
-        // 将买家物品转移给卖家（通过 RPC 或直接插入）
-        try await transferItemsToSeller(
-            sellerId: offer.ownerId,
-            items: offer.requestingItems
-        )
-
-        let now = Date()
         let buyerUsername = user.email ?? user.id.uuidString.prefix(8).description
 
-        // 更新挂单状态
-        try await supabase
-            .from("trade_offers")
-            .update([
-                "status": TradeOfferStatus.completed.rawValue,
-                "completed_at": now.ISO8601Format(),
-                "completed_by_user_id": user.id.uuidString,
-                "completed_by_username": buyerUsername
-            ])
-            .eq("id", value: offerId.uuidString)
-            .execute()
+        // 调用 RPC 函数执行原子性交易
+        do {
+            let response: AcceptTradeRPCResponse = try await supabase
+                .rpc("accept_trade_offer", params: [
+                    "p_offer_id": offerId.uuidString,
+                    "p_buyer_id": user.id.uuidString,
+                    "p_buyer_username": buyerUsername
+                ])
+                .execute()
+                .value
 
-        // 创建交易历史
-        let exchange = TradeExchange(
-            sellerItems: offer.offeringItems,
-            buyerItems: offer.requestingItems
-        )
+            // 检查 RPC 执行结果
+            if !response.success {
+                // RPC 失败，退还买家物品
+                await returnItems(deductedItems)
+                if let error = response.toTradeError() {
+                    throw error
+                }
+                throw TradeError.saveFailed(response.message ?? "交易执行失败")
+            }
 
-        let encoder = JSONEncoder()
-        guard let exchangeData = try? encoder.encode(exchange),
-              let exchangeJson = String(data: exchangeData, encoding: .utf8) else {
-            throw TradeError.saveFailed("交易数据编码失败")
+            logger.log("RPC 交易执行成功: \(response.historyId?.uuidString ?? "unknown")", type: .success)
+
+            // 刷新库存数据
+            await inventoryManager.refreshInventory()
+
+            // 获取完整的交易历史记录
+            guard let historyId = response.historyId else {
+                throw TradeError.saveFailed("无法获取交易历史ID")
+            }
+
+            let historyResponse: [TradeHistoryDB] = try await supabase
+                .from("trade_history")
+                .select()
+                .eq("id", value: historyId.uuidString)
+                .limit(1)
+                .execute()
+                .value
+
+            guard let dbHistory = historyResponse.first,
+                  let history = dbHistory.toTradeHistory() else {
+                // 交易已完成但无法获取历史，创建临时历史对象
+                let tempHistory = TradeHistory(
+                    id: historyId,
+                    offerId: offerId,
+                    sellerId: offer.ownerId,
+                    buyerId: user.id,
+                    sellerUsername: offer.ownerUsername,
+                    buyerUsername: buyerUsername,
+                    itemsExchanged: TradeExchange(
+                        sellerItems: offer.offeringItems,
+                        buyerItems: offer.requestingItems
+                    ),
+                    completedAt: response.completedAt ?? Date()
+                )
+
+                // 更新本地数据
+                if let index = availableOffers.firstIndex(where: { $0.id == offerId }) {
+                    availableOffers.remove(at: index)
+                }
+                tradeHistory.insert(tempHistory, at: 0)
+
+                logger.log("交易完成: \(tempHistory.id)", type: .success)
+                return tempHistory
+            }
+
+            // 更新本地数据
+            if let index = availableOffers.firstIndex(where: { $0.id == offerId }) {
+                availableOffers.remove(at: index)
+            }
+            tradeHistory.insert(history, at: 0)
+
+            logger.log("交易完成: \(history.id)", type: .success)
+
+            return history
+
+        } catch let error as TradeError {
+            // 已处理的交易错误，物品已在上面退还
+            throw error
+        } catch {
+            // 未知错误，退还买家物品
+            await returnItems(deductedItems)
+            logger.logError("交易执行失败", error: error)
+            throw TradeError.saveFailed(error.localizedDescription)
         }
-
-        let historyData: [String: AnyJSON] = [
-            "offer_id": .string(offerId.uuidString),
-            "seller_id": .string(offer.ownerId.uuidString),
-            "buyer_id": .string(user.id.uuidString),
-            "seller_username": .string(offer.ownerUsername),
-            "buyer_username": .string(buyerUsername),
-            "items_exchanged": .string(exchangeJson),
-            "completed_at": .string(now.ISO8601Format())
-        ]
-
-        let historyResponse: [TradeHistoryDB] = try await supabase
-            .from("trade_history")
-            .insert(historyData)
-            .select()
-            .execute()
-            .value
-
-        guard let dbHistory = historyResponse.first,
-              let history = dbHistory.toTradeHistory() else {
-            throw TradeError.saveFailed("无法解析返回的历史数据")
-        }
-
-        // 更新本地数据
-        if let index = availableOffers.firstIndex(where: { $0.id == offerId }) {
-            availableOffers.remove(at: index)
-        }
-        tradeHistory.insert(history, at: 0)
-
-        logger.log("交易完成: \(history.id)", type: .success)
-
-        return history
     }
 
     // MARK: - Cancel Offer
@@ -325,6 +349,9 @@ final class TradeManager: ObservableObject {
         if let index = myOffers.firstIndex(where: { $0.id == offerId }) {
             myOffers[index].status = .cancelled
         }
+
+        // 刷新库存数据
+        await inventoryManager.refreshInventory()
 
         logger.log("挂单已取消: \(offerId)", type: .success)
     }
@@ -521,6 +548,8 @@ final class TradeManager: ObservableObject {
         // 找出已过期但状态仍为 active 的挂单
         let expiredOffers = myOffers.filter { $0.isExpired && $0.status == .active }
 
+        var hasProcessed = false
+
         for offer in expiredOffers {
             do {
                 // 退还物品
@@ -538,11 +567,17 @@ final class TradeManager: ObservableObject {
                     myOffers[index].status = .expired
                 }
 
+                hasProcessed = true
                 logger.log("挂单已过期处理: \(offer.id)", type: .info)
 
             } catch {
                 logger.logError("处理过期挂单失败: \(offer.id)", error: error)
             }
+        }
+
+        // 如果有处理过期挂单，刷新库存
+        if hasProcessed {
+            await inventoryManager.refreshInventory()
         }
     }
 

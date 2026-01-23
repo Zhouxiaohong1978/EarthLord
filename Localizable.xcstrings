@@ -49,6 +49,9 @@
         }
       }
     },
+    "/" : {
+
+    },
     "#%lld" : {
       "localizations" : {
         "en" : {
@@ -82,6 +85,7 @@
       }
     },
     "%@功能正在开发中，敬请期待！" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -96,6 +100,12 @@
           }
         }
       }
+    },
+    "%d 个" : {
+
+    },
+    "%lld" : {
+
     },
     "%lld / %lld" : {
       "localizations" : {
@@ -160,6 +170,19 @@
           }
         }
       }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+
     },
     "%llds" : {
       "localizations" : {
@@ -294,6 +317,9 @@
         }
       }
     },
+    "Lv.%lld" : {
+
+    },
     "Supabase 测试" : {
       "localizations" : {
         "en" : {
@@ -322,6 +348,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Supabase 连接测试"
+          }
+        }
+      }
+    },
+    "T%d 建筑 · 最高 Lv.%d" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "T%1$d 建筑 · 最高 Lv.%2$d"
           }
         }
       }
@@ -422,6 +458,41 @@
         }
       }
     },
+    "仓库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warehouse"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仓库"
+          }
+        }
+      }
+    },
+    "位置无效" : {
+
+    },
+    "住宅区" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Residential Area"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "住宅区"
+          }
+        }
+      }
+    },
     "你发现了新的区域和物资" : {
       "localizations" : {
         "en" : {
@@ -470,6 +541,9 @@
         }
       }
     },
+    "保存失败: %@" : {
+
+    },
     "停止圈地" : {
       "localizations" : {
         "en" : {
@@ -485,6 +559,12 @@
           }
         }
       }
+    },
+    "储存" : {
+
+    },
+    "全部" : {
+
     },
     "关于" : {
       "localizations" : {
@@ -514,6 +594,25 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "关闭"
+          }
+        }
+      }
+    },
+    "最高等级" : {
+
+    },
+    "军事设施" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Military Facility"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "军事设施"
           }
         }
       }
@@ -710,6 +809,22 @@
         }
       }
     },
+    "加油站" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gas Station"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加油站"
+          }
+        }
+      }
+    },
     "加载中..." : {
       "localizations" : {
         "en" : {
@@ -754,6 +869,61 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "加载背包数据..."
+          }
+        }
+      }
+    },
+    "医院" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hospital"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "医院"
+          }
+        }
+      }
+    },
+    "医院废墟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hospital Ruins"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "医院废墟"
+          }
+        }
+      }
+    },
+    "升级" : {
+
+    },
+    "升级中" : {
+
+    },
+    "占领时间" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Occupied Time"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "占领时间"
           }
         }
       }
@@ -805,6 +975,9 @@
           }
         }
       }
+    },
+    "即将完成" : {
+
     },
     "去探索收集物资吧" : {
       "localizations" : {
@@ -999,6 +1172,7 @@
       }
     },
     "基本信息" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1058,6 +1232,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "安全"
+          }
+        }
+      }
+    },
+    "完成圈地" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete Claiming"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成圈地"
           }
         }
       }
@@ -1142,6 +1333,41 @@
         }
       }
     },
+    "工厂" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Factory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工厂"
+          }
+        }
+      }
+    },
+    "工厂废墟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Factory Ruins"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工厂废墟"
+          }
+        }
+      }
+    },
+    "已停用" : {
+
+    },
     "已发现" : {
       "localizations" : {
         "en" : {
@@ -1157,6 +1383,9 @@
           }
         }
       }
+    },
+    "已损坏" : {
+
     },
     "已添加到背包" : {
       "localizations" : {
@@ -1190,6 +1419,9 @@
         }
       }
     },
+    "已达最高等级" : {
+
+    },
     "已达最高等级!" : {
       "localizations" : {
         "en" : {
@@ -1205,6 +1437,9 @@
           }
         }
       }
+    },
+    "已选择位置" : {
+
     },
     "帮助" : {
       "localizations" : {
@@ -1238,6 +1473,70 @@
         }
       }
     },
+    "废弃超市" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abandoned Supermarket"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "废弃超市"
+          }
+        }
+      }
+    },
+    "废金属" : {
+
+    },
+    "建筑" : {
+
+    },
+    "建筑不存在" : {
+
+    },
+    "建筑列表" : {
+
+    },
+    "建筑属性" : {
+
+    },
+    "建筑已达到最高等级" : {
+
+    },
+    "建筑模板不存在" : {
+
+    },
+    "建筑浏览" : {
+
+    },
+    "建筑状态无效" : {
+
+    },
+    "建造" : {
+
+    },
+    "建造中" : {
+
+    },
+    "建造中..." : {
+
+    },
+    "建造位置" : {
+
+    },
+    "建造失败" : {
+
+    },
+    "建造所需" : {
+
+    },
+    "建造时间" : {
+
+    },
     "开发测试" : {
       "localizations" : {
         "en" : {
@@ -1255,6 +1554,7 @@
       }
     },
     "开发者工具" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1285,6 +1585,9 @@
           }
         }
       }
+    },
+    "开始建造" : {
+
     },
     "当前位置: %@" : {
       "localizations" : {
@@ -1366,6 +1669,22 @@
         }
       }
     },
+    "总面积" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total Area"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总面积"
+          }
+        }
+      }
+    },
     "您已拒绝定位权限。要在末日世界中显示您的位置，请在设置中开启定位权限。" : {
       "localizations" : {
         "en" : {
@@ -1414,6 +1733,9 @@
         }
       }
     },
+    "所需资源" : {
+
+    },
     "找回密码" : {
       "localizations" : {
         "en" : {
@@ -1429,6 +1751,15 @@
           }
         }
       }
+    },
+    "技术支持" : {
+
+    },
+    "拆除" : {
+
+    },
+    "拆除建筑" : {
+
     },
     "排名" : {
       "localizations" : {
@@ -1525,6 +1856,9 @@
           }
         }
       }
+    },
+    "描述" : {
+
     },
     "搜刮完成!" : {
       "localizations" : {
@@ -1654,6 +1988,9 @@
         }
       }
     },
+    "支持与隐私" : {
+
+    },
     "收下物品" : {
       "localizations" : {
         "en" : {
@@ -1703,6 +2040,7 @@
       }
     },
     "敬请期待" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1717,6 +2055,9 @@
           }
         }
       }
+    },
+    "新名称" : {
+
     },
     "无效的坐标数据" : {
       "localizations" : {
@@ -1765,6 +2106,9 @@
           }
         }
       }
+    },
+    "暂无建筑" : {
+
     },
     "暂无日志\n\n请前往地图页面开始圈地追踪" : {
       "localizations" : {
@@ -1830,6 +2174,9 @@
         }
       }
     },
+    "木材" : {
+
+    },
     "未发现" : {
       "localizations" : {
         "en" : {
@@ -1845,6 +2192,25 @@
           }
         }
       }
+    },
+    "未命名领地" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unnamed Territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未命名领地"
+          }
+        }
+      }
+    },
+    "未知错误" : {
+
     },
     "本次" : {
       "localizations" : {
@@ -1909,6 +2275,9 @@
           }
         }
       }
+    },
+    "水" : {
+
     },
     "永久删除账户" : {
       "localizations" : {
@@ -2086,6 +2455,12 @@
         }
       }
     },
+    "点击上方「建造」按钮开始建设" : {
+
+    },
+    "点击地图选择建造位置" : {
+
+    },
     "点击搜索按钮发现周围的废墟" : {
       "localizations" : {
         "en" : {
@@ -2102,6 +2477,9 @@
         }
       }
     },
+    "点击选择建造位置" : {
+
+    },
     "版本信息" : {
       "localizations" : {
         "en" : {
@@ -2117,6 +2495,15 @@
           }
         }
       }
+    },
+    "玻璃" : {
+
+    },
+    "生产" : {
+
+    },
+    "生存" : {
+
     },
     "用户未登录" : {
       "localizations" : {
@@ -2166,6 +2553,12 @@
         }
       }
     },
+    "知道了" : {
+
+    },
+    "石头" : {
+
+    },
     "确定" : {
       "localizations" : {
         "en" : {
@@ -2181,6 +2574,9 @@
           }
         }
       }
+    },
+    "确定要删除这块 %.0f m² 的领地吗？此操作无法撤销。" : {
+
     },
     "确定要删除这块 %@ m² 的领地吗？此操作无法撤销。" : {
       "localizations" : {
@@ -2198,6 +2594,9 @@
         }
       }
     },
+    "确定要拆除 %@ 吗？此操作无法撤销。" : {
+
+    },
     "确定要退出登录吗？" : {
       "localizations" : {
         "en" : {
@@ -2214,6 +2613,9 @@
         }
       }
     },
+    "确认位置" : {
+
+    },
     "确认删除账户" : {
       "localizations" : {
         "en" : {
@@ -2229,6 +2631,9 @@
           }
         }
       }
+    },
+    "确认建造" : {
+
     },
     "确认收下" : {
       "localizations" : {
@@ -2486,6 +2891,9 @@
         }
       }
     },
+    "能源" : {
+
+    },
     "自动滚动" : {
       "localizations" : {
         "en" : {
@@ -2498,6 +2906,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "自动滚动"
+          }
+        }
+      }
+    },
+    "药店" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pharmacy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "药店"
+          }
+        }
+      }
+    },
+    "药店废墟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pharmacy Ruins"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "药店废墟"
           }
         }
       }
@@ -2549,6 +2989,9 @@
           }
         }
       }
+    },
+    "该建筑已达到领地上限 (%d)" : {
+
     },
     "语言" : {
       "localizations" : {
@@ -2630,6 +3073,9 @@
         }
       }
     },
+    "请在领地范围内选择建造位置" : {
+
+    },
     "请稍候..." : {
       "localizations" : {
         "en" : {
@@ -2662,6 +3108,9 @@
         }
       }
     },
+    "请输入新的领地名称" : {
+
+    },
     "警告：正在靠近他人领地（%dm）" : {
       "localizations" : {
         "en" : {
@@ -2674,6 +3123,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "警告：正在靠近他人领地（%dm）"
+          }
+        }
+      }
+    },
+    "警察局" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Police Station"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "警察局"
           }
         }
       }
@@ -2738,6 +3203,25 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "资源"
+          }
+        }
+      }
+    },
+    "资源不足，还需要: %@" : {
+
+    },
+    "超市" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supermarket"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "超市"
           }
         }
       }
@@ -2870,6 +3354,29 @@
         }
       }
     },
+    "边界点" : {
+
+    },
+    "边界点数" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boundary Points"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "边界点数"
+          }
+        }
+      }
+    },
+    "运行中" : {
+
+    },
     "这里是分支宇宙的测试页" : {
       "localizations" : {
         "en" : {
@@ -2917,6 +3424,9 @@
           }
         }
       }
+    },
+    "选择建造位置" : {
+
     },
     "通知" : {
       "localizations" : {
@@ -2998,6 +3508,9 @@
         }
       }
     },
+    "重命名领地" : {
+
+    },
     "重试" : {
       "localizations" : {
         "en" : {
@@ -3078,6 +3591,9 @@
         }
       }
     },
+    "隐私政策" : {
+
+    },
     "隐私设置" : {
       "localizations" : {
         "en" : {
@@ -3093,6 +3609,9 @@
           }
         }
       }
+    },
+    "面积" : {
+
     },
     "领地" : {
       "localizations" : {
@@ -3110,6 +3629,9 @@
         }
       }
     },
+    "领地上限" : {
+
+    },
     "领地大小: %lld 米" : {
       "localizations" : {
         "en" : {
@@ -3122,6 +3644,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地大小: %lld 米"
+          }
+        }
+      }
+    },
+    "领地数量" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory Count"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地数量"
           }
         }
       }
@@ -3143,6 +3681,7 @@
       }
     },
     "领地管理" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3154,6 +3693,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地管理"
+          }
+        }
+      }
+    },
+    "领地面积" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory Area"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地面积"
           }
         }
       }
@@ -3170,6 +3726,25 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地验证未通过，无法上传"
+          }
+        }
+      }
+    },
+    "食物" : {
+
+    },
+    "餐厅" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurant"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "餐厅"
           }
         }
       }
@@ -3202,358 +3777,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "验证码已发送至 %@"
-          }
-        }
-      }
-    },
-    "领地数量" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Count"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地数量"
-          }
-        }
-      }
-    },
-    "总面积" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Total Area"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "总面积"
-          }
-        }
-      }
-    },
-    "领地面积" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Area"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地面积"
-          }
-        }
-      }
-    },
-    "边界点数" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Boundary Points"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "边界点数"
-          }
-        }
-      }
-    },
-    "占领时间" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Occupied Time"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "占领时间"
-          }
-        }
-      }
-    },
-    "开始圈地" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start Claiming"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "开始圈地"
-          }
-        }
-      }
-    },
-    "完成圈地" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Complete Claiming"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成圈地"
-          }
-        }
-      }
-    },
-    "未命名领地" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unnamed Territory"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未命名领地"
-          }
-        }
-      }
-    },
-    "超市" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Supermarket"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "超市"
-          }
-        }
-      }
-    },
-    "餐厅" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restaurant"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "餐厅"
-          }
-        }
-      }
-    },
-    "医院" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hospital"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "医院"
-          }
-        }
-      }
-    },
-    "加油站" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gas Station"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加油站"
-          }
-        }
-      }
-    },
-    "药店" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pharmacy"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "药店"
-          }
-        }
-      }
-    },
-    "工厂" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Factory"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "工厂"
-          }
-        }
-      }
-    },
-    "仓库" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Warehouse"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "仓库"
-          }
-        }
-      }
-    },
-    "住宅区" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Residential Area"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "住宅区"
-          }
-        }
-      }
-    },
-    "警察局" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Police Station"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "警察局"
-          }
-        }
-      }
-    },
-    "军事设施" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Military Facility"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "军事设施"
-          }
-        }
-      }
-    },
-    "废弃超市" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abandoned Supermarket"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "废弃超市"
-          }
-        }
-      }
-    },
-    "医院废墟" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hospital Ruins"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "医院废墟"
-          }
-        }
-      }
-    },
-    "药店废墟" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pharmacy Ruins"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "药店废墟"
-          }
-        }
-      }
-    },
-    "工厂废墟" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Factory Ruins"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "工厂废墟"
           }
         }
       }

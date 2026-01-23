@@ -47,6 +47,24 @@ struct SettingsDetailView: View {
                     Text("账号")
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
+
+                // 支持与隐私
+                Section {
+                    Link(destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/support.html")!) {
+                        Text("技术支持")
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                    }
+                    .listRowBackground(ApocalypseTheme.cardBackground)
+
+                    Link(destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/privacy.html")!) {
+                        Text("隐私政策")
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                    }
+                    .listRowBackground(ApocalypseTheme.cardBackground)
+                } header: {
+                    Text("支持与隐私")
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
             }
             .scrollContentBackground(.hidden)
         }

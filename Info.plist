@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleDisplayName</key>
-	<string>EarthLord</string>
+	<string>EarthLord Alpha</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

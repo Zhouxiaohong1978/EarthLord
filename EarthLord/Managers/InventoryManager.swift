@@ -329,4 +329,82 @@ final class InventoryManager: ObservableObject {
             .eq("id", value: itemId)
             .execute()
     }
+
+    // MARK: - 开发者测试方法
+
+    #if DEBUG
+    /// 添加测试资源（用于测试建造系统）
+    /// - Returns: 是否添加成功
+    @discardableResult
+    func addTestResources() async -> Bool {
+        guard AuthManager.shared.currentUser?.id != nil else {
+            logger.log("添加测试资源失败：用户未登录", type: .error)
+            return false
+        }
+
+        logger.log("开始添加测试资源...", type: .info)
+
+        // 测试资源列表：物品ID -> 数量
+        let testResources: [(itemId: String, quantity: Int)] = [
+            ("wood", 200),           // 木材
+            ("stone", 150),          // 石头
+            ("scrap_metal", 100),    // 废金属
+            ("glass", 50),           // 玻璃
+            ("cloth", 80),           // 布料
+            ("rope", 40),            // 绳子
+            ("nails", 100),          // 钉子
+            ("plastic", 60)          // 塑料
+        ]
+
+        var successCount = 0
+
+        for resource in testResources {
+            do {
+                try await addItem(
+                    itemId: resource.itemId,
+                    quantity: resource.quantity,
+                    quality: nil,
+                    obtainedFrom: "测试添加"
+                )
+                successCount += 1
+            } catch {
+                logger.logError("添加测试资源失败: \(resource.itemId)", error: error)
+            }
+        }
+
+        logger.log("测试资源添加完成：\(successCount)/\(testResources.count) 成功", type: successCount == testResources.count ? .success : .warning)
+
+        return successCount > 0
+    }
+
+    /// 清空所有背包物品
+    /// - Returns: 是否清空成功
+    @discardableResult
+    func clearAllItems() async -> Bool {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            logger.log("清空背包失败：用户未登录", type: .error)
+            return false
+        }
+
+        logger.log("开始清空背包...", type: .info)
+
+        do {
+            try await supabase
+                .from("inventory_items")
+                .delete()
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+
+            // 清空本地数据
+            self.items = []
+
+            logger.log("背包已清空", type: .success)
+            return true
+
+        } catch {
+            logger.logError("清空背包失败", error: error)
+            return false
+        }
+    }
+    #endif
 }

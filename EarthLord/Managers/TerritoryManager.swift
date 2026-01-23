@@ -225,6 +225,37 @@ final class TerritoryManager {
             .execute()
 
         print("✅ 领地已删除")
+
+        // 发送通知刷新列表
+        await MainActor.run {
+            NotificationCenter.default.post(name: .territoryDeleted, object: nil)
+        }
+    }
+
+    /// 更新领地名称
+    /// - Parameters:
+    ///   - id: 领地 ID
+    ///   - name: 新名称
+    func updateTerritoryName(id: String, name: String) async throws {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            throw TerritoryError.notAuthenticated
+        }
+
+        print("📝 更新领地名称: \(id) -> \(name)")
+
+        try await supabase
+            .from("territories")
+            .update(["name": name, "updated_at": Date().ISO8601Format()])
+            .eq("id", value: id)
+            .eq("user_id", value: userId.uuidString)  // 确保只能修改自己的
+            .execute()
+
+        print("✅ 领地名称已更新")
+
+        // 发送通知刷新列表
+        await MainActor.run {
+            NotificationCenter.default.post(name: .territoryUpdated, object: nil)
+        }
     }
 
     // MARK: - 测试数据方法
@@ -594,4 +625,13 @@ enum TerritoryError: LocalizedError {
             return String(format: String(localized: "上传失败: %@"), message)
         }
     }
+}
+
+// MARK: - 通知名称
+
+extension Notification.Name {
+    /// 领地更新通知（重命名等）
+    static let territoryUpdated = Notification.Name("territoryUpdated")
+    /// 领地删除通知
+    static let territoryDeleted = Notification.Name("territoryDeleted")
 }

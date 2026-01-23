@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import CoreLocation
 
 // MARK: - BuildingCategory 建筑分类
 
@@ -66,15 +67,24 @@ enum BuildingCategory: String, Codable, CaseIterable {
 /// 建筑状态枚举
 enum BuildingStatus: String, Codable {
     case constructing = "constructing"  // 建造中
+    case upgrading = "upgrading"        // 升级中
     case active = "active"              // 运行中
+    case inactive = "inactive"          // 已停用
+    case damaged = "damaged"            // 已损坏
 
     /// 本地化显示名称
     var displayName: String {
         switch self {
         case .constructing:
             return String(localized: "建造中")
+        case .upgrading:
+            return String(localized: "升级中")
         case .active:
             return String(localized: "运行中")
+        case .inactive:
+            return String(localized: "已停用")
+        case .damaged:
+            return String(localized: "已损坏")
         }
     }
 
@@ -82,9 +92,15 @@ enum BuildingStatus: String, Codable {
     var color: Color {
         switch self {
         case .constructing:
+            return .orange
+        case .upgrading:
             return ApocalypseTheme.info
         case .active:
             return ApocalypseTheme.success
+        case .inactive:
+            return .gray
+        case .damaged:
+            return ApocalypseTheme.danger
         }
     }
 
@@ -93,8 +109,14 @@ enum BuildingStatus: String, Codable {
         switch self {
         case .constructing:
             return "hammer.fill"
+        case .upgrading:
+            return "arrow.up.circle.fill"
         case .active:
             return "checkmark.circle.fill"
+        case .inactive:
+            return "pause.circle.fill"
+        case .damaged:
+            return "exclamationmark.triangle.fill"
         }
     }
 }
@@ -203,6 +225,47 @@ struct PlayerBuilding: Identifiable, Codable {
         let elapsed = Date().timeIntervalSince(buildStartedAt)
         let progress = elapsed / Double(template.buildTimeSeconds)
         return min(1.0, max(0.0, progress))
+    }
+
+    // MARK: - 便捷计算属性
+
+    /// 坐标便捷属性
+    var coordinate: CLLocationCoordinate2D? {
+        guard let lat = locationLat, let lon = locationLon else { return nil }
+        return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+    }
+
+    /// 建造进度（0.0 ~ 1.0）- 基于 buildCompletedAt
+    var buildProgress: Double {
+        guard status == .constructing || status == .upgrading,
+              let completedAt = buildCompletedAt else { return 0 }
+
+        let total = completedAt.timeIntervalSince(buildStartedAt)
+        guard total > 0 else { return 1.0 }
+
+        let elapsed = Date().timeIntervalSince(buildStartedAt)
+        return min(1.0, max(0, elapsed / total))
+    }
+
+    /// 格式化剩余时间
+    var formattedRemainingTime: String {
+        guard status == .constructing || status == .upgrading,
+              let completedAt = buildCompletedAt else { return "" }
+
+        let remaining = completedAt.timeIntervalSince(Date())
+        guard remaining > 0 else { return String(localized: "即将完成") }
+
+        let hours = Int(remaining) / 3600
+        let minutes = (Int(remaining) % 3600) / 60
+        let seconds = Int(remaining) % 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        } else {
+            return "\(seconds)s"
+        }
     }
 }
 

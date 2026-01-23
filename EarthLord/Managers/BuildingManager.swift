@@ -470,6 +470,13 @@ final class BuildingManager: ObservableObject {
         }
     }
 
+    /// 拆除建筑（deleteBuilding 的别名，语义更清晰）
+    /// - Parameter buildingId: 建筑 ID
+    /// - Throws: BuildingError
+    func demolishBuilding(buildingId: UUID) async throws {
+        try await deleteBuilding(buildingId: buildingId)
+    }
+
     // MARK: - Helper Methods
 
     /// 检查并自动完成已到期的建造

@@ -55,6 +55,14 @@ struct MapViewRepresentable: UIViewRepresentable {
     /// 附近的POI列表
     var nearbyPOIs: [POI] = []
 
+    // MARK: - 建筑显示属性
+
+    /// 玩家建筑列表
+    var buildings: [PlayerBuilding] = []
+
+    /// 建筑模板列表
+    var buildingTemplates: [BuildingTemplate] = []
+
     // MARK: - UIViewRepresentable
 
     /// 创建 MKMapView
@@ -113,6 +121,9 @@ struct MapViewRepresentable: UIViewRepresentable {
 
         // 更新POI标记
         updatePOIAnnotations(on: uiView)
+
+        // 更新建筑标记
+        updateBuildingAnnotations(on: uiView, context: context)
     }
 
     /// 创建 Coordinator 代理
@@ -289,6 +300,9 @@ struct MapViewRepresentable: UIViewRepresentable {
         /// 上次领地数量 - 避免重复绘制
         var lastTerritoriesCount: Int = -1
 
+        /// 上次建筑数量 - 避免重复绘制
+        var lastBuildingsCount: Int = -1
+
         init(_ parent: MapViewRepresentable) {
             self.parent = parent
         }
@@ -393,6 +407,48 @@ struct MapViewRepresentable: UIViewRepresentable {
                 return nil
             }
 
+            // 处理建筑标注
+            if let buildingAnnotation = annotation as? BuildingAnnotation {
+                let identifier = "BuildingMarker"
+
+                // 复用或创建新的标注视图
+                let annotationView = mapView.dequeueReusableAnnotationView(
+                    withIdentifier: identifier
+                ) as? MKMarkerAnnotationView ?? MKMarkerAnnotationView(
+                    annotation: annotation,
+                    reuseIdentifier: identifier
+                )
+
+                annotationView.annotation = annotation
+                annotationView.canShowCallout = true
+
+                // 根据建筑状态设置颜色
+                let statusColor: UIColor
+                switch buildingAnnotation.building.status {
+                case .constructing:
+                    statusColor = .systemOrange
+                case .upgrading:
+                    statusColor = .systemBlue
+                case .active:
+                    statusColor = .systemGreen
+                case .inactive:
+                    statusColor = .systemGray
+                case .damaged:
+                    statusColor = .systemRed
+                }
+                annotationView.markerTintColor = statusColor
+
+                // 设置建筑图标
+                let iconName = buildingAnnotation.template?.icon ?? "building.2.fill"
+                let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+                annotationView.glyphImage = UIImage(systemName: iconName, withConfiguration: config)
+
+                // 建筑标注始终显示
+                annotationView.displayPriority = .required
+
+                return annotationView
+            }
+
             // 处理 POI 标注
             if let poiAnnotation = annotation as? POIAnnotation {
                 let identifier = "POIMarker"
@@ -465,6 +521,36 @@ struct MapViewRepresentable: UIViewRepresentable {
         }
         mapView.addAnnotations(newAnnotations)
     }
+
+    // MARK: - 建筑标记管理
+
+    /// 更新建筑标记
+    private func updateBuildingAnnotations(on mapView: MKMapView, context: Context) {
+        // 检查建筑数量是否变化
+        let currentBuildingCount = buildings.count
+        guard context.coordinator.lastBuildingsCount != currentBuildingCount else { return }
+        context.coordinator.lastBuildingsCount = currentBuildingCount
+
+        // 移除旧的建筑标记
+        let oldBuildingAnnotations = mapView.annotations.filter { $0 is BuildingAnnotation }
+        mapView.removeAnnotations(oldBuildingAnnotations)
+
+        // 添加新的建筑标记
+        for building in buildings {
+            guard let coord = building.coordinate else { continue }
+
+            // ⚠️ 重要：数据库中保存的已经是 GCJ-02 坐标，直接使用无需转换
+            let template = buildingTemplates.first { $0.templateId == building.templateId }
+            let annotation = BuildingAnnotation(building: building, template: template)
+            annotation.coordinate = coord
+
+            mapView.addAnnotation(annotation)
+        }
+
+        if currentBuildingCount > 0 {
+            print("🏗️ 更新建筑标记: \(currentBuildingCount) 个")
+        }
+    }
 }
 
 // MARK: - POI Annotation
@@ -479,6 +565,35 @@ class POIAnnotation: NSObject, MKAnnotation {
 
     init(poi: POI) {
         self.poi = poi
+    }
+}
+
+// MARK: - Building Annotation
+
+/// 建筑标记类
+class BuildingAnnotation: NSObject, MKAnnotation {
+    let building: PlayerBuilding
+    let template: BuildingTemplate?
+
+    /// 建筑坐标（数据库保存的已经是 GCJ-02 坐标）
+    dynamic var coordinate: CLLocationCoordinate2D
+
+    var title: String? {
+        building.buildingName
+    }
+
+    var subtitle: String? {
+        var parts: [String] = []
+        parts.append("Lv.\(building.level)")
+        parts.append(building.status.displayName)
+        return parts.joined(separator: " · ")
+    }
+
+    init(building: PlayerBuilding, template: BuildingTemplate?) {
+        self.building = building
+        self.template = template
+        self.coordinate = building.coordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
+        super.init()
     }
 }
 

@@ -15,24 +15,6 @@ struct MoreTabView: View {
                     .ignoresSafeArea()
 
                 List {
-                    // 开发者工具部分
-                    Section {
-                        NavigationLink {
-                            TestMenuView()
-                        } label: {
-                            HStack {
-                                Image(systemName: "wrench.and.screwdriver")
-                                    .foregroundColor(ApocalypseTheme.primary)
-                                    .frame(width: 30)
-                                Text("开发测试")
-                                    .foregroundColor(ApocalypseTheme.textPrimary)
-                            }
-                        }
-                        .listRowBackground(ApocalypseTheme.cardBackground)
-                    } header: {
-                        Text("开发者工具")
-                            .foregroundColor(ApocalypseTheme.textSecondary)
-                    }
                 }
                 .scrollContentBackground(.hidden)
             }

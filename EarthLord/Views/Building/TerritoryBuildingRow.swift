@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 /// 领地建筑行
 struct TerritoryBuildingRow: View {
@@ -13,6 +14,12 @@ struct TerritoryBuildingRow: View {
     let template: BuildingTemplate?
     var onUpgrade: (() -> Void)?
     var onDemolish: (() -> Void)?
+
+    /// 定时器触发器 - 用于实时更新建造进度
+    @State private var timerTrigger = false
+
+    /// 定时器
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         HStack(spacing: 12) {
@@ -57,6 +64,13 @@ struct TerritoryBuildingRow: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(ApocalypseTheme.textMuted.opacity(0.3), lineWidth: 1)
         )
+        .onReceive(timer) { _ in
+            // 仅在建造中或升级中时触发刷新
+            if building.status == .constructing || building.status == .upgrading {
+                timerTrigger.toggle()
+            }
+        }
+        .id(timerTrigger) // 通过改变 id 强制视图刷新
     }
 
     // MARK: - 子视图

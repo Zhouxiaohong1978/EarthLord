@@ -1554,7 +1554,6 @@
       }
     },
     "开发者工具" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2423,6 +2422,9 @@
         }
       }
     },
+    "添加测试资源" : {
+
+    },
     "清空日志" : {
       "localizations" : {
         "en" : {
@@ -2438,6 +2440,9 @@
           }
         }
       }
+    },
+    "清空背包" : {
+
     },
     "清除测试领地" : {
       "localizations" : {

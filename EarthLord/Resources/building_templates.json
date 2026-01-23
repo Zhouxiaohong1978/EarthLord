@@ -12,7 +12,7 @@
         "wood": 30,
         "stone": 20
       },
-      "build_time_seconds": 300,
+      "build_time_seconds": 30,
       "max_per_territory": 3,
       "max_level": 3
     },
@@ -28,7 +28,7 @@
         "wood": 50,
         "stone": 30
       },
-      "build_time_seconds": 600,
+      "build_time_seconds": 60,
       "max_per_territory": 1,
       "max_level": 5
     },
@@ -44,7 +44,7 @@
         "wood": 40,
         "scrap_metal": 20
       },
-      "build_time_seconds": 480,
+      "build_time_seconds": 45,
       "max_per_territory": 2,
       "max_level": 3
     },
@@ -60,7 +60,7 @@
         "wood": 20,
         "stone": 10
       },
-      "build_time_seconds": 360,
+      "build_time_seconds": 35,
       "max_per_territory": 4,
       "max_level": 3
     },
@@ -76,7 +76,7 @@
         "scrap_metal": 60,
         "glass": 40
       },
-      "build_time_seconds": 900,
+      "build_time_seconds": 90,
       "max_per_territory": 2,
       "max_level": 3
     }

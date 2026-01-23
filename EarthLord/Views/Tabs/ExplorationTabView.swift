@@ -570,6 +570,13 @@ struct BackpackContentView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
 
+            #if DEBUG
+            // 开发者工具区域
+            developerTools
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+            #endif
+
             // 搜索框
             searchBar
                 .padding(.horizontal, 16)
@@ -615,6 +622,81 @@ struct BackpackContentView: View {
             }
         }
     }
+
+    // MARK: - 开发者工具
+
+    #if DEBUG
+    private var developerTools: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(ApocalypseTheme.warning)
+
+                Text("开发者工具")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                Spacer()
+            }
+
+            HStack(spacing: 12) {
+                // 添加测试资源按钮
+                Button {
+                    Task {
+                        await inventoryManager.addTestResources()
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                        Text("添加测试资源")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.success)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(ApocalypseTheme.success.opacity(0.15))
+                    )
+                }
+
+                // 清空背包按钮
+                Button {
+                    Task {
+                        await inventoryManager.clearAllItems()
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 14))
+                        Text("清空背包")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.danger)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(ApocalypseTheme.danger.opacity(0.15))
+                    )
+                }
+
+                Spacer()
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(ApocalypseTheme.cardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(ApocalypseTheme.warning.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    #endif
 
     // MARK: - 容量状态卡
 

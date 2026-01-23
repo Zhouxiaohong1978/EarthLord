@@ -200,6 +200,7 @@ final class BuildingManager: ObservableObject {
 
         // 插入数据库
         let now = Date()
+        let completedAt = now.addingTimeInterval(Double(template.buildTimeSeconds))
         let buildingData: [String: AnyJSON] = [
             "user_id": .string(userId.uuidString),
             "territory_id": .string(territoryId),
@@ -210,7 +211,7 @@ final class BuildingManager: ObservableObject {
             "location_lat": location != nil ? .double(location!.latitude) : .null,
             "location_lon": location != nil ? .double(location!.longitude) : .null,
             "build_started_at": .string(now.ISO8601Format()),
-            "build_completed_at": .null
+            "build_completed_at": .string(completedAt.ISO8601Format())
         ]
 
         do {

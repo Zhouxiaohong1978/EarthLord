@@ -56,19 +56,26 @@ struct MainTabView: View {
                 }
                 .tag(2)
 
+            CommunicationTabView()
+                .tabItem {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                    Text("通讯")
+                }
+                .tag(3)
+
             ProfileTabView()
                 .tabItem {
                     Image(systemName: "person.fill")
                     Text("个人")
                 }
-                .tag(3)
+                .tag(4)
 
             MoreTabView()
                 .tabItem {
                     Image(systemName: "ellipsis")
                     Text("更多")
                 }
-                .tag(4)
+                .tag(5)
         }
         .tint(ApocalypseTheme.primary)
         .environmentObject(locationManager)  // 注入全局定位管理器

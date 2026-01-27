@@ -25,6 +25,44 @@ struct MoreTabView: View {
     }
 }
 
+// MARK: - 更多菜单行组件
+
+struct MoreMenuRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // 图标
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(iconColor.opacity(0.15))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(iconColor)
+            }
+
+            // 文字
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 #Preview {
     MoreTabView()
 }

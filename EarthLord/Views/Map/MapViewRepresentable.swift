@@ -237,9 +237,9 @@ struct MapViewRepresentable: UIViewRepresentable {
 
             let polygon = MKPolygon(coordinates: coords, count: coords.count)
 
-            // ⚠️ 关键：比较 userId 时必须统一大小写！
-            // 数据库存的是小写 UUID，但 iOS 的 uuidString 返回大写
-            let isMine = territory.userId.lowercased() == currentUserId?.lowercased()
+            // ⚠️ 关键：使用 AuthManager 检查是否为关联账号的领地
+            // 这样可以正确识别所有关联账号拥有的领地
+            let isMine = AuthManager.shared.isLinkedUser(territory.userId)
 
             // ⭐ 特殊处理：名称带 [TEST] 前缀的领地显示为"他人领地"（橙色）
             // 这样可以用于测试碰撞检测等功能

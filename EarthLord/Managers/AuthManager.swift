@@ -40,6 +40,9 @@ final class AuthManager: ObservableObject {
     /// 验证码是否已验证（等待设置密码）
     @Published var otpVerified: Bool = false
 
+    /// 关联账号的用户 ID 列表（包括当前用户自己）
+    @Published var linkedUserIds: Set<String> = []
+
     // MARK: - 私有属性
 
     /// Supabase 客户端
@@ -100,6 +103,10 @@ final class AuthManager: ObservableObject {
                     isAuthenticated = false
                 } else {
                     isAuthenticated = true
+                    // 获取关联账号列表
+                    Task {
+                        await self.fetchLinkedUserIds()
+                    }
                 }
                 print("✅ 初始会话: \(session.user.email ?? "unknown")")
             } else {
@@ -118,6 +125,10 @@ final class AuthManager: ObservableObject {
                     // 登录成功后启动位置上报
                     LocationReporter.shared.startReporting()
                     print("📍 位置上报已启动")
+                    // 获取关联账号列表
+                    Task {
+                        await self.fetchLinkedUserIds()
+                    }
                 }
                 print("✅ 用户登录: \(session.user.email ?? "unknown")")
             }
@@ -134,6 +145,7 @@ final class AuthManager: ObservableObject {
             currentUser = nil
             otpSent = false
             otpVerified = false
+            linkedUserIds = []
             print("✅ 用户已登出")
 
         case .tokenRefreshed:
@@ -374,17 +386,41 @@ final class AuthManager: ObservableObject {
         isLoading = false
     }
 
-    // MARK: - 第三方登录（预留）
+    // MARK: - 第三方登录
 
     /// 使用 Apple 账号登录
-    /// TODO: 实现 Apple 登录
-    /// - 需要配置 Apple Developer 账号
-    /// - 需要在 Supabase Dashboard 启用 Apple Provider
     func signInWithApple() async {
-        // TODO: 实现 Apple 登录
-        // 1. 使用 AuthenticationServices 获取 Apple ID credential
-        // 2. 调用 supabase.auth.signInWithIdToken(credentials: .init(provider: .apple, idToken: idToken))
-        print("🍎 Apple 登录 - 待实现")
+        isLoading = true
+        errorMessage = nil
+
+        print("🍎 开始 Apple 登录流程")
+
+        do {
+            // 调用 AppleAuthService 执行登录
+            let session = try await AppleAuthService.shared.signInWithApple()
+
+            // 登录成功，更新状态
+            currentUser = session.user
+            isAuthenticated = true
+
+            print("✅ Apple 登录完成")
+            print("   用户邮箱: \(session.user.email ?? "未知")")
+        } catch let error as AppleAuthError {
+            // Apple 登录特定错误
+            print("❌ Apple 登录失败: \(error.localizedDescription)")
+            // 用户取消登录时不显示错误提示
+            if case .userCancelled = error {
+                print("   用户取消了 Apple 登录")
+            } else {
+                errorMessage = "Apple 登录失败: \(error.localizedDescription)"
+            }
+        } catch {
+            // 其他错误
+            print("❌ Apple 登录失败: \(error)")
+            errorMessage = "Apple 登录失败，请重试"
+        }
+
+        isLoading = false
     }
 
     /// 使用 Google 账号登录
@@ -523,5 +559,37 @@ final class AuthManager: ObservableObject {
     /// 清除错误信息
     func clearError() {
         errorMessage = nil
+    }
+
+    /// 获取关联账号 ID 列表
+    /// 调用数据库函数获取当前用户及其关联账号的所有 ID
+    func fetchLinkedUserIds() async {
+        guard let userId = currentUser?.id else {
+            linkedUserIds = []
+            return
+        }
+
+        do {
+            let response: [String] = try await supabase
+                .rpc("get_all_linked_user_ids", params: ["user_id": userId.uuidString])
+                .execute()
+                .value
+
+            await MainActor.run {
+                self.linkedUserIds = Set(response.map { $0.lowercased() })
+                print("🔗 关联账号: \(self.linkedUserIds.count) 个")
+            }
+        } catch {
+            // 如果获取失败，至少包含当前用户
+            await MainActor.run {
+                self.linkedUserIds = [userId.uuidString.lowercased()]
+                print("⚠️ 获取关联账号失败，仅使用当前用户: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// 检查指定用户 ID 是否属于当前用户（包括关联账号）
+    func isLinkedUser(_ userId: String) -> Bool {
+        return linkedUserIds.contains(userId.lowercased())
     }
 }

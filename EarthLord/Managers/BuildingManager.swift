@@ -354,7 +354,7 @@ final class BuildingManager: ObservableObject {
     /// - Returns: 建筑列表
     @discardableResult
     func fetchPlayerBuildings(territoryId: String) async throws -> [PlayerBuilding] {
-        guard let userId = AuthManager.shared.currentUser?.id else {
+        guard AuthManager.shared.currentUser != nil else {
             throw BuildingError.notAuthenticated
         }
 
@@ -363,10 +363,10 @@ final class BuildingManager: ObservableObject {
         defer { isLoading = false }
 
         do {
+            // 不手动过滤 user_id，依赖 RLS 策略返回关联账号的数据
             let response: [PlayerBuildingDB] = try await supabase
                 .from("player_buildings")
                 .select()
-                .eq("user_id", value: userId.uuidString)
                 .eq("territory_id", value: territoryId)
                 .order("created_at", ascending: false)
                 .execute()
@@ -385,11 +385,11 @@ final class BuildingManager: ObservableObject {
         }
     }
 
-    /// 获取用户所有建筑
+    /// 获取用户所有建筑（包括关联账号的建筑）
     /// - Returns: 建筑列表
     @discardableResult
     func fetchAllPlayerBuildings() async throws -> [PlayerBuilding] {
-        guard let userId = AuthManager.shared.currentUser?.id else {
+        guard AuthManager.shared.currentUser != nil else {
             throw BuildingError.notAuthenticated
         }
 
@@ -398,10 +398,10 @@ final class BuildingManager: ObservableObject {
         defer { isLoading = false }
 
         do {
+            // 不手动过滤 user_id，依赖 RLS 策略返回关联账号的数据
             let response: [PlayerBuildingDB] = try await supabase
                 .from("player_buildings")
                 .select()
-                .eq("user_id", value: userId.uuidString)
                 .order("created_at", ascending: false)
                 .execute()
                 .value

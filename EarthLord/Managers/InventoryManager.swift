@@ -75,10 +75,10 @@ final class InventoryManager: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// 获取用户背包所有物品
+    /// 获取用户背包所有物品（包括关联账号的物品）
     /// - Returns: 背包物品列表
     func getInventory() async throws -> [BackpackItem] {
-        guard let userId = AuthManager.shared.currentUser?.id else {
+        guard AuthManager.shared.currentUser != nil else {
             throw InventoryError.notAuthenticated
         }
 
@@ -87,10 +87,10 @@ final class InventoryManager: ObservableObject {
         defer { isLoading = false }
 
         do {
+            // 不手动过滤 user_id，依赖 RLS 策略返回关联账号的数据
             let response: [InventoryItemDB] = try await supabase
                 .from("inventory_items")
                 .select()
-                .eq("user_id", value: userId.uuidString)
                 .order("created_at", ascending: false)
                 .execute()
                 .value

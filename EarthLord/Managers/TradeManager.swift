@@ -89,12 +89,18 @@ final class TradeManager: ObservableObject {
             throw TradeError.insufficientItems(inventoryCheck.missingItems)
         }
 
-        // 锁定物品（从背包扣除）
-        for item in offeringItems {
-            if let inventoryItem = findInventoryItem(itemId: item.itemId, quality: item.quality) {
-                try await inventoryManager.useItem(inventoryId: inventoryItem.id, quantity: item.quantity)
+        // 锁定物品（从背包扣除，支持跨多条记录）
+        var lockedItems: [TradeItem] = []
+        do {
+            for item in offeringItems {
+                try await deductItemFromInventory(itemId: item.itemId, quantity: item.quantity, quality: item.quality)
+                lockedItems.append(item)
                 logger.log("锁定物品: \(item.itemId) x\(item.quantity)", type: .info)
             }
+        } catch {
+            // 锁定失败，退还已锁定的物品
+            await returnItems(lockedItems)
+            throw error
         }
 
         // 计算过期时间
@@ -164,7 +170,7 @@ final class TradeManager: ObservableObject {
     // MARK: - Accept Offer
 
     /// 接受交易挂单
-    /// 使用数据库 RPC 函数实现原子性操作，防止并发问题
+    /// 使用数据库 RPC 函数实现原子性操作
     /// - Parameter offerId: 挂单ID
     /// - Returns: 交易历史记录
     @discardableResult
@@ -206,11 +212,9 @@ final class TradeManager: ObservableObject {
         var deductedItems: [TradeItem] = []
         do {
             for item in offer.requestingItems {
-                if let inventoryItem = findInventoryItem(itemId: item.itemId, quality: item.quality) {
-                    try await inventoryManager.useItem(inventoryId: inventoryItem.id, quantity: item.quantity)
-                    deductedItems.append(item)
-                    logger.log("扣除买家物品: \(item.itemId) x\(item.quantity)", type: .info)
-                }
+                try await deductItemFromInventory(itemId: item.itemId, quantity: item.quantity, quality: item.quality)
+                deductedItems.append(item)
+                logger.log("扣除买家物品: \(item.itemId) x\(item.quantity)", type: .info)
             }
         } catch {
             // 扣除失败，退还已扣除的物品
@@ -220,71 +224,78 @@ final class TradeManager: ObservableObject {
 
         let buyerUsername = user.email ?? user.id.uuidString.prefix(8).description
 
+        // 构建交易物品数据
+        let exchange = TradeExchange(
+            sellerItems: offer.offeringItems,
+            buyerItems: offer.requestingItems
+        )
+
+        // 将 TradeItem 数组转换为 AnyJSON 格式
+        let sellerItemsJson: [AnyJSON] = offer.offeringItems.map { item in
+            var dict: [String: AnyJSON] = [
+                "itemId": .string(item.itemId),
+                "quantity": .integer(item.quantity)
+            ]
+            if let quality = item.quality {
+                dict["quality"] = .string(quality.rawValue)
+            }
+            return .object(dict)
+        }
+
+        let buyerItemsJson: [AnyJSON] = offer.requestingItems.map { item in
+            var dict: [String: AnyJSON] = [
+                "itemId": .string(item.itemId),
+                "quantity": .integer(item.quantity)
+            ]
+            if let quality = item.quality {
+                dict["quality"] = .string(quality.rawValue)
+            }
+            return .object(dict)
+        }
+
+        let itemsExchangedJson: AnyJSON = .object([
+            "sellerItems": .array(sellerItemsJson),
+            "buyerItems": .array(buyerItemsJson)
+        ])
+
         // 调用 RPC 函数执行原子性交易
         do {
-            let response: AcceptTradeRPCResponse = try await supabase
+            let response: AcceptTradeRPCResult = try await supabase
                 .rpc("accept_trade_offer", params: [
-                    "p_offer_id": offerId.uuidString,
-                    "p_buyer_id": user.id.uuidString,
-                    "p_buyer_username": buyerUsername
+                    "p_offer_id": AnyJSON.string(offerId.uuidString),
+                    "p_buyer_id": AnyJSON.string(user.id.uuidString),
+                    "p_buyer_username": AnyJSON.string(buyerUsername),
+                    "p_items_exchanged": itemsExchangedJson
                 ])
                 .execute()
                 .value
 
             // 检查 RPC 执行结果
-            if !response.success {
+            guard response.success else {
                 // RPC 失败，退还买家物品
                 await returnItems(deductedItems)
-                if let error = response.toTradeError() {
-                    throw error
-                }
-                throw TradeError.saveFailed(response.message ?? "交易执行失败")
+                throw TradeError.saveFailed(response.message ?? response.error ?? "交易执行失败")
             }
 
-            logger.log("RPC 交易执行成功: \(response.historyId?.uuidString ?? "unknown")", type: .success)
+            logger.log("RPC 交易执行成功: \(response.historyId ?? "unknown")", type: .success)
 
             // 刷新库存数据
             await inventoryManager.refreshInventory()
 
-            // 获取完整的交易历史记录
-            guard let historyId = response.historyId else {
-                throw TradeError.saveFailed("无法获取交易历史ID")
-            }
+            // 创建本地历史对象
+            let historyId = response.historyId.flatMap { UUID(uuidString: $0) } ?? UUID()
+            let completedAt = response.completedAt ?? Date()
 
-            let historyResponse: [TradeHistoryDB] = try await supabase
-                .from("trade_history")
-                .select()
-                .eq("id", value: historyId.uuidString)
-                .limit(1)
-                .execute()
-                .value
-
-            guard let dbHistory = historyResponse.first,
-                  let history = dbHistory.toTradeHistory() else {
-                // 交易已完成但无法获取历史，创建临时历史对象
-                let tempHistory = TradeHistory(
-                    id: historyId,
-                    offerId: offerId,
-                    sellerId: offer.ownerId,
-                    buyerId: user.id,
-                    sellerUsername: offer.ownerUsername,
-                    buyerUsername: buyerUsername,
-                    itemsExchanged: TradeExchange(
-                        sellerItems: offer.offeringItems,
-                        buyerItems: offer.requestingItems
-                    ),
-                    completedAt: response.completedAt ?? Date()
-                )
-
-                // 更新本地数据
-                if let index = availableOffers.firstIndex(where: { $0.id == offerId }) {
-                    availableOffers.remove(at: index)
-                }
-                tradeHistory.insert(tempHistory, at: 0)
-
-                logger.log("交易完成: \(tempHistory.id)", type: .success)
-                return tempHistory
-            }
+            let history = TradeHistory(
+                id: historyId,
+                offerId: offerId,
+                sellerId: offer.ownerId,
+                buyerId: user.id,
+                sellerUsername: offer.ownerUsername,
+                buyerUsername: buyerUsername,
+                itemsExchanged: exchange,
+                completedAt: completedAt
+            )
 
             // 更新本地数据
             if let index = availableOffers.firstIndex(where: { $0.id == offerId }) {
@@ -297,14 +308,13 @@ final class TradeManager: ObservableObject {
             return history
 
         } catch let error as TradeError {
-            // 已处理的交易错误（来自 !response.success 分支），物品已在上面退还
-            // 确保库存刷新
             await inventoryManager.refreshInventory()
             throw error
         } catch {
             // 未知错误（RPC 调用失败、网络错误等），退还买家物品
             logger.logError("交易执行失败，正在退还物品...", error: error)
             await returnItems(deductedItems)
+            await inventoryManager.refreshInventory()
             throw TradeError.saveFailed(error.localizedDescription)
         }
     }
@@ -624,6 +634,30 @@ final class TradeManager: ObservableObject {
     /// - Returns: 背包物品
     private func findInventoryItem(itemId: String, quality: ItemQuality?) -> BackpackItem? {
         return inventoryManager.items.first { $0.itemId == itemId && $0.quality == quality }
+    }
+
+    /// 从库存中扣除物品（支持跨多条记录扣除）
+    /// - Parameters:
+    ///   - itemId: 物品ID
+    ///   - quantity: 需要扣除的数量
+    ///   - quality: 品质（可选）
+    private func deductItemFromInventory(itemId: String, quantity: Int, quality: ItemQuality?) async throws {
+        var remainingQuantity = quantity
+
+        // 获取所有匹配的库存记录
+        let matchingItems = inventoryManager.items.filter { $0.itemId == itemId && $0.quality == quality }
+
+        for item in matchingItems {
+            if remainingQuantity <= 0 { break }
+
+            let deductAmount = min(item.quantity, remainingQuantity)
+            try await inventoryManager.useItem(inventoryId: item.id, quantity: deductAmount)
+            remainingQuantity -= deductAmount
+        }
+
+        if remainingQuantity > 0 {
+            throw TradeError.insufficientItems([itemId: remainingQuantity])
+        }
     }
 
     /// 退还物品到背包

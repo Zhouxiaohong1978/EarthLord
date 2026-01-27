@@ -490,7 +490,32 @@ struct CanAcceptTradeResult {
     }
 }
 
-// MARK: - AcceptTradeRPCResponse RPC 响应模型
+// MARK: - AcceptTradeRPCResult RPC 结果模型
+
+/// 接受交易 RPC 函数的 JSONB 返回结果
+struct AcceptTradeRPCResult: Codable {
+    let success: Bool
+    let error: String?
+    let message: String?
+    let historyId: String?
+    let offerId: String?
+    let sellerId: String?
+    let buyerId: String?
+    let completedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case error
+        case message
+        case historyId = "history_id"
+        case offerId = "offer_id"
+        case sellerId = "seller_id"
+        case buyerId = "buyer_id"
+        case completedAt = "completed_at"
+    }
+}
+
+// MARK: - AcceptTradeRPCResponse RPC 响应模型（旧版）
 
 /// 接受交易 RPC 函数的响应模型
 struct AcceptTradeRPCResponse: Codable {

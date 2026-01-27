@@ -297,12 +297,14 @@ final class TradeManager: ObservableObject {
             return history
 
         } catch let error as TradeError {
-            // 已处理的交易错误，物品已在上面退还
+            // 已处理的交易错误（来自 !response.success 分支），物品已在上面退还
+            // 确保库存刷新
+            await inventoryManager.refreshInventory()
             throw error
         } catch {
-            // 未知错误，退还买家物品
+            // 未知错误（RPC 调用失败、网络错误等），退还买家物品
+            logger.logError("交易执行失败，正在退还物品...", error: error)
             await returnItems(deductedItems)
-            logger.logError("交易执行失败", error: error)
             throw TradeError.saveFailed(error.localizedDescription)
         }
     }
@@ -626,7 +628,10 @@ final class TradeManager: ObservableObject {
 
     /// 退还物品到背包
     /// - Parameter items: 要退还的物品列表
+    /// - Throws: 如果任何物品退还失败
     private func returnItems(_ items: [TradeItem]) async {
+        var failedItems: [String] = []
+
         for item in items {
             do {
                 try await inventoryManager.addItem(
@@ -638,7 +643,16 @@ final class TradeManager: ObservableObject {
                 logger.log("退还物品: \(item.itemId) x\(item.quantity)", type: .info)
             } catch {
                 logger.logError("退还物品失败: \(item.itemId)", error: error)
+                failedItems.append(item.itemId)
             }
+        }
+
+        // 强制刷新库存以确保本地缓存同步
+        await inventoryManager.refreshInventory()
+
+        // 如果有失败的物品，记录警告
+        if !failedItems.isEmpty {
+            logger.log("警告：部分物品退还失败: \(failedItems.joined(separator: ", "))", type: .warning)
         }
     }
 

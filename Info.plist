@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleDisplayName</key>
-	<string>EarthLord Alpha</string>
+	<string>末日之主</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -30,7 +30,7 @@
 		</dict>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>《地球新主》需要获取您的位置来显示您在末日世界中的坐标，帮助您探索和圈定领地。</string>
+	<string>《末日之主》需要获取您的位置来显示您在末日世界中的坐标，帮助您探索和圈定领地。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

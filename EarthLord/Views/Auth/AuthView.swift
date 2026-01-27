@@ -135,7 +135,7 @@ struct AuthView: View {
                 .shadow(color: ApocalypseTheme.primary.opacity(0.5), radius: 20)
 
             // 标题
-            Text("地球新主")
+            Text("末日之主")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
@@ -426,9 +426,16 @@ struct AuthView: View {
         VStack(spacing: 12) {
             // Apple 登录按钮
             Button {
-                // 收起键盘
+                // 先收起键盘
                 hideKeyboard()
-                showToastMessage("Apple 登录即将开放")
+                print("🍎 Apple 登录按钮被点击")
+                Task {
+                    // 等待键盘完全收起（300ms）
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    print("🍎 开始执行 Apple 登录")
+                    await authManager.signInWithApple()
+                    print("🍎 Apple 登录完成")
+                }
             } label: {
                 HStack {
                     Image(systemName: "apple.logo")

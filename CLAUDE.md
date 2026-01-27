@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-EarthLord (地球新主) is a pure SwiftUI iOS application with an apocalypse-themed UI. The app uses MVVM architecture with TabView navigation.
+EarthLord (末日之主) is a pure SwiftUI iOS application with an apocalypse-themed UI. The app uses MVVM architecture with TabView navigation.
 
 ## Build and Run
 
@@ -51,6 +51,7 @@ EarthLord/
 ## Theme Colors (ApocalypseTheme)
 
 All UI colors are defined in `Theme/ApocalypseTheme.swift`:
+
 - `background` - Near black (#141416)
 - `primary` - Orange (#FF6619)
 - `textPrimary` - White

@@ -87,7 +87,7 @@ struct CommunicationTabView: View {
             }
         }
         .onAppear {
-            if let userId = authManager.currentUser?.id {
+            if authManager.currentUser?.id != nil {
                 Task {
                     await communicationManager.ensureDevicesInitialized()
                 }

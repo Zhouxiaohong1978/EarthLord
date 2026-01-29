@@ -34,6 +34,17 @@ final class CommunicationManager: ObservableObject {
     /// 错误信息
     @Published var errorMessage: String?
 
+    // MARK: - Channel Properties
+
+    /// 所有活跃频道列表
+    @Published var channels: [CommunicationChannel] = []
+
+    /// 用户订阅的频道（含订阅信息）
+    @Published var subscribedChannels: [SubscribedChannel] = []
+
+    /// 用户的订阅列表
+    @Published var mySubscriptions: [ChannelSubscription] = []
+
     // MARK: - Private Properties
 
     /// Supabase 客户端
@@ -326,8 +337,239 @@ final class CommunicationManager: ObservableObject {
     func reset() {
         devices = []
         currentDevice = nil
+        channels = []
+        subscribedChannels = []
+        mySubscriptions = []
         isLoading = false
         errorMessage = nil
         logger.log("CommunicationManager 已重置", type: .info)
+    }
+
+    // MARK: - Channel Methods
+
+    /// 加载所有活跃频道
+    /// - Returns: 频道列表
+    @discardableResult
+    func loadPublicChannels() async throws -> [CommunicationChannel] {
+        logger.log("加载公共频道...", type: .info)
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let response: [CommunicationChannel] = try await supabase
+                .from("communication_channels")
+                .select()
+                .eq("is_active", value: true)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            self.channels = response
+            logger.log("成功加载 \(response.count) 个公共频道", type: .success)
+            return response
+
+        } catch {
+            logger.logError("加载公共频道失败", error: error)
+            throw CommunicationError.loadFailed(error.localizedDescription)
+        }
+    }
+
+    /// 加载用户订阅的频道
+    /// - Parameter userId: 用户ID
+    /// - Returns: 订阅的频道列表
+    @discardableResult
+    func loadSubscribedChannels(userId: UUID) async throws -> [SubscribedChannel] {
+        logger.log("加载订阅频道...", type: .info)
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let response: [ChannelWithSubscription] = try await supabase
+                .from("communication_channels")
+                .select("*, channel_subscriptions!inner(*)")
+                .eq("channel_subscriptions.user_id", value: userId.uuidString)
+                .eq("is_active", value: true)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            let subscribedList = response.compactMap { $0.toSubscribedChannel() }
+            self.subscribedChannels = subscribedList
+            self.mySubscriptions = subscribedList.map { $0.subscription }
+
+            logger.log("成功加载 \(subscribedList.count) 个订阅频道", type: .success)
+            return subscribedList
+
+        } catch {
+            logger.logError("加载订阅频道失败", error: error)
+            throw CommunicationError.loadFailed(error.localizedDescription)
+        }
+    }
+
+    /// 创建频道
+    /// - Parameters:
+    ///   - creatorId: 创建者ID
+    ///   - channelType: 频道类型
+    ///   - name: 频道名称
+    ///   - description: 频道描述（可选）
+    /// - Returns: 新创建的频道ID
+    @discardableResult
+    func createChannel(
+        creatorId: UUID,
+        channelType: ChannelType,
+        name: String,
+        description: String? = nil
+    ) async throws -> UUID {
+        logger.log("创建频道: \(name)", type: .info)
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let params: [String: AnyJSON] = [
+                "p_creator_id": .string(creatorId.uuidString),
+                "p_channel_type": .string(channelType.rawValue),
+                "p_name": .string(name),
+                "p_description": description != nil ? .string(description!) : .null
+            ]
+
+            let channelIdString: String = try await supabase
+                .rpc("create_channel_with_subscription", params: params)
+                .execute()
+                .value
+
+            guard let channelId = UUID(uuidString: channelIdString) else {
+                throw CommunicationError.saveFailed("无效的频道ID")
+            }
+
+            // 刷新频道列表
+            _ = try? await loadPublicChannels()
+            _ = try? await loadSubscribedChannels(userId: creatorId)
+
+            logger.log("成功创建频道: \(channelId)", type: .success)
+            return channelId
+
+        } catch {
+            logger.logError("创建频道失败", error: error)
+            throw CommunicationError.saveFailed(error.localizedDescription)
+        }
+    }
+
+    /// 订阅频道
+    /// - Parameters:
+    ///   - userId: 用户ID
+    ///   - channelId: 频道ID
+    func subscribeToChannel(userId: UUID, channelId: UUID) async throws {
+        logger.log("订阅频道: \(channelId)", type: .info)
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            try await supabase
+                .from("channel_subscriptions")
+                .insert([
+                    "user_id": userId.uuidString,
+                    "channel_id": channelId.uuidString
+                ])
+                .execute()
+
+            // 刷新订阅列表
+            _ = try? await loadSubscribedChannels(userId: userId)
+            _ = try? await loadPublicChannels()
+
+            logger.log("成功订阅频道", type: .success)
+
+        } catch {
+            logger.logError("订阅频道失败", error: error)
+            throw CommunicationError.saveFailed(error.localizedDescription)
+        }
+    }
+
+    /// 取消订阅频道
+    /// - Parameters:
+    ///   - userId: 用户ID
+    ///   - channelId: 频道ID
+    func unsubscribeFromChannel(userId: UUID, channelId: UUID) async throws {
+        logger.log("取消订阅频道: \(channelId)", type: .info)
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            try await supabase
+                .from("channel_subscriptions")
+                .delete()
+                .eq("user_id", value: userId.uuidString)
+                .eq("channel_id", value: channelId.uuidString)
+                .execute()
+
+            // 更新本地状态
+            subscribedChannels.removeAll { $0.channel.id == channelId }
+            mySubscriptions.removeAll { $0.channelId == channelId }
+
+            // 刷新频道列表以更新成员数
+            _ = try? await loadPublicChannels()
+
+            logger.log("成功取消订阅频道", type: .success)
+
+        } catch {
+            logger.logError("取消订阅频道失败", error: error)
+            throw CommunicationError.saveFailed(error.localizedDescription)
+        }
+    }
+
+    /// 删除频道
+    /// - Parameter channelId: 频道ID
+    func deleteChannel(channelId: UUID) async throws {
+        logger.log("删除频道: \(channelId)", type: .info)
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            try await supabase
+                .from("communication_channels")
+                .delete()
+                .eq("id", value: channelId.uuidString)
+                .execute()
+
+            // 更新本地状态
+            channels.removeAll { $0.id == channelId }
+            subscribedChannels.removeAll { $0.channel.id == channelId }
+            mySubscriptions.removeAll { $0.channelId == channelId }
+
+            logger.log("成功删除频道", type: .success)
+
+        } catch {
+            logger.logError("删除频道失败", error: error)
+            throw CommunicationError.saveFailed(error.localizedDescription)
+        }
+    }
+
+    /// 检查是否已订阅指定频道
+    /// - Parameter channelId: 频道ID
+    /// - Returns: 是否已订阅
+    func isSubscribed(channelId: UUID) -> Bool {
+        return mySubscriptions.contains { $0.channelId == channelId }
+    }
+
+    /// 获取指定频道
+    /// - Parameter channelId: 频道ID
+    /// - Returns: 频道（如果存在）
+    func getChannel(_ channelId: UUID) -> CommunicationChannel? {
+        return channels.first { $0.id == channelId }
+    }
+
+    /// 刷新频道数据
+    func refreshChannels() async {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            errorMessage = "用户未登录"
+            return
+        }
+
+        do {
+            _ = try await loadPublicChannels()
+            _ = try await loadSubscribedChannels(userId: userId)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }

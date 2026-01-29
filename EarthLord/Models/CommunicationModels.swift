@@ -360,3 +360,368 @@ enum CommunicationError: LocalizedError {
         }
     }
 }
+
+// MARK: - ChannelType 频道类型
+
+/// 频道类型枚举
+enum ChannelType: String, Codable, CaseIterable, Identifiable {
+    case official = "official"      // 官方频道
+    case `public` = "public"        // 公共频道
+    case walkie = "walkie"          // 对讲频道
+    case camp = "camp"              // 营地频道
+    case satellite = "satellite"    // 卫星频道
+
+    var id: String { rawValue }
+
+    /// 本地化显示名称
+    var displayName: String {
+        switch self {
+        case .official:
+            return String(localized: "官方频道")
+        case .public:
+            return String(localized: "公共频道")
+        case .walkie:
+            return String(localized: "对讲频道")
+        case .camp:
+            return String(localized: "营地频道")
+        case .satellite:
+            return String(localized: "卫星频道")
+        }
+    }
+
+    /// 频道图标
+    var icon: String {
+        switch self {
+        case .official:
+            return "megaphone.fill"
+        case .public:
+            return "antenna.radiowaves.left.and.right"
+        case .walkie:
+            return "walkie.talkie.fill"
+        case .camp:
+            return "tent.fill"
+        case .satellite:
+            return "globe"
+        }
+    }
+
+    /// 频道颜色
+    var color: Color {
+        switch self {
+        case .official:
+            return ApocalypseTheme.primary
+        case .public:
+            return ApocalypseTheme.success
+        case .walkie:
+            return ApocalypseTheme.warning
+        case .camp:
+            return ApocalypseTheme.info
+        case .satellite:
+            return Color.purple
+        }
+    }
+
+    /// 频道描述
+    var description: String {
+        switch self {
+        case .official:
+            return String(localized: "官方发布的重要信息")
+        case .public:
+            return String(localized: "所有人可见的公共频道")
+        case .walkie:
+            return String(localized: "短距离实时通讯")
+        case .camp:
+            return String(localized: "营地内部通讯")
+        case .satellite:
+            return String(localized: "全球范围通讯")
+        }
+    }
+
+    /// 用户可创建的频道类型（排除官方）
+    static var creatableTypes: [ChannelType] {
+        return [.public, .walkie, .camp, .satellite]
+    }
+}
+
+// MARK: - CommunicationChannel 频道模型
+
+/// 通讯频道模型
+struct CommunicationChannel: Codable, Identifiable {
+    let id: UUID
+    let creatorId: UUID
+    let channelType: ChannelType
+    let channelCode: String
+    let name: String
+    let description: String?
+    let isActive: Bool
+    let memberCount: Int
+    let createdAt: Date
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case creatorId = "creator_id"
+        case channelType = "channel_type"
+        case channelCode = "channel_code"
+        case name
+        case description
+        case isActive = "is_active"
+        case memberCount = "member_count"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        creatorId = try container.decode(UUID.self, forKey: .creatorId)
+
+        let typeString = try container.decode(String.self, forKey: .channelType)
+        channelType = ChannelType(rawValue: typeString) ?? .public
+
+        channelCode = try container.decode(String.self, forKey: .channelCode)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
+        memberCount = try container.decodeIfPresent(Int.self, forKey: .memberCount) ?? 0
+
+        // 解析日期
+        if let createdString = try? container.decode(String.self, forKey: .createdAt) {
+            createdAt = ISO8601DateFormatter().date(from: createdString) ?? Date()
+        } else {
+            createdAt = Date()
+        }
+
+        if let updatedString = try? container.decode(String.self, forKey: .updatedAt) {
+            updatedAt = ISO8601DateFormatter().date(from: updatedString) ?? Date()
+        } else {
+            updatedAt = Date()
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(creatorId, forKey: .creatorId)
+        try container.encode(channelType.rawValue, forKey: .channelType)
+        try container.encode(channelCode, forKey: .channelCode)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encode(isActive, forKey: .isActive)
+        try container.encode(memberCount, forKey: .memberCount)
+        try container.encode(ISO8601DateFormatter().string(from: createdAt), forKey: .createdAt)
+        try container.encode(ISO8601DateFormatter().string(from: updatedAt), forKey: .updatedAt)
+    }
+}
+
+// MARK: - ChannelSubscription 订阅模型
+
+/// 频道订阅模型
+struct ChannelSubscription: Codable, Identifiable {
+    let id: UUID
+    let userId: UUID
+    let channelId: UUID
+    let isMuted: Bool
+    let joinedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case channelId = "channel_id"
+        case isMuted = "is_muted"
+        case joinedAt = "joined_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        userId = try container.decode(UUID.self, forKey: .userId)
+        channelId = try container.decode(UUID.self, forKey: .channelId)
+        isMuted = try container.decodeIfPresent(Bool.self, forKey: .isMuted) ?? false
+
+        if let joinedString = try? container.decode(String.self, forKey: .joinedAt) {
+            joinedAt = ISO8601DateFormatter().date(from: joinedString) ?? Date()
+        } else {
+            joinedAt = Date()
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(userId, forKey: .userId)
+        try container.encode(channelId, forKey: .channelId)
+        try container.encode(isMuted, forKey: .isMuted)
+        try container.encode(ISO8601DateFormatter().string(from: joinedAt), forKey: .joinedAt)
+    }
+}
+
+// MARK: - SubscribedChannel 组合模型
+
+/// 已订阅频道组合模型（频道+订阅信息）
+struct SubscribedChannel: Identifiable {
+    let channel: CommunicationChannel
+    let subscription: ChannelSubscription
+
+    var id: UUID { channel.id }
+}
+
+// MARK: - ChannelWithSubscription 数据库联合查询模型
+
+/// 用于从数据库联合查询的模型
+struct ChannelWithSubscription: Codable {
+    let id: UUID
+    let creatorId: UUID
+    let channelType: String
+    let channelCode: String
+    let name: String
+    let description: String?
+    let isActive: Bool
+    let memberCount: Int
+    let createdAt: String
+    let updatedAt: String
+    let subscriptions: [SubscriptionData]?
+
+    struct SubscriptionData: Codable {
+        let id: UUID
+        let userId: UUID
+        let isMuted: Bool
+        let joinedAt: String
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case userId = "user_id"
+            case isMuted = "is_muted"
+            case joinedAt = "joined_at"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case creatorId = "creator_id"
+        case channelType = "channel_type"
+        case channelCode = "channel_code"
+        case name
+        case description
+        case isActive = "is_active"
+        case memberCount = "member_count"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case subscriptions = "channel_subscriptions"
+    }
+
+    /// 转换为 SubscribedChannel
+    func toSubscribedChannel() -> SubscribedChannel? {
+        guard let subData = subscriptions?.first else { return nil }
+
+        let formatter = ISO8601DateFormatter()
+
+        let channel = CommunicationChannelData(
+            id: id,
+            creatorId: creatorId,
+            channelType: ChannelType(rawValue: channelType) ?? .public,
+            channelCode: channelCode,
+            name: name,
+            description: description,
+            isActive: isActive,
+            memberCount: memberCount,
+            createdAt: formatter.date(from: createdAt) ?? Date(),
+            updatedAt: formatter.date(from: updatedAt) ?? Date()
+        )
+
+        let subscription = ChannelSubscriptionData(
+            id: subData.id,
+            userId: subData.userId,
+            channelId: id,
+            isMuted: subData.isMuted,
+            joinedAt: formatter.date(from: subData.joinedAt) ?? Date()
+        )
+
+        return SubscribedChannel(channel: channel.toCommunicationChannel(), subscription: subscription.toChannelSubscription())
+    }
+}
+
+// MARK: - Helper Structs for Conversion
+
+/// 频道数据辅助结构
+private struct CommunicationChannelData {
+    let id: UUID
+    let creatorId: UUID
+    let channelType: ChannelType
+    let channelCode: String
+    let name: String
+    let description: String?
+    let isActive: Bool
+    let memberCount: Int
+    let createdAt: Date
+    let updatedAt: Date
+
+    func toCommunicationChannel() -> CommunicationChannel {
+        let jsonData = try! JSONEncoder().encode(self)
+        return try! JSONDecoder().decode(CommunicationChannel.self, from: jsonData)
+    }
+}
+
+extension CommunicationChannelData: Codable {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case creatorId = "creator_id"
+        case channelType = "channel_type"
+        case channelCode = "channel_code"
+        case name
+        case description
+        case isActive = "is_active"
+        case memberCount = "member_count"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(creatorId, forKey: .creatorId)
+        try container.encode(channelType.rawValue, forKey: .channelType)
+        try container.encode(channelCode, forKey: .channelCode)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encode(isActive, forKey: .isActive)
+        try container.encode(memberCount, forKey: .memberCount)
+        try container.encode(ISO8601DateFormatter().string(from: createdAt), forKey: .createdAt)
+        try container.encode(ISO8601DateFormatter().string(from: updatedAt), forKey: .updatedAt)
+    }
+}
+
+/// 订阅数据辅助结构
+private struct ChannelSubscriptionData {
+    let id: UUID
+    let userId: UUID
+    let channelId: UUID
+    let isMuted: Bool
+    let joinedAt: Date
+
+    func toChannelSubscription() -> ChannelSubscription {
+        let jsonData = try! JSONEncoder().encode(self)
+        return try! JSONDecoder().decode(ChannelSubscription.self, from: jsonData)
+    }
+}
+
+extension ChannelSubscriptionData: Codable {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case channelId = "channel_id"
+        case isMuted = "is_muted"
+        case joinedAt = "joined_at"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(userId, forKey: .userId)
+        try container.encode(channelId, forKey: .channelId)
+        try container.encode(isMuted, forKey: .isMuted)
+        try container.encode(ISO8601DateFormatter().string(from: joinedAt), forKey: .joinedAt)
+    }
+}

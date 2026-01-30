@@ -18,6 +18,7 @@ struct ChannelDetailView: View {
     @State private var showDeleteConfirm = false
     @State private var isProcessing = false
     @State private var errorMessage: String?
+    @State private var showChatView = false
 
     private var isCreator: Bool {
         authManager.currentUser?.id == channel.creatorId
@@ -28,9 +29,23 @@ struct ChannelDetailView: View {
     }
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            ApocalypseTheme.background.ignoresSafeArea()
+
             ScrollView {
                 VStack(spacing: 24) {
+                    // 关闭按钮
+                    HStack {
+                        Spacer()
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(ApocalypseTheme.textSecondary)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+
                     // 频道头部
                     channelHeader
 
@@ -52,24 +67,30 @@ struct ChannelDetailView: View {
                 }
                 .padding()
             }
-            .background(ApocalypseTheme.background)
-            .navigationTitle("频道详情")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(ApocalypseTheme.textSecondary)
-                    }
-                }
+        }
+        .alert("确认删除", isPresented: $showDeleteConfirm) {
+            Button("取消", role: .cancel) { }
+            Button("删除", role: .destructive) {
+                deleteChannel()
             }
-            .alert("确认删除", isPresented: $showDeleteConfirm) {
-                Button("取消", role: .cancel) { }
-                Button("删除", role: .destructive) {
-                    deleteChannel()
-                }
-            } message: {
-                Text("确定要删除频道「\(channel.name)」吗？此操作不可撤销。")
+        } message: {
+            Text("确定要删除频道「\(channel.name)」吗？此操作不可撤销。")
+        }
+        .fullScreenCover(isPresented: $showChatView) {
+            NavigationStack {
+                ChannelChatView(channel: channel)
+                    .environmentObject(authManager)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button(action: { showChatView = false }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "chevron.left")
+                                    Text("返回")
+                                }
+                                .foregroundColor(ApocalypseTheme.primary)
+                            }
+                        }
+                    }
             }
         }
         .preferredColorScheme(.dark)
@@ -239,7 +260,7 @@ struct ChannelDetailView: View {
     }
 
     private var enterChatButton: some View {
-        NavigationLink(destination: ChannelChatView(channel: channel).environmentObject(authManager)) {
+        Button(action: { showChatView = true }) {
             HStack {
                 Image(systemName: "bubble.left.and.bubble.right.fill")
                 Text("进入聊天")

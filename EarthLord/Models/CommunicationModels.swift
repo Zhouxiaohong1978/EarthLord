@@ -66,7 +66,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
     var range: Double {
         switch self {
         case .radio:
-            return 50.0       // 收音机只能接收，范围较大
+            return Double.infinity  // 收音机无限制接收
         case .walkieTalkie:
             return 5.0        // 对讲机短距离
         case .campRadio:
@@ -135,7 +135,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
     var rangeText: String {
         switch self {
         case .radio:
-            return "50km (仅接收)"
+            return "无限制 (仅接收)"
         case .walkieTalkie:
             return "5km"
         case .campRadio:

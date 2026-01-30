@@ -19,7 +19,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2B5C55CB2EFACCA5008CAE02 /* EarthLord */ = {isa = PBXFileSystemSynchronizedRootGroup; path = EarthLord; sourceTree = "<group>"; };
+		2B5C55CB2EFACCA5008CAE02 /* EarthLord */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = EarthLord;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -275,7 +279,7 @@
 				CODE_SIGN_ENTITLEMENTS = EarthLord/EarthLord.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = PW83W8JG6H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -319,7 +323,7 @@
 				CODE_SIGN_ENTITLEMENTS = EarthLord/EarthLord.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = PW83W8JG6H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;

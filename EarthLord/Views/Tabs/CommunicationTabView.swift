@@ -74,16 +74,19 @@ struct CommunicationTabView: View {
                 .background(ApocalypseTheme.cardBackground)
 
                 // 内容区域
-                switch selectedSection {
-                case .messages:
-                    MessageCenterView()
-                case .channels:
-                    ChannelCenterView()
-                case .call:
-                    PTTCallView()
-                case .devices:
-                    DeviceManagementView()
+                NavigationStack {
+                    switch selectedSection {
+                    case .messages:
+                        MessageCenterView()
+                    case .channels:
+                        ChannelCenterView()
+                    case .call:
+                        PTTCallView()
+                    case .devices:
+                        DeviceManagementView()
+                    }
                 }
+                .tint(ApocalypseTheme.primary)
             }
         }
         .onAppear {

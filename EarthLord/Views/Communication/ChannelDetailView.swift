@@ -221,6 +221,11 @@ struct ChannelDetailView: View {
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
+            // 进入聊天按钮（已订阅时显示）
+            if isSubscribed {
+                enterChatButton
+            }
+
             // 订阅/取消订阅按钮
             if !isCreator {
                 subscribeButton
@@ -230,6 +235,21 @@ struct ChannelDetailView: View {
             if isCreator {
                 deleteButton
             }
+        }
+    }
+
+    private var enterChatButton: some View {
+        NavigationLink(destination: ChannelChatView(channel: channel).environmentObject(authManager)) {
+            HStack {
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                Text("进入聊天")
+            }
+            .font(.headline)
+            .foregroundColor(ApocalypseTheme.textPrimary)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(ApocalypseTheme.primary)
+            .cornerRadius(12)
         }
     }
 

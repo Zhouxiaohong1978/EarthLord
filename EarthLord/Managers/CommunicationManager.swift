@@ -7,6 +7,7 @@
 
 import Foundation
 import Supabase
+import Realtime
 import Combine
 
 // MARK: - CommunicationManager
@@ -44,6 +45,25 @@ final class CommunicationManager: ObservableObject {
 
     /// 用户的订阅列表
     @Published var mySubscriptions: [ChannelSubscription] = []
+
+    // MARK: - Message Properties
+
+    /// 频道消息缓存（channelId -> messages）
+    @Published var channelMessages: [UUID: [ChannelMessage]] = [:]
+
+    /// 是否正在发送消息
+    @Published var isSendingMessage: Bool = false
+
+    // MARK: - Realtime Properties
+
+    /// Realtime 频道
+    private var realtimeChannel: RealtimeChannelV2?
+
+    /// 消息订阅任务
+    private var messageSubscriptionTask: Task<Void, Never>?
+
+    /// 已订阅消息推送的频道ID集合
+    @Published var subscribedChannelIds: Set<UUID> = []
 
     // MARK: - Private Properties
 
@@ -340,6 +360,10 @@ final class CommunicationManager: ObservableObject {
         channels = []
         subscribedChannels = []
         mySubscriptions = []
+        channelMessages = [:]
+        isSendingMessage = false
+        subscribedChannelIds = []
+        stopRealtimeSubscription()
         isLoading = false
         errorMessage = nil
         logger.log("CommunicationManager 已重置", type: .info)
@@ -570,6 +594,190 @@ final class CommunicationManager: ObservableObject {
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Message Methods
+
+    /// 加载频道历史消息
+    /// - Parameter channelId: 频道ID
+    /// - Returns: 消息列表
+    @discardableResult
+    func loadChannelMessages(channelId: UUID) async throws -> [ChannelMessage] {
+        logger.log("加载频道消息: \(channelId)", type: .info)
+
+        do {
+            let response: [ChannelMessage] = try await supabase
+                .from("channel_messages")
+                .select()
+                .eq("channel_id", value: channelId.uuidString)
+                .order("created_at", ascending: true)
+                .limit(100)
+                .execute()
+                .value
+
+            channelMessages[channelId] = response
+            logger.log("成功加载 \(response.count) 条消息", type: .success)
+            return response
+
+        } catch {
+            logger.logError("加载消息失败", error: error)
+            throw CommunicationError.loadFailed(error.localizedDescription)
+        }
+    }
+
+    /// 发送频道消息
+    /// - Parameters:
+    ///   - channelId: 频道ID
+    ///   - content: 消息内容
+    ///   - latitude: 发送位置纬度（可选）
+    ///   - longitude: 发送位置经度（可选）
+    /// - Returns: 消息ID
+    @discardableResult
+    func sendChannelMessage(
+        channelId: UUID,
+        content: String,
+        latitude: Double? = nil,
+        longitude: Double? = nil
+    ) async throws -> UUID {
+        logger.log("发送消息到频道: \(channelId)", type: .info)
+        isSendingMessage = true
+        defer { isSendingMessage = false }
+
+        // 获取当前设备类型
+        let deviceTypeString = currentDevice?.deviceType.rawValue ?? "unknown"
+
+        do {
+            var params: [String: AnyJSON] = [
+                "p_channel_id": .string(channelId.uuidString),
+                "p_content": .string(content),
+                "p_device_type": .string(deviceTypeString)
+            ]
+
+            if let lat = latitude, let lon = longitude {
+                params["p_latitude"] = .double(lat)
+                params["p_longitude"] = .double(lon)
+            }
+
+            let messageIdString: String = try await supabase
+                .rpc("send_channel_message", params: params)
+                .execute()
+                .value
+
+            guard let messageId = UUID(uuidString: messageIdString) else {
+                throw CommunicationError.saveFailed("无效的消息ID")
+            }
+
+            logger.log("成功发送消息: \(messageId)", type: .success)
+            return messageId
+
+        } catch {
+            logger.logError("发送消息失败", error: error)
+            throw CommunicationError.saveFailed(error.localizedDescription)
+        }
+    }
+
+    /// 获取频道消息列表
+    /// - Parameter channelId: 频道ID
+    /// - Returns: 消息列表
+    func getMessages(for channelId: UUID) -> [ChannelMessage] {
+        return channelMessages[channelId] ?? []
+    }
+
+    // MARK: - Realtime Methods
+
+    /// 启动 Realtime 订阅
+    func startRealtimeSubscription() {
+        guard realtimeChannel == nil else {
+            logger.log("Realtime 已启动", type: .warning)
+            return
+        }
+
+        logger.log("启动 Realtime 订阅...", type: .info)
+
+        let channel = supabase.realtimeV2.channel("channel_messages")
+
+        messageSubscriptionTask = Task { [weak self] in
+            let insertions = channel.postgresChange(
+                InsertAction.self,
+                schema: "public",
+                table: "channel_messages"
+            )
+
+            try? await channel.subscribeWithError()
+
+            for await insertion in insertions {
+                await self?.handleNewMessage(insertion: insertion)
+            }
+        }
+
+        realtimeChannel = channel
+        logger.log("Realtime 订阅已启动", type: .success)
+    }
+
+    /// 停止 Realtime 订阅
+    func stopRealtimeSubscription() {
+        messageSubscriptionTask?.cancel()
+        messageSubscriptionTask = nil
+
+        if let channel = realtimeChannel {
+            Task {
+                await supabase.realtimeV2.removeChannel(channel)
+            }
+        }
+        realtimeChannel = nil
+        logger.log("Realtime 订阅已停止", type: .info)
+    }
+
+    /// 处理新消息
+    private func handleNewMessage(insertion: InsertAction) async {
+        do {
+            let decoder = JSONDecoder()
+            let message = try insertion.decodeRecord(as: ChannelMessage.self, decoder: decoder)
+
+            // 检查是否是已订阅的频道
+            guard subscribedChannelIds.contains(message.channelId) else {
+                return
+            }
+
+            // 添加到本地缓存
+            if channelMessages[message.channelId] != nil {
+                // 检查是否已存在（防止重复）
+                if !channelMessages[message.channelId]!.contains(where: { $0.messageId == message.messageId }) {
+                    channelMessages[message.channelId]?.append(message)
+                    logger.log("收到新消息: \(message.messageId)", type: .info)
+                }
+            } else {
+                channelMessages[message.channelId] = [message]
+            }
+
+        } catch {
+            logger.logError("解析新消息失败", error: error)
+        }
+    }
+
+    /// 订阅频道消息推送
+    /// - Parameter channelId: 频道ID
+    func subscribeToChannelMessages(channelId: UUID) {
+        subscribedChannelIds.insert(channelId)
+
+        // 确保 Realtime 已启动
+        if realtimeChannel == nil {
+            startRealtimeSubscription()
+        }
+
+        logger.log("已订阅频道消息: \(channelId)", type: .info)
+    }
+
+    /// 取消订阅频道消息推送
+    /// - Parameter channelId: 频道ID
+    func unsubscribeFromChannelMessages(channelId: UUID) {
+        subscribedChannelIds.remove(channelId)
+        logger.log("已取消订阅频道消息: \(channelId)", type: .info)
+
+        // 如果没有任何订阅，停止 Realtime
+        if subscribedChannelIds.isEmpty {
+            stopRealtimeSubscription()
         }
     }
 }

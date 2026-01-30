@@ -122,10 +122,15 @@ struct ChannelCenterView: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(communicationManager.subscribedChannels) { subscribedChannel in
-                        ChannelRowView(channel: subscribedChannel.channel, isSubscribed: true)
-                            .onTapGesture {
-                                selectedChannel = subscribedChannel.channel
+                        NavigationLink(destination: ChannelChatView(channel: subscribedChannel.channel).environmentObject(authManager)) {
+                            ChannelRowView(channel: subscribedChannel.channel, isSubscribed: true)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .contextMenu {
+                            Button(action: { selectedChannel = subscribedChannel.channel }) {
+                                Label("频道详情", systemImage: "info.circle")
                             }
+                        }
                     }
                 }
                 .padding()

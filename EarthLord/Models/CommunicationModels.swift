@@ -725,3 +725,146 @@ extension ChannelSubscriptionData: Codable {
         try container.encode(ISO8601DateFormatter().string(from: joinedAt), forKey: .joinedAt)
     }
 }
+
+// MARK: - LocationPoint 位置点模型
+
+/// 位置点模型（用于消息位置）
+struct LocationPoint: Codable, Equatable {
+    let latitude: Double
+    let longitude: Double
+
+    /// 从 PostGIS WKT 格式解析：POINT(经度 纬度)
+    static func fromPostGIS(_ wkt: String) -> LocationPoint? {
+        let pattern = #"POINT\(([0-9.-]+)\s+([0-9.-]+)\)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: wkt, range: NSRange(wkt.startIndex..., in: wkt)),
+              let lonRange = Range(match.range(at: 1), in: wkt),
+              let latRange = Range(match.range(at: 2), in: wkt),
+              let longitude = Double(wkt[lonRange]),
+              let latitude = Double(wkt[latRange]) else {
+            return nil
+        }
+        return LocationPoint(latitude: latitude, longitude: longitude)
+    }
+}
+
+// MARK: - MessageMetadata 消息元数据
+
+/// 消息元数据
+struct MessageMetadata: Codable, Equatable {
+    let deviceType: String?
+
+    enum CodingKeys: String, CodingKey {
+        case deviceType = "device_type"
+    }
+}
+
+// MARK: - ChannelMessage 频道消息模型
+
+/// 频道消息模型
+struct ChannelMessage: Codable, Identifiable, Equatable {
+    let messageId: UUID
+    let channelId: UUID
+    let senderId: UUID?
+    let senderCallsign: String?
+    let content: String
+    let senderLocation: LocationPoint?
+    let metadata: MessageMetadata?
+    let createdAt: Date
+
+    var id: UUID { messageId }
+
+    enum CodingKeys: String, CodingKey {
+        case messageId = "message_id"
+        case channelId = "channel_id"
+        case senderId = "sender_id"
+        case senderCallsign = "sender_callsign"
+        case content
+        case senderLocation = "sender_location"
+        case metadata
+        case createdAt = "created_at"
+    }
+
+    /// 自定义解码（处理 PostGIS POINT 和日期格式）
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        messageId = try container.decode(UUID.self, forKey: .messageId)
+        channelId = try container.decode(UUID.self, forKey: .channelId)
+        senderId = try container.decodeIfPresent(UUID.self, forKey: .senderId)
+        senderCallsign = try container.decodeIfPresent(String.self, forKey: .senderCallsign)
+        content = try container.decode(String.self, forKey: .content)
+
+        // 解析 PostGIS 位置
+        if let locationString = try container.decodeIfPresent(String.self, forKey: .senderLocation) {
+            senderLocation = LocationPoint.fromPostGIS(locationString)
+        } else {
+            senderLocation = nil
+        }
+
+        metadata = try container.decodeIfPresent(MessageMetadata.self, forKey: .metadata)
+
+        // 多格式日期解析
+        if let dateString = try? container.decode(String.self, forKey: .createdAt) {
+            createdAt = ChannelMessage.parseDate(dateString) ?? Date()
+        } else {
+            createdAt = Date()
+        }
+    }
+
+    /// 多格式日期解析
+    private static func parseDate(_ string: String) -> Date? {
+        let formatters: [ISO8601DateFormatter] = {
+            let f1 = ISO8601DateFormatter()
+            f1.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+            let f2 = ISO8601DateFormatter()
+            f2.formatOptions = [.withInternetDateTime]
+
+            return [f1, f2]
+        }()
+
+        for formatter in formatters {
+            if let date = formatter.date(from: string) {
+                return date
+            }
+        }
+        return nil
+    }
+
+    /// 时间间隔描述
+    var timeAgo: String {
+        let now = Date()
+        let interval = now.timeIntervalSince(createdAt)
+
+        if interval < 60 {
+            return "刚刚"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "\(minutes)分钟前"
+        } else if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "\(hours)小时前"
+        } else {
+            let days = Int(interval / 86400)
+            return "\(days)天前"
+        }
+    }
+
+    /// 设备类型
+    var deviceType: String? {
+        metadata?.deviceType
+    }
+
+    /// 用于编码（发送时不需要完整编码）
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(messageId, forKey: .messageId)
+        try container.encode(channelId, forKey: .channelId)
+        try container.encodeIfPresent(senderId, forKey: .senderId)
+        try container.encodeIfPresent(senderCallsign, forKey: .senderCallsign)
+        try container.encode(content, forKey: .content)
+        try container.encodeIfPresent(metadata, forKey: .metadata)
+        try container.encode(ISO8601DateFormatter().string(from: createdAt), forKey: .createdAt)
+    }
+}

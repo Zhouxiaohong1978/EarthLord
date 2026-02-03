@@ -109,6 +109,11 @@ final class LocationManager: NSObject, ObservableObject {
     /// 速度暂停阈值（km/h）
     private let speedPauseThreshold: Double = 30.0
 
+    #if DEBUG
+    /// 调试模式：通过环境变量 DEBUG_LAT/DEBUG_LON 覆盖位置，便于测试距离过滤
+    private var isDebugLocationMode = false
+    #endif
+
     // MARK: - Computed Properties
 
     /// 是否已授权定位
@@ -149,6 +154,18 @@ final class LocationManager: NSObject, ObservableObject {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest  // 最高精度
         locationManager.distanceFilter = 5  // 移动5米就更新（追踪时需要更频繁）
+
+        #if DEBUG
+        // 测试用：自动给 Simulator 和实机分配不同坐标（相距 3.6km），用于距离过滤测试
+        isDebugLocationMode = true
+        #if targetEnvironment(simulator)
+        userLocation = CLLocationCoordinate2D(latitude: 31.2624, longitude: 121.4737)
+        print("🔧 [LocationManager] DEBUG 模式 (Simulator)：位置覆盖为 (31.2624, 121.4737)")
+        #else
+        userLocation = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
+        print("🔧 [LocationManager] DEBUG 模式 (实机)：位置覆盖为 (31.2304, 121.4737)")
+        #endif
+        #endif
     }
 
     // MARK: - Public Methods
@@ -810,6 +827,10 @@ extension LocationManager: CLLocationManagerDelegate {
     /// 位置更新回调
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         Task { @MainActor in
+            #if DEBUG
+            if isDebugLocationMode { return }
+            #endif
+
             guard let location = locations.last else { return }
 
             // 更新用户位置

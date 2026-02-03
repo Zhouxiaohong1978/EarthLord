@@ -9,6 +9,7 @@ import Foundation
 import Supabase
 import Realtime
 import Combine
+import CoreLocation
 
 // MARK: - CommunicationManager
 
@@ -20,6 +21,11 @@ final class CommunicationManager: ObservableObject {
 
     /// 全局单例
     static let shared = CommunicationManager()
+
+    // MARK: - Constants
+
+    /// 官方频道固定 UUID（Day 36）
+    static let officialChannelId = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
     // MARK: - Published Properties
 
@@ -430,6 +436,43 @@ final class CommunicationManager: ObservableObject {
         }
     }
 
+    // MARK: - 官方频道相关（Day 36）
+
+    /// 确保用户订阅了官方频道（强制订阅）
+    /// - Parameter userId: 用户ID
+    func ensureOfficialChannelSubscribed(userId: UUID) async {
+        let officialId = CommunicationManager.officialChannelId
+
+        // 检查是否已订阅
+        if subscribedChannels.contains(where: { $0.channel.id == officialId }) {
+            logger.log("官方频道已订阅", type: .success)
+            return
+        }
+
+        // 强制订阅官方频道
+        do {
+            let params: [String: String] = [
+                "p_user_id": userId.uuidString,
+                "p_channel_id": officialId.uuidString
+            ]
+
+            try await supabase.rpc("subscribe_to_channel", params: params).execute()
+
+            // 刷新订阅列表
+            _ = try await loadSubscribedChannels(userId: userId)
+            logger.log("官方频道已自动订阅", type: .success)
+        } catch {
+            logger.logError("官方频道订阅失败", error: error)
+        }
+    }
+
+    /// 检查是否是官方频道
+    /// - Parameter channelId: 频道ID
+    /// - Returns: 是否为官方频道
+    func isOfficialChannel(_ channelId: UUID) -> Bool {
+        return channelId == CommunicationManager.officialChannelId
+    }
+
     /// 创建频道
     /// - Parameters:
     ///   - creatorId: 创建者ID
@@ -616,9 +659,12 @@ final class CommunicationManager: ObservableObject {
                 .execute()
                 .value
 
-            channelMessages[channelId] = response
-            logger.log("成功加载 \(response.count) 条消息", type: .success)
-            return response
+            // 应用距离过滤（与 Realtime 逻辑一致）
+            let channel = getChannel(channelId)
+            let filtered = response.filter { shouldReceiveMessage($0, channel: channel) }
+            channelMessages[channelId] = filtered
+            logger.log("成功加载消息: 原始 \(response.count) 条, 过滤后 \(filtered.count) 条", type: .success)
+            return filtered
 
         } catch {
             logger.logError("加载消息失败", error: error)
@@ -654,9 +700,13 @@ final class CommunicationManager: ObservableObject {
                 "p_device_type": .string(deviceTypeString)
             ]
 
+            // 🐛 DEBUG: 检查RPC参数
             if let lat = latitude, let lon = longitude {
                 params["p_latitude"] = .double(lat)
                 params["p_longitude"] = .double(lon)
+                print("📍 [RPC] 传入位置参数: p_latitude=\(lat), p_longitude=\(lon)")
+            } else {
+                print("⚠️ [RPC] 位置参数为空: latitude=\(latitude as Any), longitude=\(longitude as Any)")
             }
 
             let messageIdString: String = try await supabase
@@ -682,6 +732,109 @@ final class CommunicationManager: ObservableObject {
     /// - Returns: 消息列表
     func getMessages(for channelId: UUID) -> [ChannelMessage] {
         return channelMessages[channelId] ?? []
+    }
+
+    // MARK: - Distance Filtering (Day 35)
+
+    /// 判断是否应该接收该消息（基于设备类型和距离）
+    /// 只对公共频道应用距离过滤，私有频道不限制
+    func shouldReceiveMessage(_ message: ChannelMessage, channel: CommunicationChannel?) -> Bool {
+        // 0. 私有频道（非 public 类型）不应用距离过滤
+        if let ch = channel, ch.channelType != .public {
+            print("📌 [距离过滤] 非公共频道，跳过过滤")
+            return true
+        }
+
+        // 1. 获取当前用户设备类型
+        guard let myDeviceType = currentDevice?.deviceType else {
+            print("⚠️ [距离过滤] 无法获取当前设备，保守显示消息")
+            return true  // 保守策略
+        }
+
+        // 2. 收音机可以接收所有消息（无限距离）
+        if myDeviceType == .radio {
+            print("📻 [距离过滤] 收音机用户，接收所有消息")
+            return true
+        }
+
+        // 3. 检查发送者设备类型
+        guard let senderDevice = message.senderDeviceType else {
+            print("⚠️ [距离过滤] 消息缺少设备类型，保守显示（向后兼容）")
+            return true  // 向后兼容
+        }
+
+        // 4. 收音机不能发送消息
+        if senderDevice == .radio {
+            print("🚫 [距离过滤] 收音机不能发送消息")
+            return false
+        }
+
+        // 5. 检查发送者位置
+        guard let senderLocation = message.senderLocation else {
+            print("⚠️ [距离过滤] 消息缺少位置信息，保守显示")
+            return true  // 保守策略
+        }
+
+        // 6. 获取当前用户位置
+        guard let myLocation = getCurrentLocation() else {
+            print("⚠️ [距离过滤] 无法获取当前位置，保守显示")
+            return true  // 保守策略
+        }
+
+        // 7. 计算距离（公里）
+        let distance = calculateDistance(
+            from: CLLocationCoordinate2D(latitude: myLocation.latitude, longitude: myLocation.longitude),
+            to: CLLocationCoordinate2D(latitude: senderLocation.latitude, longitude: senderLocation.longitude)
+        )
+
+        // 8. 根据设备矩阵判断（传入本地设备对象以获取含等级加成的范围）
+        guard let myDevice = currentDevice else { return true }
+        let canReceive = canReceiveMessage(senderDevice: senderDevice, myDevice: myDevice, distance: distance)
+
+        if canReceive {
+            print("✅ [距离过滤] 通过: 发送者=\(senderDevice.rawValue), 我=\(myDeviceType.rawValue), 距离=\(String(format: "%.1f", distance))km")
+        } else {
+            print("🚫 [距离过滤] 丢弃: 发送者=\(senderDevice.rawValue), 我=\(myDeviceType.rawValue), 距离=\(String(format: "%.1f", distance))km (超出范围)")
+        }
+
+        return canReceive
+    }
+
+    /// 根据设备类型矩阵判断是否能接收消息
+    /// 有效范围 = max(发送者基础范围, 接收者实际范围)，含 5% 缓冲区
+    private func canReceiveMessage(senderDevice: DeviceType, myDevice: CommunicationDevice, distance: Double) -> Bool {
+        // 收音机接收方：无距离限制
+        if myDevice.deviceType == .radio {
+            return true
+        }
+
+        // 收音机发送方：不能发送
+        if senderDevice == .radio {
+            return false
+        }
+
+        // 取发送者基础范围和接收者实际范围（含等级加成）中的较大值，再加 5% 缓冲
+        let senderRange = senderDevice.range
+        let receiverRange = myDevice.currentRange
+        let effectiveRange = max(senderRange, receiverRange) * 1.05
+
+        return distance <= effectiveRange
+    }
+
+    /// 计算两个坐标之间的距离（公里）
+    private func calculateDistance(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
+        let fromLocation = CLLocation(latitude: from.latitude, longitude: from.longitude)
+        let toLocation = CLLocation(latitude: to.latitude, longitude: to.longitude)
+        return fromLocation.distance(from: toLocation) / 1000.0  // 转换为公里
+    }
+
+    /// 获取当前用户位置
+    private func getCurrentLocation() -> LocationPoint? {
+        guard let coordinate = LocationManager.shared.userLocation else {
+            print("⚠️ [距离过滤] LocationManager 无位置数据")
+            return nil
+        }
+        return LocationPoint(latitude: coordinate.latitude, longitude: coordinate.longitude)
     }
 
     // MARK: - Realtime Methods
@@ -737,6 +890,13 @@ final class CommunicationManager: ObservableObject {
 
             // 检查是否是已订阅的频道
             guard subscribedChannelIds.contains(message.channelId) else {
+                return
+            }
+
+            // Day 35: 距离过滤
+            let channel = getChannel(message.channelId)
+            guard shouldReceiveMessage(message, channel: channel) else {
+                logger.log("[Realtime] 距离过滤丢弃消息", type: .info)
                 return
             }
 

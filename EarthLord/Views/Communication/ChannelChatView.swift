@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Auth
+import CoreLocation
 
 struct ChannelChatView: View {
     let channel: CommunicationChannel
@@ -205,11 +206,25 @@ struct ChannelChatView: View {
         let textToSend = content
         messageText = ""
 
+        // Day 35: 获取真实 GPS 位置
+        let location = LocationManager.shared.userLocation
+        let latitude = location?.latitude
+        let longitude = location?.longitude
+
+        // 🐛 DEBUG: 检查位置数据
+        if let lat = latitude, let lon = longitude {
+            print("📍 [发送消息] 位置数据: (\(lat), \(lon))")
+        } else {
+            print("⚠️ [发送消息] 位置数据缺失: location=\(location as Any), lat=\(latitude as Any), lon=\(longitude as Any)")
+        }
+
         Task {
             do {
                 try await communicationManager.sendChannelMessage(
                     channelId: channel.id,
-                    content: textToSend
+                    content: textToSend,
+                    latitude: latitude,      // Day 35: 传入位置
+                    longitude: longitude     // Day 35: 传入位置
                 )
                 // 重新加载消息以确保同步
                 try await communicationManager.loadChannelMessages(channelId: channel.id)

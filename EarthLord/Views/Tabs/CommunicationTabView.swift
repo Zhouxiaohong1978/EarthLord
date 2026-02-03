@@ -90,9 +90,11 @@ struct CommunicationTabView: View {
             }
         }
         .onAppear {
-            if authManager.currentUser?.id != nil {
+            if let userId = authManager.currentUser?.id {
                 Task {
                     await communicationManager.ensureDevicesInitialized()
+                    // Day 36-A：确保订阅官方频道
+                    await communicationManager.ensureOfficialChannelSubscribed(userId: userId)
                 }
             }
         }

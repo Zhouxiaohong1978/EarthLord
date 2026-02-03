@@ -68,11 +68,11 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .radio:
             return Double.infinity  // 收音机无限制接收
         case .walkieTalkie:
-            return 5.0        // 对讲机短距离
+            return 3.0        // 对讲机短距离
         case .campRadio:
-            return 50.0       // 营地电台中距离
+            return 30.0       // 营地电台中距离
         case .satellite:
-            return Double.infinity  // 卫星电话全球
+            return 100.0      // 卫星电话全球
         }
     }
 
@@ -137,9 +137,9 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .radio:
             return "无限制 (仅接收)"
         case .walkieTalkie:
-            return "5km"
+            return "3km"
         case .campRadio:
-            return "50km"
+            return "30km"
         case .satellite:
             return "全球"
         }
@@ -446,7 +446,7 @@ enum ChannelType: String, Codable, CaseIterable, Identifiable {
 // MARK: - CommunicationChannel 频道模型
 
 /// 通讯频道模型
-struct CommunicationChannel: Codable, Identifiable {
+struct CommunicationChannel: Codable, Identifiable, Hashable {
     let id: UUID
     let creatorId: UUID
     let channelType: ChannelType
@@ -457,6 +457,15 @@ struct CommunicationChannel: Codable, Identifiable {
     let memberCount: Int
     let createdAt: Date
     let updatedAt: Date
+
+    // MARK: - Hashable 实现（基于 id，因为 Date 不是 Hashable）
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: CommunicationChannel, rhs: CommunicationChannel) -> Bool {
+        lhs.id == rhs.id
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -748,14 +757,59 @@ struct LocationPoint: Codable, Equatable {
     }
 }
 
+/// GeoJSON Point 格式（用于解码 Supabase geography 类型）
+private struct GeoJSONPoint: Codable {
+    let type: String
+    let coordinates: [Double]  // [longitude, latitude]
+}
+
+// MARK: - MessageCategory 消息分类（官方频道专用）
+
+/// 消息分类枚举（官方频道使用）
+enum MessageCategory: String, Codable, CaseIterable {
+    case survival = "survival"   // 生存指南
+    case news = "news"           // 游戏资讯
+    case mission = "mission"     // 任务发布
+    case alert = "alert"         // 紧急广播
+
+    var displayName: String {
+        switch self {
+        case .survival: return "生存指南"
+        case .news: return "游戏资讯"
+        case .mission: return "任务发布"
+        case .alert: return "紧急广播"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .survival: return .green
+        case .news: return .blue
+        case .mission: return .orange
+        case .alert: return .red
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .survival: return "leaf.fill"
+        case .news: return "newspaper.fill"
+        case .mission: return "target"
+        case .alert: return "exclamationmark.triangle.fill"
+        }
+    }
+}
+
 // MARK: - MessageMetadata 消息元数据
 
 /// 消息元数据
 struct MessageMetadata: Codable, Equatable {
     let deviceType: String?
+    let category: String?  // 消息分类（官方频道使用）
 
     enum CodingKeys: String, CodingKey {
         case deviceType = "device_type"
+        case category
     }
 }
 
@@ -795,10 +849,25 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         senderCallsign = try container.decodeIfPresent(String.self, forKey: .senderCallsign)
         content = try container.decode(String.self, forKey: .content)
 
-        // 解析 PostGIS 位置
-        if let locationString = try container.decodeIfPresent(String.self, forKey: .senderLocation) {
-            senderLocation = LocationPoint.fromPostGIS(locationString)
+        // 解析 PostGIS 位置（支持 WKT 字符串和 GeoJSON 对象）
+        // 🐛 DEBUG: 打印解码过程
+        if let rawValue = try? container.decode(String.self, forKey: .senderLocation) {
+            print("🐛 [解码] sender_location 字符串: \(rawValue)")
+            senderLocation = LocationPoint.fromPostGIS(rawValue)
+            if senderLocation == nil {
+                print("⚠️ [解码] WKT 解析失败")
+            } else {
+                print("✅ [解码] WKT 解析成功: \(senderLocation!)")
+            }
+        } else if let geoJSON = try? container.decode(GeoJSONPoint.self, forKey: .senderLocation) {
+            print("🐛 [解码] GeoJSON: type=\(geoJSON.type), coords=\(geoJSON.coordinates)")
+            senderLocation = LocationPoint(
+                latitude: geoJSON.coordinates[1],
+                longitude: geoJSON.coordinates[0]
+            )
+            print("✅ [解码] GeoJSON 解析成功: \(senderLocation!)")
         } else {
+            print("⚠️ [解码] sender_location 为空或格式未知")
             senderLocation = nil
         }
 
@@ -854,6 +923,18 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
     /// 设备类型
     var deviceType: String? {
         metadata?.deviceType
+    }
+
+    /// 发送者设备类型（用于距离过滤，Day 35）
+    var senderDeviceType: DeviceType? {
+        guard let deviceTypeString = metadata?.deviceType else { return nil }
+        return DeviceType(rawValue: deviceTypeString)
+    }
+
+    /// 消息分类（官方频道使用，Day 36）
+    var category: MessageCategory? {
+        guard let categoryString = metadata?.category else { return nil }
+        return MessageCategory(rawValue: categoryString)
     }
 
     /// 用于编码（发送时不需要完整编码）

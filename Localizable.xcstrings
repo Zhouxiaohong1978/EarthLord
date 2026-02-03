@@ -93,23 +93,6 @@
         }
       }
     },
-    "%@功能正在开发中，敬请期待！" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ feature is under development, stay tuned!"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@功能正在开发中，敬请期待！"
-          }
-        }
-      }
-    },
     "%d 个" : {
 
     },
@@ -1037,23 +1020,6 @@
     "卖家" : {
 
     },
-    "占领时间" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Occupied Time"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "占领时间"
-          }
-        }
-      }
-    },
     "卫星电话" : {
 
     },
@@ -1338,23 +1304,6 @@
         }
       }
     },
-    "基本信息" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basic Info"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "基本信息"
-          }
-        }
-      }
-    },
     "处理中..." : {
 
     },
@@ -1402,23 +1351,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "安全"
-          }
-        }
-      }
-    },
-    "完成圈地" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Complete Claiming"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成圈地"
           }
         }
       }
@@ -2318,23 +2250,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "放弃物品"
-          }
-        }
-      }
-    },
-    "敬请期待" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coming Soon"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "敬请期待"
           }
         }
       }
@@ -3794,23 +3709,6 @@
     "边界点" : {
 
     },
-    "边界点数" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Boundary Points"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "边界点数"
-          }
-        }
-      }
-    },
     "运行中" : {
 
     },
@@ -4143,40 +4041,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地登记成功！"
-          }
-        }
-      }
-    },
-    "领地管理" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Management"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地管理"
-          }
-        }
-      }
-    },
-    "领地面积" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory Area"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地面积"
           }
         }
       }

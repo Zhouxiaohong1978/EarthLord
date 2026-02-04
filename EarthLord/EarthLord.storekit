@@ -1,0 +1,120 @@
+{
+  "identifier" : "DA00FC38",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "6.00",
+      "familyShareable" : false,
+      "internalID" : "6736501956",
+      "localizations" : [
+        {
+          "description" : "包含矿泉水×5、罐头食品×3、绷带×2",
+          "displayName" : "新手物资包",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "com.earthlord.starter_pack",
+      "referenceName" : "新手物资包",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "12.00",
+      "familyShareable" : false,
+      "internalID" : "6736502345",
+      "localizations" : [
+        {
+          "description" : "包含手电筒×1、绳子×2、矿泉水×3、高级搜刮券×1",
+          "displayName" : "探索物资包",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "com.earthlord.explorer_pack",
+      "referenceName" : "探索物资包",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "18.00",
+      "familyShareable" : false,
+      "internalID" : "6736502678",
+      "localizations" : [
+        {
+          "description" : "包含木材×20、废金属×15、玻璃×10、建筑加速令×2",
+          "displayName" : "建设物资包",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "com.earthlord.builder_pack",
+      "referenceName" : "建设物资包",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "30.00",
+      "familyShareable" : false,
+      "internalID" : "6736502901",
+      "localizations" : [
+        {
+          "description" : "包含稀有装备×1、传奇物品×1、各类资源若干、背包扩容×10",
+          "displayName" : "高级物资包",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "com.earthlord.premium_pack",
+      "referenceName" : "高级物资包",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6736480291",
+    "_developerTeamID" : "YOUR_TEAM_ID",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 760190393.97932196,
+    "_locale" : "zh_CN",
+    "_storefront" : "CHN",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

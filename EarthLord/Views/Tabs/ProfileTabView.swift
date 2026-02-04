@@ -12,6 +12,9 @@ struct ProfileTabView: View {
     /// 认证管理器
     @ObservedObject private var authManager = AuthManager.shared
 
+    /// 邮箱管理器
+    @StateObject private var mailboxManager = MailboxManager.shared
+
     /// 显示退出确认弹窗
     @State private var showLogoutAlert = false
 
@@ -29,6 +32,12 @@ struct ProfileTabView: View {
 
     /// 显示删除错误提示
     @State private var showDeleteError = false
+
+    /// 显示商城
+    @State private var showStore = false
+
+    /// 显示邮箱
+    @State private var showMailbox = false
 
     var body: some View {
         NavigationStack {
@@ -59,6 +68,47 @@ struct ProfileTabView: View {
             .navigationTitle("个人中心")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 16) {
+                        // 邮箱按钮（带红点提示）
+                        Button(action: { showMailbox = true }) {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "envelope.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(ApocalypseTheme.primary)
+
+                                // 未读红点
+                                if mailboxManager.unreadCount > 0 {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.red)
+                                            .frame(width: 18, height: 18)
+
+                                        Text("\(mailboxManager.unreadCount)")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.white)
+                                    }
+                                    .offset(x: 8, y: -8)
+                                }
+                            }
+                        }
+
+                        // 商城按钮
+                        Button(action: { showStore = true }) {
+                            Image(systemName: "bag.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(ApocalypseTheme.primary)
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showStore) {
+                StoreView()
+            }
+            .sheet(isPresented: $showMailbox) {
+                MailboxView()
+            }
             .alert("确认退出", isPresented: $showLogoutAlert) {
                 Button("取消", role: .cancel) { }
                 Button("退出", role: .destructive) {
@@ -76,6 +126,12 @@ struct ProfileTabView: View {
                 Button("确定", role: .cancel) { }
             } message: {
                 Text(deleteErrorMessage ?? "未知错误")
+            }
+            .onAppear {
+                // 加载未读邮件数量
+                Task {
+                    await mailboxManager.loadUnreadCount()
+                }
             }
         }
     }

@@ -166,17 +166,11 @@ final class MailboxManager: ObservableObject {
                 "p_backpack_limit": .integer(remainingSpace)
             ]
 
-            let resultJSON: String = try await supabase
+            // RPC 返回 JSONB，直接解码为 ClaimResult
+            let result: ClaimResult = try await supabase
                 .rpc("claim_mail_partial", params: params)
                 .execute()
                 .value
-
-            // 解析结果
-            guard let resultData = resultJSON.data(using: .utf8) else {
-                throw PurchaseError.deliveryFailed("解析领取结果失败")
-            }
-
-            let result = try JSONDecoder().decode(ClaimResult.self, from: resultData)
 
             // 刷新邮件列表
             await loadMails()

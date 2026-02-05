@@ -61,6 +61,13 @@ struct ChannelChatView: View {
         .onAppear {
             loadMessages()
             communicationManager.subscribeToChannelMessages(channelId: channel.id)
+
+            // Day 36: 标记频道已读
+            if let userId = authManager.currentUser?.id {
+                Task {
+                    await communicationManager.markChannelAsRead(userId: userId, channelId: channel.id)
+                }
+            }
         }
         .onDisappear {
             communicationManager.unsubscribeFromChannelMessages(channelId: channel.id)

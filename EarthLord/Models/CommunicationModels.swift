@@ -949,3 +949,93 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         try container.encode(ISO8601DateFormatter().string(from: createdAt), forKey: .createdAt)
     }
 }
+
+// MARK: - ChannelPreview 频道预览（消息中心使用 Day 36）
+
+/// 频道预览模型（消息中心列表使用）
+struct ChannelPreview: Codable, Identifiable {
+    let channelId: UUID
+    let channelName: String
+    let channelType: String
+    let channelCode: String
+    let memberCount: Int
+    let isMuted: Bool
+    let unreadCount: Int
+    let lastMessageContent: String?
+    let lastMessageTime: Date?
+    let lastMessageSender: String?
+
+    var id: UUID { channelId }
+
+    /// 是否为官方频道
+    var isOfficial: Bool {
+        channelType == "official"
+    }
+
+    /// 频道类型枚举
+    var type: ChannelType {
+        ChannelType(rawValue: channelType) ?? .public
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case channelId = "channel_id"
+        case channelName = "channel_name"
+        case channelType = "channel_type"
+        case channelCode = "channel_code"
+        case memberCount = "member_count"
+        case isMuted = "is_muted"
+        case unreadCount = "unread_count"
+        case lastMessageContent = "last_message_content"
+        case lastMessageTime = "last_message_time"
+        case lastMessageSender = "last_message_sender"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        channelId = try container.decode(UUID.self, forKey: .channelId)
+        channelName = try container.decode(String.self, forKey: .channelName)
+        channelType = try container.decode(String.self, forKey: .channelType)
+        channelCode = try container.decode(String.self, forKey: .channelCode)
+        memberCount = try container.decodeIfPresent(Int.self, forKey: .memberCount) ?? 0
+        isMuted = try container.decodeIfPresent(Bool.self, forKey: .isMuted) ?? false
+        unreadCount = try container.decodeIfPresent(Int.self, forKey: .unreadCount) ?? 0
+        lastMessageContent = try container.decodeIfPresent(String.self, forKey: .lastMessageContent)
+        lastMessageSender = try container.decodeIfPresent(String.self, forKey: .lastMessageSender)
+
+        if let timeString = try? container.decode(String.self, forKey: .lastMessageTime) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: timeString) {
+                lastMessageTime = date
+            } else {
+                // 尝试不带毫秒的格式
+                let formatter2 = ISO8601DateFormatter()
+                formatter2.formatOptions = [.withInternetDateTime]
+                lastMessageTime = formatter2.date(from: timeString)
+            }
+        } else {
+            lastMessageTime = nil
+        }
+    }
+
+    /// 格式化时间显示
+    var formattedTime: String {
+        guard let time = lastMessageTime else { return "" }
+
+        let now = Date()
+        let calendar = Calendar.current
+
+        if calendar.isDateInToday(time) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: time)
+        } else if calendar.isDateInYesterday(time) {
+            return "昨天"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MM/dd"
+            return formatter.string(from: time)
+        }
+    }
+}

@@ -60,6 +60,14 @@ final class CommunicationManager: ObservableObject {
     /// 是否正在发送消息
     @Published var isSendingMessage: Bool = false
 
+    // MARK: - Day 36 Properties
+
+    /// 用户呼号
+    @Published var userCallsign: String?
+
+    /// 频道预览列表（消息中心使用）
+    @Published var channelPreviews: [ChannelPreview] = []
+
     // MARK: - Realtime Properties
 
     /// Realtime 频道
@@ -939,5 +947,172 @@ final class CommunicationManager: ObservableObject {
         if subscribedChannelIds.isEmpty {
             stopRealtimeSubscription()
         }
+    }
+
+    // MARK: - Day 36: Message Center Methods
+
+    /// 加载带预览的订阅频道列表（消息中心使用）
+    @discardableResult
+    func loadChannelPreviews(userId: UUID) async throws -> [ChannelPreview] {
+        logger.log("加载频道预览列表...", type: .info)
+
+        do {
+            let response: [ChannelPreview] = try await supabase
+                .rpc("get_subscribed_channels_with_preview", params: ["p_user_id": userId.uuidString])
+                .execute()
+                .value
+
+            channelPreviews = response
+            logger.log("成功加载 \(response.count) 个频道预览", type: .success)
+            return response
+
+        } catch {
+            logger.logError("加载频道预览失败", error: error)
+            throw CommunicationError.loadFailed(error.localizedDescription)
+        }
+    }
+
+    /// 标记频道为已读
+    func markChannelAsRead(userId: UUID, channelId: UUID) async {
+        do {
+            try await supabase.rpc("mark_channel_read", params: [
+                "p_user_id": userId.uuidString,
+                "p_channel_id": channelId.uuidString
+            ]).execute()
+
+            logger.log("标记频道已读: \(channelId)", type: .success)
+        } catch {
+            logger.logError("标记已读失败", error: error)
+        }
+    }
+
+    // MARK: - Day 36: Callsign Methods
+
+    /// 初始化用户呼号
+    @discardableResult
+    func initializeCallsign(userId: UUID) async throws -> String {
+        logger.log("初始化用户呼号...", type: .info)
+
+        do {
+            let callsign: String = try await supabase
+                .rpc("initialize_user_callsign", params: ["p_user_id": userId.uuidString])
+                .execute()
+                .value
+
+            userCallsign = callsign
+            logger.log("呼号初始化成功: \(callsign)", type: .success)
+            return callsign
+
+        } catch {
+            logger.logError("初始化呼号失败", error: error)
+            throw CommunicationError.saveFailed(error.localizedDescription)
+        }
+    }
+
+    /// 加载用户呼号
+    func loadCallsign(userId: UUID) async {
+        do {
+            struct CallsignResult: Codable {
+                let callsign: String?
+            }
+
+            let result: [CallsignResult] = try await supabase
+                .from("profiles")
+                .select("callsign")
+                .eq("id", value: userId.uuidString)
+                .execute()
+                .value
+
+            userCallsign = result.first?.callsign
+
+            // 如果没有呼号，自动初始化
+            if userCallsign == nil {
+                _ = try await initializeCallsign(userId: userId)
+            }
+
+            logger.log("呼号加载成功: \(userCallsign ?? "无")", type: .success)
+        } catch {
+            logger.logError("加载呼号失败", error: error)
+        }
+    }
+
+    /// 更新用户呼号
+    func updateCallsign(userId: UUID, newCallsign: String) async throws {
+        logger.log("更新用户呼号: \(newCallsign)", type: .info)
+
+        do {
+            let success: Bool = try await supabase
+                .rpc("update_user_callsign", params: [
+                    "p_user_id": userId.uuidString,
+                    "p_callsign": newCallsign
+                ])
+                .execute()
+                .value
+
+            if success {
+                userCallsign = newCallsign
+                logger.log("呼号更新成功", type: .success)
+            }
+
+        } catch {
+            logger.logError("更新呼号失败", error: error)
+            throw CommunicationError.saveFailed(error.localizedDescription)
+        }
+    }
+
+    // MARK: - Day 36: Official Channel Methods
+
+    /// 加载官方频道消息（支持分类过滤）
+    func loadOfficialMessages(category: MessageCategory? = nil) async throws -> [ChannelMessage] {
+        logger.log("加载官方频道消息, 分类: \(category?.rawValue ?? "全部")", type: .info)
+
+        let response: [ChannelMessage] = try await supabase
+            .from("channel_messages")
+            .select()
+            .eq("channel_id", value: CommunicationManager.officialChannelId.uuidString)
+            .order("created_at", ascending: false)
+            .limit(50)
+            .execute()
+            .value
+
+        // 客户端过滤分类（因为 metadata 是 JSONB）
+        let filtered: [ChannelMessage]
+        if let category = category {
+            filtered = response.filter { $0.category == category }
+        } else {
+            filtered = response
+        }
+
+        channelMessages[CommunicationManager.officialChannelId] = filtered.reversed()
+        logger.log("成功加载 \(filtered.count) 条官方消息", type: .success)
+        return filtered.reversed()
+    }
+
+    // MARK: - Day 36: PTT Methods
+
+    /// 发送PTT快捷消息
+    func sendPTTMessage(content: String, isEmergency: Bool = false) async throws -> UUID {
+        logger.log("发送PTT消息: \(content.prefix(20))..., 紧急: \(isEmergency)", type: .info)
+
+        guard let device = currentDevice, device.canSend else {
+            throw CommunicationError.cannotSend
+        }
+
+        // 获取当前位置
+        let location = LocationManager.shared.userLocation
+
+        // 查找目标频道（第一个公共频道或官方频道）
+        let targetChannel = subscribedChannels.first { $0.channel.channelType == .public }?.channel.id
+            ?? CommunicationManager.officialChannelId
+
+        // 紧急消息添加前缀
+        let finalContent = isEmergency ? "[紧急] \(content)" : content
+
+        return try await sendChannelMessage(
+            channelId: targetChannel,
+            content: finalContent,
+            latitude: location?.latitude,
+            longitude: location?.longitude
+        )
     }
 }

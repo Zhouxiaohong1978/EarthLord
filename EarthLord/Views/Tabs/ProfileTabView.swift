@@ -204,6 +204,14 @@ struct ProfileTabView: View {
 
     private var menuSection: some View {
         VStack(spacing: 0) {
+            // Day 36: 呼号设置
+            NavigationLink {
+                CallsignEditView()
+                    .environmentObject(authManager)
+            } label: {
+                callsignMenuItem
+            }
+            menuDivider
             NavigationLink {
                 SettingsDetailView()
             } label: {
@@ -220,6 +228,34 @@ struct ProfileTabView: View {
         }
         .background(ApocalypseTheme.cardBackground)
         .cornerRadius(12)
+    }
+
+    /// 呼号菜单项
+    private var callsignMenuItem: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "antenna.radiowaves.left.and.right")
+                .font(.body)
+                .foregroundColor(ApocalypseTheme.info)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("呼号设置")
+                    .font(.callout)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                Text(CommunicationManager.shared.userCallsign ?? "未设置")
+                    .font(.caption2)
+                    .foregroundColor(ApocalypseTheme.primary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
     }
 
     private var menuDivider: some View {

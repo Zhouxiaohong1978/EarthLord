@@ -95,6 +95,8 @@ struct CommunicationTabView: View {
                     await communicationManager.ensureDevicesInitialized()
                     // Day 36-A：确保订阅官方频道
                     await communicationManager.ensureOfficialChannelSubscribed(userId: userId)
+                    // Day 36：加载用户呼号
+                    await communicationManager.loadCallsign(userId: userId)
                 }
             }
         }

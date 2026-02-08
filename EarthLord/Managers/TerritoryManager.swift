@@ -11,6 +11,7 @@ import Supabase
 
 /// 领地管理器
 /// 负责领地数据的上传和拉取，以及碰撞检测
+@MainActor
 final class TerritoryManager {
 
     // MARK: - 单例

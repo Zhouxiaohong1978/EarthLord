@@ -9,6 +9,7 @@ import SwiftUI
 import Supabase
 
 // MARK: - Supabase 客户端单例
+@MainActor
 final class SupabaseManager {
     static let shared = SupabaseManager()
 

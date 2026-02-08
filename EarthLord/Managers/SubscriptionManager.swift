@@ -359,12 +359,12 @@ final class SubscriptionManager: ObservableObject {
 
     /// 监听交易更新
     private func listenForTransactions() -> Task<Void, Never> {
-        Task.detached { [weak self] in
+        Task { [weak self] in
             guard let self = self else { return }
 
             for await result in Transaction.updates {
                 do {
-                    let transaction = try await self.checkVerified(result)
+                    let transaction = try self.checkVerified(result)
 
                     // 自动处理订阅续费
                     await self.handleTransactionUpdate(transaction)
@@ -372,7 +372,7 @@ final class SubscriptionManager: ObservableObject {
                     await transaction.finish()
 
                 } catch {
-                    await self.logger.logError("交易更新处理失败", error: error)
+                    self.logger.logError("交易更新处理失败", error: error)
                 }
             }
         }

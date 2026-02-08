@@ -91,9 +91,9 @@ struct MainTabView: View {
             .allowsHitTesting(subscriptionManager.isExpired || subscriptionManager.isExpiringSoon)
         }
         .onAppear {
-            // 延迟检查过期订阅（等6秒确保其他初始化完成，避免并发请求冲突）
+            // 延迟检查过期订阅（等10秒确保 ProfileTabView 的串行操作全部完成）
             Task {
-                try? await Task.sleep(nanoseconds: 6_000_000_000)
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
                 await subscriptionManager.handleExpiredSubscriptions()
             }
         }

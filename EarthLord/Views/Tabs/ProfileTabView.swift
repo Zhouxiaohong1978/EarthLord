@@ -73,14 +73,18 @@ struct ProfileTabView: View {
                 // 预加载订阅和礼包数据，避免导航时才发起网络请求
                 guard !hasPreloaded else { return }
                 hasPreloaded = true
-                // 延迟1.5秒确保CommunicationManager等初始化完成，避免并发请求
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    Task {
-                        // 按顺序加载，避免并发Supabase请求
-                        await subscriptionManager.loadSubscriptions()
-                        await subscriptionManager.refreshSubscriptionStatus()
-                        await dailyRewardManager.checkTodayStatus()
-                    }
+                // 延迟3秒确保其他Manager初始化完成，避免并发请求导致真机崩溃
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    // 严格串行：每个操作完成后再执行下一个
+                    await subscriptionManager.loadSubscriptions()
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await subscriptionManager.refreshSubscriptionStatus()
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await dailyRewardManager.checkTodayStatus()
+                    // 最后启动 PurchaseManager 交易监听
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    PurchaseManager.shared.startTransactionListenerIfNeeded()
                 }
             }
             .alert("确认退出", isPresented: $showLogoutAlert) {

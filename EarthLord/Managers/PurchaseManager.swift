@@ -50,9 +50,15 @@ final class PurchaseManager: ObservableObject {
     // MARK: - Initialization
 
     private init() {
-        // 启动交易监听
-        transactionListener = listenForTransactions()
+        // 不在 init 中启动交易监听，避免 App 启动时 StoreKit 后台线程与其他初始化并发冲突
         logger.log("PurchaseManager 初始化完成", type: .info)
+    }
+
+    /// 延迟启动交易监听（由外部在合适时机调用）
+    func startTransactionListenerIfNeeded() {
+        guard transactionListener == nil else { return }
+        transactionListener = listenForTransactions()
+        logger.log("PurchaseManager 交易监听已启动", type: .info)
     }
 
     deinit {
@@ -215,6 +221,20 @@ final class PurchaseManager: ObservableObject {
             let id: String
         }
 
+        // 先检查是否已存在相同 transaction_id 的记录（防止重复发货）
+        let existing: [PurchaseResponse] = try await supabase
+            .from("purchases")
+            .select("id")
+            .eq("transaction_id", value: String(transaction.id))
+            .limit(1)
+            .execute()
+            .value
+
+        if let existingId = existing.first?.id, let uuid = UUID(uuidString: existingId) {
+            logger.log("交易已存在，跳过重复记录: \(transaction.id)", type: .info)
+            return uuid
+        }
+
         let response: [PurchaseResponse] = try await supabase
             .from("purchases")
             .insert(purchaseData)
@@ -306,20 +326,18 @@ final class PurchaseManager: ObservableObject {
 
     /// 监听未完成的交易
     private func listenForTransactions() -> Task<Void, Never> {
-        return Task.detached { [weak self] in
+        return Task { [weak self] in
             for await result in Transaction.updates {
                 guard let self = self else { return }
 
                 do {
-                    let transaction = try await self.checkVerified(result)
+                    let transaction = try self.checkVerified(result)
 
                     // 如果交易未完成，尝试发货
                     await self.handleUnfinishedTransaction(transaction)
 
                 } catch {
-                    await MainActor.run {
-                        self.logger.logError("处理交易失败", error: error)
-                    }
+                    self.logger.logError("处理交易失败", error: error)
                 }
             }
         }

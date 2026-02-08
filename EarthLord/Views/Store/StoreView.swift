@@ -78,7 +78,9 @@ struct StoreView: View {
             }
         }
         .onAppear {
+            // 延迟1秒加载商品，避免与其他初始化操作并发导致真机崩溃
             Task {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 await purchaseManager.loadProducts()
             }
         }

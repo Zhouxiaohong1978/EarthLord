@@ -122,13 +122,21 @@ struct ChannelCenterView: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(communicationManager.subscribedChannels) { subscribedChannel in
-                        NavigationLink(destination: ChannelChatView(channel: subscribedChannel.channel).environmentObject(authManager)) {
-                            ChannelRowView(channel: subscribedChannel.channel, isSubscribed: true)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .contextMenu {
-                            Button(action: { selectedChannel = subscribedChannel.channel }) {
-                                Label("频道详情", systemImage: "info.circle")
+                        // 官方频道导航到 OfficialChannelDetailView
+                        if communicationManager.isOfficialChannel(subscribedChannel.channel.id) {
+                            NavigationLink(destination: OfficialChannelDetailView().environmentObject(authManager)) {
+                                ChannelRowView(channel: subscribedChannel.channel, isSubscribed: true, isOfficial: true)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        } else {
+                            NavigationLink(destination: ChannelChatView(channel: subscribedChannel.channel).environmentObject(authManager)) {
+                                ChannelRowView(channel: subscribedChannel.channel, isSubscribed: true, isOfficial: false)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .contextMenu {
+                                Button(action: { selectedChannel = subscribedChannel.channel }) {
+                                    Label("频道详情", systemImage: "info.circle")
+                                }
                             }
                         }
                     }
@@ -192,12 +200,25 @@ struct ChannelCenterView: View {
                 } else {
                     LazyVStack(spacing: 12) {
                         ForEach(filteredChannels) { channel in
-                            ChannelRowView(
-                                channel: channel,
-                                isSubscribed: communicationManager.isSubscribed(channelId: channel.id)
-                            )
-                            .onTapGesture {
-                                selectedChannel = channel
+                            let isOfficial = communicationManager.isOfficialChannel(channel.id)
+                            if isOfficial {
+                                NavigationLink(destination: OfficialChannelDetailView().environmentObject(authManager)) {
+                                    ChannelRowView(
+                                        channel: channel,
+                                        isSubscribed: true,
+                                        isOfficial: true
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            } else {
+                                ChannelRowView(
+                                    channel: channel,
+                                    isSubscribed: communicationManager.isSubscribed(channelId: channel.id),
+                                    isOfficial: false
+                                )
+                                .onTapGesture {
+                                    selectedChannel = channel
+                                }
                             }
                         }
                     }
@@ -298,51 +319,58 @@ struct ChannelCenterView: View {
 struct ChannelRowView: View {
     let channel: CommunicationChannel
     let isSubscribed: Bool
+    var isOfficial: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
             // 频道图标
             ZStack {
                 Circle()
-                    .fill(channel.channelType.color.opacity(0.2))
+                    .fill(isOfficial ? ApocalypseTheme.primary.opacity(0.2) : channel.channelType.color.opacity(0.2))
                     .frame(width: 48, height: 48)
 
-                Image(systemName: channel.channelType.icon)
+                Image(systemName: isOfficial ? "megaphone.fill" : channel.channelType.icon)
                     .font(.title3)
-                    .foregroundColor(channel.channelType.color)
+                    .foregroundColor(isOfficial ? ApocalypseTheme.primary : channel.channelType.color)
             }
 
             // 频道信息
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(channel.name)
+                    Text(isOfficial ? "末日广播站" : channel.name)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(ApocalypseTheme.textPrimary)
                         .lineLimit(1)
 
-                    if isSubscribed {
+                    if isOfficial {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.caption)
+                            .foregroundColor(ApocalypseTheme.primary)
+                    } else if isSubscribed {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundColor(ApocalypseTheme.success)
                     }
                 }
 
-                Text(channel.channelCode)
+                Text(isOfficial ? "全球覆盖 · 官方公告" : channel.channelCode)
                     .font(.caption)
                     .foregroundColor(ApocalypseTheme.textSecondary)
 
                 HStack(spacing: 8) {
-                    Label("\(channel.memberCount)", systemImage: "person.2.fill")
-                        .font(.caption2)
-                        .foregroundColor(ApocalypseTheme.textSecondary)
+                    if !isOfficial {
+                        Label("\(channel.memberCount)", systemImage: "person.2.fill")
+                            .font(.caption2)
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
 
-                    Text(channel.channelType.displayName)
+                    Text(isOfficial ? "官方频道" : channel.channelType.displayName)
                         .font(.caption2)
-                        .foregroundColor(channel.channelType.color)
+                        .foregroundColor(isOfficial ? ApocalypseTheme.primary : channel.channelType.color)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(channel.channelType.color.opacity(0.15))
+                        .background((isOfficial ? ApocalypseTheme.primary : channel.channelType.color).opacity(0.15))
                         .cornerRadius(4)
                 }
             }

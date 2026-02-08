@@ -988,12 +988,15 @@ extension ExplorationManager {
             "西北": []  // 270°-360°
         ]
 
+        // 获取探索范围（基于订阅档位：1.0/2.0/3.0 km）
+        let explorationRadius = SubscriptionManager.shared.explorationRadius * 1000 // 转换为米
+
         for poi in allResults {
             let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
             let distance = userLocation.distance(from: poiLocation)
 
-            // 只保留1000米内的POI
-            guard distance <= 1000 else { continue }
+            // 只保留探索范围内的POI
+            guard distance <= explorationRadius else { continue }
 
             // 计算方位角（0°=正北，顺时针）
             let dx = poi.coordinate.longitude - center.longitude
@@ -1026,7 +1029,7 @@ extension ExplorationManager {
         var balancedResults: [POI] = []
         let perQuadrant = targetPOICount / 4  // 每个象限的基础配额
 
-        logger.log("🧭 1000米范围内POI方位分布:", type: .info)
+        logger.log("🧭 \(String(format: "%.0f", explorationRadius))米范围内POI方位分布:", type: .info)
         for (direction, pois) in quadrants.sorted(by: { $0.key < $1.key }) {
             logger.log("  \(direction)象限: 找到 \(pois.count) 个POI", type: .info)
         }

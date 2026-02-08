@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Auth
 
 struct CallsignEditView: View {
     @Environment(\.dismiss) private var dismiss
@@ -159,7 +160,7 @@ struct CallsignEditView: View {
                     .background(ApocalypseTheme.background)
                     .cornerRadius(8)
                     .frame(width: 80)
-                    .onChange(of: number) { _, newValue in
+                    .onChange(of: number) { newValue in
                         // Limit to 3 digits
                         if newValue.count > 3 {
                             number = String(newValue.prefix(3))

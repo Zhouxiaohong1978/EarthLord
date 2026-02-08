@@ -13,6 +13,9 @@ struct MainTabView: View {
     /// 全局定位管理器 - 供所有 Tab 共享（使用单例）
     @StateObject private var locationManager = LocationManager.shared
 
+    /// 订阅管理器 - 用于显示过期横幅
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
+
     init() {
         // 设置 TabBar 外观
         let appearance = UITabBarAppearance()
@@ -34,44 +37,66 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            MapTabView()
-                .tabItem {
-                    Image(systemName: "map.fill")
-                    Text("地图")
-                }
-                .tag(0)
+        ZStack(alignment: .top) {
+            TabView(selection: $selectedTab) {
+                MapTabView()
+                    .tabItem {
+                        Image(systemName: "map.fill")
+                        Text("地图")
+                    }
+                    .tag(0)
 
-            TerritoryTabView()
-                .tabItem {
-                    Image(systemName: "flag.fill")
-                    Text("领地")
-                }
-                .tag(1)
+                TerritoryTabView()
+                    .tabItem {
+                        Image(systemName: "flag.fill")
+                        Text("领地")
+                    }
+                    .tag(1)
 
-            ExplorationTabView()
-                .tabItem {
-                    Image(systemName: "shippingbox.fill")
-                    Text("资源")
-                }
-                .tag(2)
+                ExplorationTabView()
+                    .tabItem {
+                        Image(systemName: "shippingbox.fill")
+                        Text("资源")
+                    }
+                    .tag(2)
 
-            CommunicationTabView()
-                .tabItem {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                    Text("通讯")
-                }
-                .tag(3)
+                CommunicationTabView()
+                    .tabItem {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                        Text("通讯")
+                    }
+                    .tag(3)
 
-            ProfileTabView()
-                .tabItem {
-                    Image(systemName: "person.fill")
-                    Text("个人")
+                ProfileTabView()
+                    .tabItem {
+                        Image(systemName: "person.fill")
+                        Text("个人")
+                    }
+                    .tag(4)
+            }
+            .tint(ApocalypseTheme.primary)
+            .environmentObject(locationManager)  // 注入全局定位管理器
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToMailbox)) { _ in
+                // 切换到资源 Tab（index 2）
+                withAnimation {
+                    selectedTab = 2
                 }
-                .tag(4)
+            }
+
+            // 订阅过期横幅（仅在横幅可见时响应触摸，否则透传到 TabView）
+            VStack {
+                SubscriptionExpirationBanner()
+                Spacer()
+            }
+            .allowsHitTesting(subscriptionManager.isExpired || subscriptionManager.isExpiringSoon)
         }
-        .tint(ApocalypseTheme.primary)
-        .environmentObject(locationManager)  // 注入全局定位管理器
+        .onAppear {
+            // 延迟检查过期订阅（等6秒确保其他初始化完成，避免并发请求冲突）
+            Task {
+                try? await Task.sleep(nanoseconds: 6_000_000_000)
+                await subscriptionManager.handleExpiredSubscriptions()
+            }
+        }
     }
 }
 

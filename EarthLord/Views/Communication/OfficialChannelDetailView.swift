@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import Auth
 
 struct OfficialChannelDetailView: View {
     @EnvironmentObject var authManager: AuthManager

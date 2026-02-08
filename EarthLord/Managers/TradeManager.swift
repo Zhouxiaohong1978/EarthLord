@@ -47,6 +47,9 @@ final class TradeManager: ObservableObject {
     /// 背包管理器
     private let inventoryManager = InventoryManager.shared
 
+    /// 今日交易次数（用于限制检查）
+    @Published var todayTradeCount: Int = 0
+
     /// 日志器
     private let logger = ExplorationLogger.shared
 
@@ -82,6 +85,9 @@ final class TradeManager: ObservableObject {
         logger.log("创建交易挂单...", type: .info)
         isLoading = true
         defer { isLoading = false }
+
+        // 检查每日交易限制
+        try await checkDailyTradeLimit()
 
         // 验证出售物品库存
         let inventoryCheck = checkInventory(items: offeringItems)
@@ -182,6 +188,9 @@ final class TradeManager: ObservableObject {
         logger.log("接受交易挂单: \(offerId)", type: .info)
         isLoading = true
         defer { isLoading = false }
+
+        // 检查每日交易限制
+        try await checkDailyTradeLimit()
 
         // 获取挂单（用于本地验证和物品信息）
         guard let offer = availableOffers.first(where: { $0.id == offerId }) ??
@@ -712,6 +721,68 @@ final class TradeManager: ObservableObject {
 
             logger.log("卖家获得物品: \(item.itemId) x\(item.quantity)", type: .info)
         }
+    }
+
+    // MARK: - Daily Trade Limit
+
+    /// 获取今日交易次数
+    private func getTodayTradeCount() async throws -> Int {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            throw TradeError.notAuthenticated
+        }
+
+        // 获取今天的开始时间 (00:00:00)
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+
+        // 查询今日创建的挂单数量和接受的交易数量
+        let offerCount = try await supabase
+            .from("trade_offers")
+            .select("id", head: false, count: .exact)
+            .eq("seller_id", value: userId.uuidString)
+            .gte("created_at", value: today.ISO8601Format())
+            .lt("created_at", value: tomorrow.ISO8601Format())
+            .execute()
+            .count ?? 0
+
+        let acceptCount = try await supabase
+            .from("trade_history")
+            .select("id", head: false, count: .exact)
+            .eq("buyer_id", value: userId.uuidString)
+            .gte("completed_at", value: today.ISO8601Format())
+            .lt("completed_at", value: tomorrow.ISO8601Format())
+            .execute()
+            .count ?? 0
+
+        let totalCount = offerCount + acceptCount
+        todayTradeCount = totalCount
+
+        logger.log("今日交易次数: \(totalCount) (挂单\(offerCount) + 接受\(acceptCount))", type: .info)
+
+        return totalCount
+    }
+
+    /// 检查是否超过每日交易限制
+    private func checkDailyTradeLimit() async throws {
+        // 获取订阅限制
+        let dailyLimit = SubscriptionManager.shared.dailyTradeLimit
+
+        // 无限制（订阅用户）
+        guard let limit = dailyLimit else {
+            logger.log("订阅用户，交易无限制", type: .info)
+            return
+        }
+
+        // 检查今日交易次数
+        let count = try await getTodayTradeCount()
+
+        if count >= limit {
+            logger.log("已达到今日交易限制 (\(count)/\(limit))", type: .warning)
+            throw TradeError.dailyLimitReached(limit: limit, current: count)
+        }
+
+        logger.log("交易次数检查通过 (\(count)/\(limit))", type: .info)
     }
 
     // MARK: - Debug Methods

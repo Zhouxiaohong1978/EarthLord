@@ -65,6 +65,18 @@ final class CommunicationManager: ObservableObject {
     /// 用户呼号
     @Published var userCallsign: String?
 
+    /// 带订阅档位前缀的完整呼号
+    var displayCallsign: String {
+        let prefix = SubscriptionManager.shared.currentTier.callsignPrefix
+        let callsign = userCallsign ?? "未设置"
+
+        if prefix.isEmpty {
+            return callsign
+        } else {
+            return "\(prefix) \(callsign)"
+        }
+    }
+
     /// 频道预览列表（消息中心使用）
     @Published var channelPreviews: [ChannelPreview] = []
 
@@ -747,19 +759,26 @@ final class CommunicationManager: ObservableObject {
     /// 判断是否应该接收该消息（基于设备类型和距离）
     /// 只对公共频道应用距离过滤，私有频道不限制
     func shouldReceiveMessage(_ message: ChannelMessage, channel: CommunicationChannel?) -> Bool {
-        // 0. 私有频道（非 public 类型）不应用距离过滤
+        // 0. 自己发送的消息，始终显示
+        if let currentUserId = AuthManager.shared.currentUser?.id,
+           message.senderId == currentUserId {
+            print("✅ [距离过滤] 自己发送的消息，直接显示")
+            return true
+        }
+
+        // 1. 私有频道（非 public 类型）不应用距离过滤
         if let ch = channel, ch.channelType != .public {
             print("📌 [距离过滤] 非公共频道，跳过过滤")
             return true
         }
 
-        // 1. 获取当前用户设备类型
+        // 2. 获取当前用户设备类型
         guard let myDeviceType = currentDevice?.deviceType else {
             print("⚠️ [距离过滤] 无法获取当前设备，保守显示消息")
             return true  // 保守策略
         }
 
-        // 2. 收音机可以接收所有消息（无限距离）
+        // 3. 收音机可以接收所有消息（无限距离）
         if myDeviceType == .radio {
             print("📻 [距离过滤] 收音机用户，接收所有消息")
             return true
@@ -1090,6 +1109,32 @@ final class CommunicationManager: ObservableObject {
 
     // MARK: - Day 36: PTT Methods
 
+    /// PTT 目标频道（用户选择或自动选择）
+    @Published var pttTargetChannelId: UUID?
+
+    /// 获取 PTT 目标频道
+    func getPTTTargetChannel() -> (id: UUID, name: String)? {
+        // 如果用户已选择目标频道
+        if let targetId = pttTargetChannelId,
+           let channel = subscribedChannels.first(where: { $0.channel.id == targetId }) {
+            return (channel.channel.id, channel.channel.name)
+        }
+
+        // 自动选择：第一个非官方频道
+        if let channel = subscribedChannels.first(where: { !isOfficialChannel($0.channel.id) }) {
+            return (channel.channel.id, channel.channel.name)
+        }
+
+        // 没有其他频道，返回 nil（不发送到官方频道）
+        return nil
+    }
+
+    /// 设置 PTT 目标频道
+    func setPTTTargetChannel(_ channelId: UUID) {
+        pttTargetChannelId = channelId
+        logger.log("PTT 目标频道已设置: \(channelId)", type: .info)
+    }
+
     /// 发送PTT快捷消息
     func sendPTTMessage(content: String, isEmergency: Bool = false) async throws -> UUID {
         logger.log("发送PTT消息: \(content.prefix(20))..., 紧急: \(isEmergency)", type: .info)
@@ -1098,18 +1143,21 @@ final class CommunicationManager: ObservableObject {
             throw CommunicationError.cannotSend
         }
 
+        // 获取目标频道
+        guard let target = getPTTTargetChannel() else {
+            throw CommunicationError.noTargetChannel
+        }
+
         // 获取当前位置
         let location = LocationManager.shared.userLocation
-
-        // 查找目标频道（第一个公共频道或官方频道）
-        let targetChannel = subscribedChannels.first { $0.channel.channelType == .public }?.channel.id
-            ?? CommunicationManager.officialChannelId
 
         // 紧急消息添加前缀
         let finalContent = isEmergency ? "[紧急] \(content)" : content
 
+        logger.log("PTT 发送到频道: \(target.name)", type: .info)
+
         return try await sendChannelMessage(
-            channelId: targetChannel,
+            channelId: target.id,
             content: finalContent,
             latitude: location?.latitude,
             longitude: location?.longitude

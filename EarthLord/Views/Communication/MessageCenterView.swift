@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import Auth
 
 struct MessageCenterView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -152,10 +153,33 @@ struct MessageCenterView: View {
             _ = try await communicationManager.loadChannelPreviews(userId: userId)
             // 同时加载订阅频道（用于导航）
             _ = try await communicationManager.loadSubscribedChannels(userId: userId)
+
+            // 确保官方频道始终显示在列表中
+            ensureOfficialChannelInPreviews()
         } catch {
             print("加载消息中心失败: \(error)")
+            // 即使加载失败，也确保官方频道显示
+            ensureOfficialChannelInPreviews()
         }
         isLoading = false
+    }
+
+    /// 确保官方频道始终在预览列表中
+    private func ensureOfficialChannelInPreviews() {
+        let officialId = CommunicationManager.officialChannelId
+
+        // 检查官方频道是否已在列表中
+        if !communicationManager.channelPreviews.contains(where: { $0.channelId == officialId }) {
+            // 添加默认的官方频道预览
+            let officialPreview = ChannelPreview.officialChannelPreview()
+            communicationManager.channelPreviews.insert(officialPreview, at: 0)
+        } else {
+            // 确保官方频道在列表最前面
+            if let index = communicationManager.channelPreviews.firstIndex(where: { $0.channelId == officialId }), index != 0 {
+                let preview = communicationManager.channelPreviews.remove(at: index)
+                communicationManager.channelPreviews.insert(preview, at: 0)
+            }
+        }
     }
 }
 
@@ -164,17 +188,21 @@ struct MessageCenterView: View {
 struct ChannelPreviewRow: View {
     let preview: ChannelPreview
 
+    private var iconColor: Color {
+        preview.isOfficial ? ApocalypseTheme.primary : preview.type.color
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             // Channel icon
             ZStack {
                 Circle()
-                    .fill(preview.type.color.opacity(0.2))
+                    .fill(iconColor.opacity(0.2))
                     .frame(width: 50, height: 50)
 
                 Image(systemName: preview.isOfficial ? "megaphone.fill" : preview.type.icon)
                     .font(.system(size: 22))
-                    .foregroundColor(preview.type.color)
+                    .foregroundColor(iconColor)
             }
 
             // Channel info

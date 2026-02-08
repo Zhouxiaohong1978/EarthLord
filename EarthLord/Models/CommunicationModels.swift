@@ -338,6 +338,7 @@ enum CommunicationError: LocalizedError {
     case deviceLocked               // 设备未解锁
     case cannotSend                 // 当前设备无法发送
     case outOfRange                 // 超出通讯范围
+    case noTargetChannel            // 没有目标频道
     case saveFailed(String)
     case loadFailed(String)
 
@@ -353,6 +354,8 @@ enum CommunicationError: LocalizedError {
             return String(localized: "当前设备无法发送消息")
         case .outOfRange:
             return String(localized: "超出通讯范围")
+        case .noTargetChannel:
+            return String(localized: "请先订阅一个频道")
         case .saveFailed(let message):
             return String(format: String(localized: "保存失败: %@"), message)
         case .loadFailed(let message):
@@ -967,9 +970,9 @@ struct ChannelPreview: Codable, Identifiable {
 
     var id: UUID { channelId }
 
-    /// 是否为官方频道
+    /// 是否为官方频道（通过频道ID判断）
     var isOfficial: Bool {
-        channelType == "official"
+        channelId == UUID(uuidString: "00000000-0000-0000-0000-000000000000")
     }
 
     /// 频道类型枚举
@@ -1023,7 +1026,6 @@ struct ChannelPreview: Codable, Identifiable {
     var formattedTime: String {
         guard let time = lastMessageTime else { return "" }
 
-        let now = Date()
         let calendar = Calendar.current
 
         if calendar.isDateInToday(time) {
@@ -1037,5 +1039,46 @@ struct ChannelPreview: Codable, Identifiable {
             formatter.dateFormat = "MM/dd"
             return formatter.string(from: time)
         }
+    }
+
+    /// 手动初始化（用于创建默认预览）
+    init(
+        channelId: UUID,
+        channelName: String,
+        channelType: String,
+        channelCode: String,
+        memberCount: Int = 0,
+        isMuted: Bool = false,
+        unreadCount: Int = 0,
+        lastMessageContent: String? = nil,
+        lastMessageTime: Date? = nil,
+        lastMessageSender: String? = nil
+    ) {
+        self.channelId = channelId
+        self.channelName = channelName
+        self.channelType = channelType
+        self.channelCode = channelCode
+        self.memberCount = memberCount
+        self.isMuted = isMuted
+        self.unreadCount = unreadCount
+        self.lastMessageContent = lastMessageContent
+        self.lastMessageTime = lastMessageTime
+        self.lastMessageSender = lastMessageSender
+    }
+
+    /// 创建官方频道预览
+    static func officialChannelPreview() -> ChannelPreview {
+        ChannelPreview(
+            channelId: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+            channelName: "末日广播站",
+            channelType: "official",
+            channelCode: "OFFICIAL",
+            memberCount: 0,
+            isMuted: false,
+            unreadCount: 0,
+            lastMessageContent: "官方公告与生存指南",
+            lastMessageTime: nil,
+            lastMessageSender: nil
+        )
     }
 }

@@ -103,9 +103,9 @@ extension SupplyPackConfig {
         .starterPack: SupplyPackConfig(
             product: .starterPack,
             baseItems: [
-                PackItem(itemId: "water_001", quantity: 5, quality: nil),
-                PackItem(itemId: "food_002", quantity: 3, quality: "normal"),
-                PackItem(itemId: "medical_001", quantity: 2, quality: nil)
+                PackItem(itemId: "water_bottle", quantity: 5, quality: nil),
+                PackItem(itemId: "canned_food", quantity: 3, quality: "normal"),
+                PackItem(itemId: "bandage", quantity: 2, quality: nil)
             ],
             bonusItems: []
         ),
@@ -113,13 +113,13 @@ extension SupplyPackConfig {
         .explorerPack: SupplyPackConfig(
             product: .explorerPack,
             baseItems: [
-                PackItem(itemId: "tool_flashlight", quantity: 1, quality: "good"),
-                PackItem(itemId: "tool_rope", quantity: 2, quality: nil),
-                PackItem(itemId: "water_001", quantity: 3, quality: nil)
+                PackItem(itemId: "flashlight", quantity: 1, quality: "good"),
+                PackItem(itemId: "rope", quantity: 2, quality: nil),
+                PackItem(itemId: "water_bottle", quantity: 3, quality: nil)
             ],
             bonusItems: [
                 BonusItem(
-                    item: PackItem(itemId: "tool_flashlight", quantity: 1, quality: "legendary"),
+                    item: PackItem(itemId: "flashlight", quantity: 1, quality: "legendary"),
                     probability: 10
                 )
             ]
@@ -128,9 +128,9 @@ extension SupplyPackConfig {
         .builderPack: SupplyPackConfig(
             product: .builderPack,
             baseItems: [
-                PackItem(itemId: "material_wood", quantity: 20, quality: nil),
-                PackItem(itemId: "material_metal", quantity: 15, quality: nil),
-                PackItem(itemId: "material_glass", quantity: 10, quality: nil)
+                PackItem(itemId: "wood", quantity: 20, quality: nil),
+                PackItem(itemId: "scrap_metal", quantity: 15, quality: nil),
+                PackItem(itemId: "glass", quantity: 10, quality: nil)
             ],
             bonusItems: [
                 BonusItem(
@@ -144,10 +144,10 @@ extension SupplyPackConfig {
             product: .premiumPack,
             baseItems: [
                 PackItem(itemId: "equipment_rare", quantity: 1, quality: "rare"),
-                PackItem(itemId: "material_wood", quantity: 10, quality: nil),
-                PackItem(itemId: "material_metal", quantity: 10, quality: nil),
-                PackItem(itemId: "water_001", quantity: 5, quality: nil),
-                PackItem(itemId: "food_002", quantity: 5, quality: nil)
+                PackItem(itemId: "wood", quantity: 10, quality: nil),
+                PackItem(itemId: "scrap_metal", quantity: 10, quality: nil),
+                PackItem(itemId: "water_bottle", quantity: 5, quality: nil),
+                PackItem(itemId: "canned_food", quantity: 5, quality: nil)
             ],
             bonusItems: [
                 BonusItem(
@@ -259,6 +259,311 @@ enum PurchaseError: LocalizedError {
             return "发货失败: \(message)"
         case .invalidTransaction:
             return "无效的交易"
+        }
+    }
+}
+
+// MARK: - 订阅系统模型
+
+/// 订阅商品枚举
+enum SubscriptionProduct: String, CaseIterable, Identifiable {
+    // 探索者（基础版）
+    case explorerMonthly = "com.earthlord.sub.basic.monthly"
+    case explorerYearly = "com.earthlord.sub.basic.yearly"
+
+    // 领主（高级版）
+    case lordMonthly = "com.earthlord.sub.premium.monthly"
+    case lordYearly = "com.earthlord.sub.premium.yearly"
+
+    var id: String { rawValue }
+
+    /// 显示名称
+    var displayName: String {
+        switch self {
+        case .explorerMonthly: return "探索者·月卡"
+        case .explorerYearly: return "探索者·年卡"
+        case .lordMonthly: return "领主·月卡"
+        case .lordYearly: return "领主·年卡"
+        }
+    }
+
+    /// 简短名称
+    var shortName: String {
+        switch self {
+        case .explorerMonthly, .explorerYearly: return "探索者"
+        case .lordMonthly, .lordYearly: return "领主"
+        }
+    }
+
+    /// 价格（人民币）
+    var price: Int {
+        switch self {
+        case .explorerMonthly: return 12
+        case .explorerYearly: return 88
+        case .lordMonthly: return 25
+        case .lordYearly: return 168
+        }
+    }
+
+    /// 月均价格
+    var monthlyEquivalent: Double {
+        switch self {
+        case .explorerMonthly: return 12.0
+        case .explorerYearly: return 7.3
+        case .lordMonthly: return 25.0
+        case .lordYearly: return 14.0
+        }
+    }
+
+    /// 优惠百分比（仅年卡）
+    var savingsPercent: Int? {
+        switch self {
+        case .explorerYearly: return 39
+        case .lordYearly: return 44
+        default: return nil
+        }
+    }
+
+    /// 订阅档位
+    var tier: SubscriptionTier {
+        switch self {
+        case .explorerMonthly, .explorerYearly: return .explorer
+        case .lordMonthly, .lordYearly: return .lord
+        }
+    }
+
+    /// 是否为年卡
+    var isYearly: Bool {
+        switch self {
+        case .explorerYearly, .lordYearly: return true
+        default: return false
+        }
+    }
+
+    /// 订阅周期（天数）
+    var durationInDays: Int {
+        isYearly ? 365 : 30
+    }
+}
+
+/// 订阅档位
+enum SubscriptionTier: String, Codable {
+    case free = "free"           // 幸存者（免费）
+    case explorer = "explorer"   // 探索者（基础版）
+    case lord = "lord"          // 领主（高级版）
+
+    /// 显示名称
+    var displayName: String {
+        switch self {
+        case .free: return "幸存者"
+        case .explorer: return "探索者"
+        case .lord: return "领主"
+        }
+    }
+
+    /// 徽章图标
+    var badgeIcon: String {
+        switch self {
+        case .free: return ""
+        case .explorer: return "🥉"
+        case .lord: return "🥇"
+        }
+    }
+
+    /// 呼号前缀
+    var callsignPrefix: String {
+        switch self {
+        case .free: return ""
+        case .explorer: return "[探索者]"
+        case .lord: return "[领主]"
+        }
+    }
+
+    /// 背包容量
+    var backpackCapacity: Int {
+        switch self {
+        case .free: return 100
+        case .explorer: return 200
+        case .lord: return 300
+        }
+    }
+
+    /// 探索范围（km）
+    var explorationRadius: Double {
+        switch self {
+        case .free: return 1.0
+        case .explorer: return 2.0
+        case .lord: return 3.0
+        }
+    }
+
+    /// 建造速度倍率
+    var buildSpeedMultiplier: Double {
+        switch self {
+        case .free: return 1.0
+        case .explorer: return 2.0
+        case .lord: return 2.0
+        }
+    }
+
+    /// 每日交易次数限制（nil表示无限）
+    var dailyTradeLimit: Int? {
+        switch self {
+        case .free: return 10
+        case .explorer: return nil
+        case .lord: return nil
+        }
+    }
+
+    /// 每日庇护所收益次数限制（nil表示无限）
+    var dailyHarvestLimit: Int? {
+        switch self {
+        case .free: return 10
+        case .explorer: return nil
+        case .lord: return nil
+        }
+    }
+}
+
+/// 用户订阅状态（本地模型）
+struct UserSubscription: Identifiable, Codable {
+    let id: UUID
+    let userId: UUID
+    let productId: String
+    let tier: SubscriptionTier
+    let transactionId: String
+    let originalTransactionId: String?
+    let purchaseDate: Date
+    let expiresAt: Date
+    var isActive: Bool
+    var autoRenew: Bool
+    let createdAt: Date
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case productId = "product_id"
+        case tier
+        case transactionId = "transaction_id"
+        case originalTransactionId = "original_transaction_id"
+        case purchaseDate = "purchase_date"
+        case expiresAt = "expires_at"
+        case isActive = "is_active"
+        case autoRenew = "auto_renew"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    /// 是否已过期
+    var isExpired: Bool {
+        Date() > expiresAt
+    }
+
+    /// 剩余天数
+    var daysRemaining: Int {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: Date(), to: expiresAt)
+        return max(0, components.day ?? 0)
+    }
+}
+
+/// 用户订阅数据库模型
+struct SubscriptionDB: Codable {
+    let id: String?
+    let userId: String
+    let productId: String
+    let tier: String
+    let transactionId: String
+    let originalTransactionId: String?
+    let purchaseDate: String
+    let expiresAt: String
+    let isActive: Bool
+    let autoRenew: Bool
+    let createdAt: String?
+    let updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case productId = "product_id"
+        case tier
+        case transactionId = "transaction_id"
+        case originalTransactionId = "original_transaction_id"
+        case purchaseDate = "purchase_date"
+        case expiresAt = "expires_at"
+        case isActive = "is_active"
+        case autoRenew = "auto_renew"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    /// 转换为本地模型
+    func toUserSubscription() -> UserSubscription? {
+        guard let id = id,
+              let subscriptionId = UUID(uuidString: id),
+              let userId = UUID(uuidString: userId),
+              let tier = SubscriptionTier(rawValue: tier) else {
+            return nil
+        }
+
+        let dateFormatter = ISO8601DateFormatter()
+        guard let purchaseDate = dateFormatter.date(from: purchaseDate),
+              let expiresAt = dateFormatter.date(from: expiresAt) else {
+            return nil
+        }
+
+        let createdDate = createdAt.flatMap { dateFormatter.date(from: $0) } ?? Date()
+        let updatedDate = updatedAt.flatMap { dateFormatter.date(from: $0) } ?? Date()
+
+        return UserSubscription(
+            id: subscriptionId,
+            userId: userId,
+            productId: productId,
+            tier: tier,
+            transactionId: transactionId,
+            originalTransactionId: originalTransactionId,
+            purchaseDate: purchaseDate,
+            expiresAt: expiresAt,
+            isActive: isActive,
+            autoRenew: autoRenew,
+            createdAt: createdDate,
+            updatedAt: updatedDate
+        )
+    }
+}
+
+/// 订阅状态
+enum SubscriptionStatus {
+    case notSubscribed              // 未订阅
+    case active(tier: SubscriptionTier)  // 订阅中
+    case expired(tier: SubscriptionTier) // 已过期
+    case cancelled(tier: SubscriptionTier) // 已取消
+}
+
+/// 订阅错误
+enum SubscriptionError: LocalizedError {
+    case notAuthenticated
+    case productNotFound
+    case subscribeFailed(String)
+    case verificationFailed
+    case alreadySubscribed
+    case invalidSubscription
+
+    var errorDescription: String? {
+        switch self {
+        case .notAuthenticated:
+            return "用户未登录"
+        case .productNotFound:
+            return "订阅商品不存在"
+        case .subscribeFailed(let message):
+            return "订阅失败: \(message)"
+        case .verificationFailed:
+            return "订阅验证失败"
+        case .alreadySubscribed:
+            return "您已经订阅了此服务"
+        case .invalidSubscription:
+            return "无效的订阅"
         }
     }
 }

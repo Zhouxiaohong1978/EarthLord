@@ -12,8 +12,11 @@ struct ProfileTabView: View {
     /// 认证管理器
     @ObservedObject private var authManager = AuthManager.shared
 
-    /// 邮箱管理器
-    @StateObject private var mailboxManager = MailboxManager.shared
+    /// 订阅管理器
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+
+    /// 每日礼包管理器
+    @ObservedObject private var dailyRewardManager = DailyRewardManager.shared
 
     /// 显示退出确认弹窗
     @State private var showLogoutAlert = false
@@ -33,11 +36,9 @@ struct ProfileTabView: View {
     /// 显示删除错误提示
     @State private var showDeleteError = false
 
-    /// 显示商城
-    @State private var showStore = false
 
-    /// 显示邮箱
-    @State private var showMailbox = false
+    /// 是否已预加载数据
+    @State private var hasPreloaded = false
 
     var body: some View {
         NavigationStack {
@@ -68,46 +69,19 @@ struct ProfileTabView: View {
             .navigationTitle("个人中心")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        // 邮箱按钮（带红点提示）
-                        Button(action: { showMailbox = true }) {
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: "envelope.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(ApocalypseTheme.primary)
-
-                                // 未读红点
-                                if mailboxManager.unreadCount > 0 {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color.red)
-                                            .frame(width: 18, height: 18)
-
-                                        Text("\(mailboxManager.unreadCount)")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.white)
-                                    }
-                                    .offset(x: 8, y: -8)
-                                }
-                            }
-                        }
-
-                        // 商城按钮
-                        Button(action: { showStore = true }) {
-                            Image(systemName: "bag.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(ApocalypseTheme.primary)
-                        }
+            .onAppear {
+                // 预加载订阅和礼包数据，避免导航时才发起网络请求
+                guard !hasPreloaded else { return }
+                hasPreloaded = true
+                // 延迟1.5秒确保CommunicationManager等初始化完成，避免并发请求
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    Task {
+                        // 按顺序加载，避免并发Supabase请求
+                        await subscriptionManager.loadSubscriptions()
+                        await subscriptionManager.refreshSubscriptionStatus()
+                        await dailyRewardManager.checkTodayStatus()
                     }
                 }
-            }
-            .sheet(isPresented: $showStore) {
-                StoreView()
-            }
-            .sheet(isPresented: $showMailbox) {
-                MailboxView()
             }
             .alert("确认退出", isPresented: $showLogoutAlert) {
                 Button("取消", role: .cancel) { }
@@ -126,12 +100,6 @@ struct ProfileTabView: View {
                 Button("确定", role: .cancel) { }
             } message: {
                 Text(deleteErrorMessage ?? "未知错误")
-            }
-            .onAppear {
-                // 加载未读邮件数量
-                Task {
-                    await mailboxManager.loadUnreadCount()
-                }
             }
         }
     }
@@ -153,11 +121,32 @@ struct ProfileTabView: View {
             }
             .padding(.top, 12)
 
-            // 用户名
-            Text(displayName)
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(ApocalypseTheme.textPrimary)
+            // 用户名和订阅徽章
+            HStack(spacing: 6) {
+                Text(displayName)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                // 订阅档位徽章
+                if !subscriptionManager.currentTier.badgeIcon.isEmpty {
+                    Text(subscriptionManager.currentTier.badgeIcon)
+                        .font(.title3)
+                }
+            }
+
+            // 订阅档位名称
+            if subscriptionManager.currentTier != .free {
+                Text(subscriptionManager.currentTier.displayName)
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(ApocalypseTheme.primary.opacity(0.15))
+                    )
+            }
 
             // 邮箱
             Text(authManager.currentUser?.email ?? "未设置邮箱")
@@ -204,6 +193,22 @@ struct ProfileTabView: View {
 
     private var menuSection: some View {
         VStack(spacing: 0) {
+            // 订阅特权
+            NavigationLink {
+                SubscriptionView()
+            } label: {
+                subscriptionMenuItem
+            }
+            menuDivider
+
+            // 每日礼包
+            NavigationLink {
+                DailyRewardView()
+            } label: {
+                dailyRewardMenuItem
+            }
+            menuDivider
+
             // Day 36: 呼号设置
             NavigationLink {
                 CallsignEditView()
@@ -228,6 +233,97 @@ struct ProfileTabView: View {
         }
         .background(ApocalypseTheme.cardBackground)
         .cornerRadius(12)
+    }
+
+    /// 订阅菜单项
+    private var subscriptionMenuItem: some View {
+        HStack(spacing: 12) {
+            Text(subscriptionManager.currentTier.badgeIcon.isEmpty ? "👑" : subscriptionManager.currentTier.badgeIcon)
+                .font(.title3)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("幸存者特权")
+                    .font(.callout)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                HStack(spacing: 4) {
+                    Text(subscriptionManager.currentTier.displayName)
+                        .font(.caption2)
+                        .foregroundColor(subscriptionManager.currentTier == .free ? ApocalypseTheme.textSecondary : ApocalypseTheme.primary)
+
+                    // 过期提示
+                    if subscriptionManager.isExpiringSoon {
+                        Text("· 即将过期")
+                            .font(.caption2)
+                            .foregroundColor(ApocalypseTheme.warning)
+                    }
+                }
+            }
+
+            Spacer()
+
+            // 未订阅时显示"立即订阅"
+            if !subscriptionManager.isSubscribed {
+                Text("立即订阅")
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(ApocalypseTheme.primary)
+                    )
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+    }
+
+    /// 每日礼包菜单项
+    private var dailyRewardMenuItem: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "gift.fill")
+                .font(.body)
+                .foregroundColor(ApocalypseTheme.warning)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("每日礼包")
+                    .font(.callout)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                if subscriptionManager.isSubscribed {
+                    Text("订阅专属")
+                        .font(.caption2)
+                        .foregroundColor(ApocalypseTheme.primary)
+                } else {
+                    Text("订阅后可领取")
+                        .font(.caption2)
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+            }
+
+            Spacer()
+
+            // 可领取提示
+            if subscriptionManager.isSubscribed && !dailyRewardManager.hasClaimedToday {
+                Circle()
+                    .fill(ApocalypseTheme.danger)
+                    .frame(width: 8, height: 8)
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
     }
 
     /// 呼号菜单项

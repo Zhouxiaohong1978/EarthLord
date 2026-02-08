@@ -1,5 +1,5 @@
 {
-  "identifier" : "DA00FC38",
+  "identifier" : "F1A2B3C4",
   "nonRenewingSubscriptions" : [
 
   ],
@@ -7,7 +7,7 @@
     {
       "displayPrice" : "6.00",
       "familyShareable" : false,
-      "internalID" : "6736501956",
+      "internalID" : "1001",
       "localizations" : [
         {
           "description" : "包含矿泉水×5、罐头食品×3、绷带×2",
@@ -22,7 +22,7 @@
     {
       "displayPrice" : "12.00",
       "familyShareable" : false,
-      "internalID" : "6736502345",
+      "internalID" : "1002",
       "localizations" : [
         {
           "description" : "包含手电筒×1、绳子×2、矿泉水×3、高级搜刮券×1",
@@ -37,7 +37,7 @@
     {
       "displayPrice" : "18.00",
       "familyShareable" : false,
-      "internalID" : "6736502678",
+      "internalID" : "1003",
       "localizations" : [
         {
           "description" : "包含木材×20、废金属×15、玻璃×10、建筑加速令×2",
@@ -50,9 +50,9 @@
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "30.00",
+      "displayPrice" : "28.00",
       "familyShareable" : false,
-      "internalID" : "6736502901",
+      "internalID" : "1004",
       "localizations" : [
         {
           "description" : "包含稀有装备×1、传奇物品×1、各类资源若干、背包扩容×10",
@@ -66,55 +66,181 @@
     }
   ],
   "settings" : {
-    "_applicationInternalID" : "6736480291",
-    "_developerTeamID" : "YOUR_TEAM_ID",
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 760190393.97932196,
     "_locale" : "zh_CN",
     "_storefront" : "CHN",
     "_storeKitErrors" : [
       {
-        "current" : null,
+        "current" : {
+          "index" : 0,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "Load Products"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 0,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "Purchase"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 0,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "Verification"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 0,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "App Transaction"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 0,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "Manage Subscriptions Sheet"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 0,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "Refund Request Sheet"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 0,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "Offer Code Redeem Sheet"
       }
     ]
   },
   "subscriptionGroups" : [
+    {
+      "id" : "earthlord_privileges",
+      "localizations" : [
+        {
+          "description" : "末日之主订阅特权",
+          "displayName" : "末日之主特权",
+          "locale" : "zh_CN"
+        }
+      ],
+      "name" : "末日之主特权",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
 
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "25.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "2001",
+          "localizations" : [
+            {
+              "description" : "解锁全部领主特权，背包300种、探索3km、无限交易、每日礼包",
+              "displayName" : "领主·月卡",
+              "locale" : "zh_CN"
+            }
+          ],
+          "productID" : "com.earthlord.sub.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "领主·月卡",
+          "subscriptionGroupID" : "earthlord_privileges",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "168.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "2002",
+          "localizations" : [
+            {
+              "description" : "领主年度特权，畅享全部权益，年付更优惠",
+              "displayName" : "领主·年卡",
+              "locale" : "zh_CN"
+            }
+          ],
+          "productID" : "com.earthlord.sub.premium.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "领主·年卡",
+          "subscriptionGroupID" : "earthlord_privileges",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "12.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "2003",
+          "localizations" : [
+            {
+              "description" : "探索者特权，背包200种、探索2km、无限交易、每日礼包",
+              "displayName" : "探索者·月卡",
+              "locale" : "zh_CN"
+            }
+          ],
+          "productID" : "com.earthlord.sub.basic.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "探索者·月卡",
+          "subscriptionGroupID" : "earthlord_privileges",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "88.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "2004",
+          "localizations" : [
+            {
+              "description" : "探索者年度特权，年付更优惠",
+              "displayName" : "探索者·年卡",
+              "locale" : "zh_CN"
+            }
+          ],
+          "productID" : "com.earthlord.sub.basic.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "探索者·年卡",
+          "subscriptionGroupID" : "earthlord_privileges",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
   ],
   "version" : {
-    "major" : 3,
+    "major" : 4,
     "minor" : 0
   }
 }

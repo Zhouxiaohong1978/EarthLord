@@ -8,6 +8,13 @@
 import SwiftUI
 import StoreKit
 
+// MARK: - 通知名称扩展
+
+extension Notification.Name {
+    /// 跳转到邮箱的通知
+    static let navigateToMailbox = Notification.Name("navigateToMailbox")
+}
+
 struct StoreView: View {
     @StateObject private var purchaseManager = PurchaseManager.shared
     @Environment(\.dismiss) private var dismiss
@@ -58,6 +65,14 @@ struct StoreView: View {
                     message: purchaseResultMessage,
                     onDismiss: {
                         showingPurchaseResult = false
+                        // 购买成功时，发送通知跳转到邮箱
+                        if purchaseResultSuccess {
+                            dismiss() // 先关闭商城
+                            // 延迟发送通知，确保商城已关闭
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                NotificationCenter.default.post(name: .navigateToMailbox, object: nil)
+                            }
+                        }
                     }
                 )
             }

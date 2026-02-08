@@ -434,6 +434,7 @@ enum TradeError: LocalizedError {
     case alreadyCompleted               // 已完成
     case notParticipant                 // 非参与者
     case alreadyRated                   // 已评价
+    case dailyLimitReached(limit: Int, current: Int) // 达到每日交易限制
     case saveFailed(String)
     case loadFailed(String)
 
@@ -458,6 +459,8 @@ enum TradeError: LocalizedError {
             return String(localized: "您不是该交易的参与者")
         case .alreadyRated:
             return String(localized: "您已经评价过该交易")
+        case .dailyLimitReached(let limit, let current):
+            return "今日交易次数已达上限 (\(current)/\(limit))，订阅探索者或领主解锁无限交易"
         case .saveFailed(let message):
             return String(format: String(localized: "保存失败: %@"), message)
         case .loadFailed(let message):

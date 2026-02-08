@@ -36,6 +36,11 @@ struct MailDetailView: View {
                         // 物品列表
                         itemList
 
+                        // 背包容量提示
+                        if !mail.isClaimed && !mail.isExpired {
+                            backpackCapacityHint
+                        }
+
                         // 领取按钮
                         if !mail.isClaimed && !mail.isExpired {
                             claimButton
@@ -174,6 +179,55 @@ struct MailDetailView: View {
         }
     }
 
+    // MARK: - 背包容量提示
+    private var backpackCapacityHint: some View {
+        let currentTypes = InventoryManager.shared.items.count  // 当前物品种类数
+        let maxSlots = 100  // 最大格子数
+        let remainingSlots = max(0, maxSlots - currentTypes)
+
+        // 计算邮件中有多少种不同物品
+        let mailItemTypes = Set(mail.items.map { $0.itemId }).count
+        let canClaimAll = mailItemTypes <= remainingSlots
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "backpack.fill")
+                    .foregroundColor(canClaimAll ? .green : .orange)
+                Text("背包容量")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                Spacer()
+                Text("\(currentTypes)/\(maxSlots)")
+                    .font(.subheadline)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+
+            if !canClaimAll {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.circle")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    Text("背包空间不足，剩余 \(remainingSlots) 个位置，邮件包含 \(mailItemTypes) 种物品")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                    Text("背包空间充足，可领取全部物品")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+        }
+        .padding(12)
+        .background(ApocalypseTheme.cardBackground.opacity(0.5))
+        .cornerRadius(8)
+    }
+
     // MARK: - 领取按钮
     private var claimButton: some View {
         Button(action: {
@@ -220,10 +274,25 @@ struct MailDetailView: View {
         defer { isClaiming = false }
 
         do {
+            // 记录领取前的背包状态
+            let itemsBeforeClaim = InventoryManager.shared.items.count
+            let quantityBeforeClaim = InventoryManager.shared.items.reduce(0) { $0 + $1.quantity }
+            print("🔍 [领取前] 背包物品种类: \(itemsBeforeClaim), 总数量: \(quantityBeforeClaim)")
+
             let result = try await mailboxManager.claimMail(mail)
+
+            // 记录领取后的背包状态
+            let itemsAfterClaim = InventoryManager.shared.items.count
+            let quantityAfterClaim = InventoryManager.shared.items.reduce(0) { $0 + $1.quantity }
+            print("🔍 [领取后] 背包物品种类: \(itemsAfterClaim), 总数量: \(quantityAfterClaim)")
+            print("🔍 [变化] 物品种类 +\(itemsAfterClaim - itemsBeforeClaim), 总数量 +\(quantityAfterClaim - quantityBeforeClaim)")
+            print("🔍 [RPC返回] 已领取: \(result.claimedCount)件, 剩余: \(result.remainingCount)件")
+            print("🔍 [领取详情] \(result.claimedItems.map { "\($0.itemId) x\($0.quantity)" }.joined(separator: ", "))")
+
             claimResult = result
             showingClaimResult = true
         } catch {
+            print("❌ [领取失败] \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         }
     }

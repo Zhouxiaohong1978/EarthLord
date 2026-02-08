@@ -16,6 +16,7 @@ enum InventoryError: LocalizedError {
     case notAuthenticated
     case itemNotFound
     case insufficientQuantity
+    case backpackFull
     case saveFailed(String)
     case loadFailed(String)
 
@@ -27,6 +28,8 @@ enum InventoryError: LocalizedError {
             return "物品不存在"
         case .insufficientQuantity:
             return "物品数量不足"
+        case .backpackFull:
+            return "背包已满，无法添加新物品"
         case .saveFailed(let message):
             return "保存失败: \(message)"
         case .loadFailed(let message):
@@ -184,7 +187,13 @@ final class InventoryManager: ObservableObject {
             try await updateItemQuantityInDB(itemId: existing.id!, newQuantity: newQuantity)
             logger.log("物品已存在，数量更新为 \(newQuantity)", type: .success)
         } else {
-            // 新物品，插入记录
+            // 新物品，检查背包容量
+            if isBackpackFull {
+                logger.log("背包已满 (\(itemTypeCount)/\(backpackCapacity))，无法添加新物品", type: .warning)
+                throw InventoryError.backpackFull
+            }
+
+            // 插入记录
             let itemData: [String: AnyJSON] = [
                 "user_id": .string(userId.uuidString),
                 "item_id": .string(itemId),
@@ -199,7 +208,7 @@ final class InventoryManager: ObservableObject {
                 .insert(itemData)
                 .execute()
 
-            logger.log("新物品已添加到背包", type: .success)
+            logger.log("新物品已添加到背包 (当前 \(itemTypeCount + 1)/\(backpackCapacity))", type: .success)
         }
 
         // 刷新本地数据
@@ -291,6 +300,26 @@ final class InventoryManager: ObservableObject {
             }
             return total + definition.weight * Double(item.quantity)
         }
+    }
+
+    /// 获取背包物品种类数（不同的物品类型数量）
+    var itemTypeCount: Int {
+        items.count
+    }
+
+    /// 获取背包容量上限（基于订阅档位）
+    var backpackCapacity: Int {
+        SubscriptionManager.shared.backpackCapacity
+    }
+
+    /// 检查背包是否已满
+    var isBackpackFull: Bool {
+        itemTypeCount >= backpackCapacity
+    }
+
+    /// 获取剩余背包容量
+    var remainingCapacity: Int {
+        max(0, backpackCapacity - itemTypeCount)
     }
 
     // MARK: - Private Methods

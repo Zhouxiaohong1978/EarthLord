@@ -200,7 +200,13 @@ final class BuildingManager: ObservableObject {
 
         // 插入数据库
         let now = Date()
-        let completedAt = now.addingTimeInterval(Double(template.buildTimeSeconds))
+
+        // 应用建造速度加成（基于订阅档位）
+        let buildSpeedMultiplier = SubscriptionManager.shared.buildSpeedMultiplier
+        let actualBuildTime = Double(template.buildTimeSeconds) / buildSpeedMultiplier
+        let completedAt = now.addingTimeInterval(actualBuildTime)
+
+        logger.log("建造速度: \(String(format: "%.1f", buildSpeedMultiplier))倍，实际耗时: \(Int(actualBuildTime))秒", type: .info)
         let buildingData: [String: AnyJSON] = [
             "user_id": .string(userId.uuidString),
             "territory_id": .string(territoryId),

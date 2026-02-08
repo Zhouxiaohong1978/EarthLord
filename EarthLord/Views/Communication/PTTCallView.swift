@@ -19,6 +19,9 @@ struct PTTCallView: View {
     @State private var isSending = false
     @State private var showSentFeedback = false
     @State private var sentMessage: String?
+    @State private var showChannelPicker = false
+    @State private var sentToChannel: String?
+    @State private var navigateToChannel: CommunicationChannel?
 
     // Quick message templates
     private let quickMessages = [
@@ -29,6 +32,18 @@ struct PTTCallView: View {
         "正在撤离",
         "保持静默"
     ]
+
+    /// 可选择的目标频道（排除官方频道）
+    private var availableChannels: [SubscribedChannel] {
+        communicationManager.subscribedChannels.filter {
+            !communicationManager.isOfficialChannel($0.channel.id)
+        }
+    }
+
+    /// 当前目标频道
+    private var targetChannel: (id: UUID, name: String)? {
+        communicationManager.getPTTTargetChannel()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -57,6 +72,15 @@ struct PTTCallView: View {
             // Sent feedback overlay
             if showSentFeedback, let msg = sentMessage {
                 sentFeedbackOverlay(msg)
+            }
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { navigateToChannel != nil },
+            set: { if !$0 { navigateToChannel = nil } }
+        )) {
+            if let channel = navigateToChannel {
+                ChannelChatView(channel: channel)
+                    .environmentObject(authManager)
             }
         }
     }
@@ -88,8 +112,118 @@ struct PTTCallView: View {
                     .foregroundColor(ApocalypseTheme.primary)
                     .padding(.top, 4)
             }
+
+            // 目标频道选择
+            targetChannelSelector
         }
         .padding(.top, 20)
+    }
+
+    // MARK: - Target Channel Selector
+
+    private var targetChannelSelector: some View {
+        Button(action: { showChannelPicker = true }) {
+            HStack(spacing: 6) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(.caption)
+
+                if let target = targetChannel {
+                    Text("发送到: \(target.name)")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                } else if availableChannels.isEmpty {
+                    Text("请先订阅频道")
+                        .font(.caption)
+                } else {
+                    Text("选择目标频道")
+                        .font(.caption)
+                }
+
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+            }
+            .foregroundColor(targetChannel != nil ? ApocalypseTheme.textPrimary : ApocalypseTheme.warning)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(ApocalypseTheme.cardBackground)
+            .cornerRadius(8)
+        }
+        .padding(.top, 8)
+        .sheet(isPresented: $showChannelPicker) {
+            channelPickerSheet
+        }
+    }
+
+    private var channelPickerSheet: some View {
+        NavigationStack {
+            List {
+                if availableChannels.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "antenna.radiowaves.left.and.right.slash")
+                            .font(.system(size: 40))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                        Text("暂无可用频道")
+                            .font(.headline)
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                        Text("请先在频道中心订阅或创建频道")
+                            .font(.caption)
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+                    .listRowBackground(Color.clear)
+                } else {
+                    ForEach(availableChannels) { subscribedChannel in
+                        let channel = subscribedChannel.channel
+                        let isSelected = targetChannel?.id == channel.id
+
+                        Button(action: {
+                            communicationManager.setPTTTargetChannel(channel.id)
+                            showChannelPicker = false
+                        }) {
+                            HStack {
+                                ZStack {
+                                    Circle()
+                                        .fill(channel.channelType.color.opacity(0.2))
+                                        .frame(width: 40, height: 40)
+                                    Image(systemName: channel.channelType.icon)
+                                        .foregroundColor(channel.channelType.color)
+                                }
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(channel.name)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(ApocalypseTheme.textPrimary)
+                                    Text(channel.channelType.displayName)
+                                        .font(.caption2)
+                                        .foregroundColor(ApocalypseTheme.textSecondary)
+                                }
+
+                                Spacer()
+
+                                if isSelected {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(ApocalypseTheme.primary)
+                                }
+                            }
+                        }
+                        .listRowBackground(ApocalypseTheme.cardBackground)
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(ApocalypseTheme.background)
+            .navigationTitle("选择目标频道")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { showChannelPicker = false }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 
     // MARK: - Status Display
@@ -129,7 +263,17 @@ struct PTTCallView: View {
     // MARK: - PTT Button
 
     private var canSend: Bool {
-        communicationManager.currentDevice?.canSend ?? false
+        (communicationManager.currentDevice?.canSend ?? false) && targetChannel != nil
+    }
+
+    private var cannotSendReason: String {
+        if !(communicationManager.currentDevice?.canSend ?? false) {
+            return "请切换到可发送设备"
+        }
+        if targetChannel == nil {
+            return "请选择目标频道"
+        }
+        return ""
     }
 
     private var pttButtonArea: some View {
@@ -161,7 +305,7 @@ struct PTTCallView: View {
                         : ApocalypseTheme.cardBackground
                     )
                     .frame(width: 100, height: 100)
-                    .shadow(color: isPressing ? (isEmergencyMode ? .red : .orange).opacity(0.5) : .clear, radius: 20)
+                    .shadow(color: isPressing ? (isEmergencyMode ? Color.red : Color.orange).opacity(0.5) : Color.clear, radius: 20)
 
                 Image(systemName: isPressing ? "waveform" : "mic.fill")
                     .font(.system(size: 36))
@@ -190,7 +334,7 @@ struct PTTCallView: View {
                     }
             )
 
-            Text(canSend ? "按住发送" : "请切换到可发送设备")
+            Text(canSend ? "按住发送" : cannotSendReason)
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textSecondary)
         }
@@ -264,7 +408,7 @@ struct PTTCallView: View {
         VStack {
             Spacer()
 
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 40))
                     .foregroundColor(.green)
@@ -273,10 +417,39 @@ struct PTTCallView: View {
                     .font(.headline)
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
+                if let channelName = sentToChannel {
+                    Text("发送到: \(channelName)")
+                        .font(.subheadline)
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
+
                 Text(message)
                     .font(.caption)
                     .foregroundColor(ApocalypseTheme.textSecondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
+
+                // 查看消息按钮
+                Button(action: {
+                    // 找到目标频道并导航
+                    if let targetId = targetChannel?.id,
+                       let subscribedChannel = communicationManager.subscribedChannels.first(where: { $0.channel.id == targetId }) {
+                        navigateToChannel = subscribedChannel.channel
+                    }
+                    showSentFeedback = false
+                }) {
+                    HStack {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                        Text("查看消息")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(ApocalypseTheme.primary)
+                    .cornerRadius(8)
+                }
+                .padding(.top, 4)
             }
             .padding(24)
             .background(ApocalypseTheme.cardBackground)
@@ -293,6 +466,9 @@ struct PTTCallView: View {
     private func sendMessage() {
         let content = messageText.isEmpty ? "位置信号" : messageText
 
+        // 记录目标频道名称
+        let channelName = targetChannel?.name
+
         isSending = true
 
         Task {
@@ -305,16 +481,18 @@ struct PTTCallView: View {
                 // Show feedback
                 await MainActor.run {
                     sentMessage = content
+                    sentToChannel = channelName
                     withAnimation {
                         showSentFeedback = true
                     }
                     messageText = ""
 
-                    // Hide feedback after 1.5s
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    // Hide feedback after 2s
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                         withAnimation {
                             showSentFeedback = false
                             sentMessage = nil
+                            sentToChannel = nil
                         }
                     }
                 }

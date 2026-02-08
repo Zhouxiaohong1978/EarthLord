@@ -13,7 +13,7 @@ import SwiftUI
 enum ResourceSegment: String, CaseIterable {
     case poi = "POI"
     case backpack = "背包"
-    case purchased = "已购"
+    case mailbox = "邮箱"
     case territory = "领地"
     case trade = "交易"
 }
@@ -49,6 +49,12 @@ struct ExplorationTabView: View {
                 }
             }
             .navigationBarHidden(true)
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToMailbox)) { _ in
+                // 切换到邮箱分段
+                withAnimation {
+                    selectedSegment = .mailbox
+                }
+            }
         }
     }
 
@@ -108,13 +114,92 @@ struct ExplorationTabView: View {
             POIContentView()
         case .backpack:
             BackpackContentView()
-        case .purchased:
-            PlaceholderContentView(title: "已购", icon: "bag.fill")
+        case .mailbox:
+            MailboxContentView()
         case .territory:
             PlaceholderContentView(title: "领地", icon: "flag.fill")
         case .trade:
             TradeContentView()
         }
+    }
+}
+
+// MARK: - 邮箱内容视图（嵌入资源页面）
+
+struct MailboxContentView: View {
+    @StateObject private var mailboxManager = MailboxManager.shared
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if mailboxManager.isLoading && mailboxManager.mails.isEmpty {
+                loadingView
+            } else if mailboxManager.mails.isEmpty {
+                emptyView
+            } else {
+                mailListView
+            }
+        }
+        .task {
+            await mailboxManager.loadMails()
+        }
+    }
+
+    // MARK: - 邮件列表
+
+    private var mailListView: some View {
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                ForEach(mailboxManager.mails) { mail in
+                    NavigationLink(destination: MailDetailView(mail: mail)) {
+                        MailItemRow(mail: mail)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .refreshable {
+            await mailboxManager.loadMails()
+        }
+    }
+
+    // MARK: - 加载中
+
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("加载邮件...")
+                .font(.system(size: 15))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - 空状态
+
+    private var emptyView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            Image(systemName: "envelope.open")
+                .font(.system(size: 60))
+                .foregroundColor(ApocalypseTheme.textMuted)
+
+            Text("邮箱为空")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+
+            Text("购买物品后奖励将发送到这里")
+                .font(.system(size: 14))
+                .foregroundColor(ApocalypseTheme.textMuted)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -570,13 +655,6 @@ struct BackpackContentView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
 
-            #if DEBUG
-            // 开发者工具区域
-            developerTools
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-            #endif
-
             // 搜索框
             searchBar
                 .padding(.horizontal, 16)
@@ -623,81 +701,6 @@ struct BackpackContentView: View {
         }
     }
 
-    // MARK: - 开发者工具
-
-    #if DEBUG
-    private var developerTools: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "wrench.and.screwdriver.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(ApocalypseTheme.warning)
-
-                Text("开发者工具")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                Spacer()
-            }
-
-            HStack(spacing: 12) {
-                // 添加测试资源按钮
-                Button {
-                    Task {
-                        await inventoryManager.addTestResources()
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14))
-                        Text("添加测试资源")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(ApocalypseTheme.success)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(ApocalypseTheme.success.opacity(0.15))
-                    )
-                }
-
-                // 清空背包按钮
-                Button {
-                    Task {
-                        await inventoryManager.clearAllItems()
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 14))
-                        Text("清空背包")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(ApocalypseTheme.danger)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(ApocalypseTheme.danger.opacity(0.15))
-                    )
-                }
-
-                Spacer()
-            }
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(ApocalypseTheme.cardBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(ApocalypseTheme.warning.opacity(0.3), lineWidth: 1)
-                )
-        )
-    }
-    #endif
-
     // MARK: - 容量状态卡
 
     private var capacityCard: some View {
@@ -715,21 +718,31 @@ struct BackpackContentView: View {
 
                 Spacer()
 
-                Text(String(format: "%.1f / %.0f kg", animatedCapacity, maxCapacity))
+                let itemTypes = inventoryManager.itemTypeCount  // 物品种类数
+                let maxSlots = inventoryManager.backpackCapacity  // 背包容量（基于订阅档位）
+                let slotsPercentage = Double(itemTypes) / Double(maxSlots)
+                let slotsColor: Color = slotsPercentage > 0.9 ? ApocalypseTheme.danger : (slotsPercentage > 0.7 ? ApocalypseTheme.warning : ApocalypseTheme.success)
+
+                Text("\(itemTypes) / \(maxSlots)")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(capacityColor)
+                    .foregroundColor(slotsColor)
             }
 
             // 进度条
             GeometryReader { geometry in
+                let itemTypes = inventoryManager.itemTypeCount
+                let maxSlots = inventoryManager.backpackCapacity
+                let slotsPercentage = Double(itemTypes) / Double(maxSlots)
+                let slotsColor: Color = slotsPercentage > 0.9 ? ApocalypseTheme.danger : (slotsPercentage > 0.7 ? ApocalypseTheme.warning : ApocalypseTheme.success)
+
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(ApocalypseTheme.background)
                         .frame(height: 8)
 
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(capacityColor)
-                        .frame(width: geometry.size.width * (animatedCapacity / maxCapacity), height: 8)
+                        .fill(slotsColor)
+                        .frame(width: geometry.size.width * slotsPercentage, height: 8)
                 }
             }
             .frame(height: 8)

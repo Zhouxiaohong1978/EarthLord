@@ -43,8 +43,10 @@ final class MailboxManager: ObservableObject {
     /// 日志器
     private let logger = ExplorationLogger.shared
 
-    /// 背包容量限制（临时，实际应从 InventoryManager 获取）
-    private let backpackCapacity = 50
+    /// 背包容量限制（基于订阅档位动态获取）
+    private var backpackCapacity: Int {
+        InventoryManager.shared.backpackCapacity
+    }
 
     // MARK: - Initialization
 
@@ -141,21 +143,23 @@ final class MailboxManager: ObservableObject {
 
     /// 领取邮件物品（部分领取机制）
     func claimMail(_ mail: Mail) async throws -> ClaimResult {
-        guard let userId = AuthManager.shared.currentUser?.id else {
+        guard AuthManager.shared.currentUser?.id != nil else {
             throw PurchaseError.notAuthenticated
         }
 
         logger.log("开始领取邮件: \(mail.title)", type: .info)
 
-        // 计算背包剩余空间
-        let currentItemCount = InventoryManager.shared.items.reduce(0) { $0 + $1.quantity }
-        let remainingSpace = max(0, backpackCapacity - currentItemCount)
+        // 计算背包剩余格子数（物品种类数）
+        let currentItemTypes = InventoryManager.shared.items.count
+        let remainingSpace = max(0, backpackCapacity - currentItemTypes)
+
+        logger.log("当前背包: \(currentItemTypes) 种物品，剩余 \(remainingSpace) 格", type: .info)
 
         guard remainingSpace > 0 else {
             throw NSError(
                 domain: "MailboxManager",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "背包已满，请先整理背包"]
+                userInfo: [NSLocalizedDescriptionKey: "背包已满（\(currentItemTypes)/\(backpackCapacity)格），请先整理背包"]
             )
         }
 
@@ -166,17 +170,23 @@ final class MailboxManager: ObservableObject {
                 "p_backpack_limit": .integer(remainingSpace)
             ]
 
+            logger.log("调用 claim_mail_partial RPC, 邮件ID: \(mail.id), 背包限制: \(remainingSpace)", type: .info)
+
             // RPC 返回 JSONB，直接解码为 ClaimResult
             let result: ClaimResult = try await supabase
                 .rpc("claim_mail_partial", params: params)
                 .execute()
                 .value
 
+            logger.log("RPC 返回结果: 已领 \(result.claimedCount) 件，剩余 \(result.remainingCount) 件", type: .info)
+            logger.log("已领取物品: \(result.claimedItems.map { "\($0.itemId) x\($0.quantity)" })", type: .info)
+
             // 刷新邮件列表
             await loadMails()
 
-            // 刷新背包
+            // 刷新背包并打印结果
             await InventoryManager.shared.refreshInventory()
+            logger.log("背包刷新后物品数: \(InventoryManager.shared.items.count)", type: .info)
 
             logger.log("领取成功: 已领 \(result.claimedCount) 件，剩余 \(result.remainingCount) 件", type: .success)
 
@@ -246,8 +256,8 @@ final class MailboxManager: ObservableObject {
         }
 
         let testItems: [MailItem] = [
-            MailItem(itemId: "water_001", quantity: 3, quality: nil),
-            MailItem(itemId: "food_002", quantity: 2, quality: "normal")
+            MailItem(itemId: "water_bottle", quantity: 3, quality: nil),
+            MailItem(itemId: "canned_food", quantity: 2, quality: "normal")
         ]
 
         let itemsJSON = try JSONEncoder().encode(testItems)
@@ -266,6 +276,28 @@ final class MailboxManager: ObservableObject {
         await loadMails()
 
         logger.log("测试邮件已发送", type: .success)
+    }
+
+    /// 检查数据库 inventory_items 表
+    func checkInventoryInDatabase() async throws -> Int {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            throw PurchaseError.notAuthenticated
+        }
+
+        logger.log("直接查询数据库 inventory_items 表...", type: .info)
+
+        let response: [InventoryItemDB] = try await supabase
+            .from("inventory_items")
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+            .value
+
+        let totalCount = response.reduce(0) { $0 + $1.quantity }
+        logger.log("数据库中实际物品数: \(response.count) 种, 总数量: \(totalCount)", type: .info)
+        logger.log("物品详情: \(response.map { "\($0.itemId) x\($0.quantity)" }.joined(separator: ", "))", type: .info)
+
+        return totalCount
     }
     #endif
 }

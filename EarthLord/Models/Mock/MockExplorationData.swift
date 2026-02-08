@@ -429,6 +429,17 @@ struct MockExplorationData {
             maxStack: 50,
             hasQuality: false
         ),
+        ItemDefinition(
+            id: "glass",
+            name: "玻璃",
+            category: .material,
+            weight: 1.0,
+            volume: 0.8,
+            rarity: .common,
+            description: "回收的玻璃碎片，可用于建造窗户或制作容器。",
+            maxStack: 50,
+            hasQuality: false
+        ),
 
         // 工具
         ItemDefinition(

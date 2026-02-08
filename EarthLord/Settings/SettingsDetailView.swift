@@ -11,12 +11,35 @@ struct SettingsDetailView: View {
     /// 语言管理器
     @ObservedObject private var languageManager = LanguageManager.shared
 
+    /// 显示商城
+    @State private var showStore = false
+
     var body: some View {
         ZStack {
             ApocalypseTheme.background
                 .ignoresSafeArea()
 
             List {
+                // 商城入口
+                Section {
+                    Button(action: { showStore = true }) {
+                        HStack {
+                            Image(systemName: "bag.fill")
+                                .foregroundColor(ApocalypseTheme.primary)
+                                .frame(width: 30)
+                            Text("物资商城")
+                                .foregroundColor(ApocalypseTheme.textPrimary)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(ApocalypseTheme.textMuted)
+                        }
+                    }
+                    .listRowBackground(ApocalypseTheme.cardBackground)
+                }
+
                 // 语言设置
                 Section {
                     NavigationLink {
@@ -71,6 +94,9 @@ struct SettingsDetailView: View {
         .navigationTitle("设置")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .sheet(isPresented: $showStore) {
+            StoreView()
+        }
     }
 
     // MARK: - 设置项

@@ -301,7 +301,7 @@ struct POIListView: View {
             HStack(spacing: 10) {
                 ForEach(POIFilterType.allCases) { filter in
                     FilterChip(
-                        title: filter.displayName.key,
+                        title: filter.rawValue,
                         isSelected: selectedFilter == filter
                     ) {
                         withAnimation(.easeInOut(duration: 0.2)) {

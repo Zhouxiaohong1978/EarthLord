@@ -205,21 +205,21 @@ struct ProfileTabView: View {
             inlineStat(
                 icon: "calendar.badge.clock",
                 value: "\(survivalDays)\(String(localized: "天"))",
-                label: LocalizedStringKey("存活"),
+                label: "存活",
                 color: ApocalypseTheme.info
             )
             statDivider
             inlineStat(
                 icon: "flag.fill",
                 value: "\(myTerritories.count)",
-                label: LocalizedStringKey("领地"),
+                label: "领地",
                 color: ApocalypseTheme.info
             )
             statDivider
             inlineStat(
                 icon: "building.2.fill",
                 value: "\(buildingManager.playerBuildings.count)",
-                label: LocalizedStringKey("建筑"),
+                label: "建筑",
                 color: ApocalypseTheme.info
             )
         }
@@ -410,20 +410,20 @@ struct ProfileTabView: View {
                     icon: "figure.walk",
                     iconColor: ApocalypseTheme.info,
                     value: filteredDistance,
-                    label: LocalizedStringKey("距离")
+                    label: "距离"
                 )
                 bigMetricCard(
                     icon: "map.fill",
                     iconColor: ApocalypseTheme.success,
                     value: filteredArea,
-                    label: LocalizedStringKey("面积")
+                    label: "面积"
                 )
             }
 
             // 次级数据网格
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                miniStatCard(icon: "flag.fill",       iconColor: ApocalypseTheme.primary, value: "\(myTerritories.count)",                   label: LocalizedStringKey("圈地总数"))
-                miniStatCard(icon: "building.2.fill", iconColor: ApocalypseTheme.info,    value: "\(buildingManager.playerBuildings.count)", label: LocalizedStringKey("建筑总数"))
+                miniStatCard(icon: "flag.fill",       iconColor: ApocalypseTheme.primary, value: "\(myTerritories.count)",                   label: "圈地总数")
+                miniStatCard(icon: "building.2.fill", iconColor: ApocalypseTheme.info,    value: "\(buildingManager.playerBuildings.count)", label: "建筑总数")
             }
 
             // 每日礼包（订阅用户）

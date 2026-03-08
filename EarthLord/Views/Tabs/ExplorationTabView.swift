@@ -61,7 +61,7 @@ struct ExplorationTabView: View {
 
     private var headerView: some View {
         HStack {
-            Text("资源")
+            Text(LocalizedStringKey("资源"))
                 .font(.system(size: 34, weight: .bold))
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -168,7 +168,7 @@ struct MailboxContentView: View {
             Spacer()
             ProgressView()
                 .scaleEffect(1.5)
-            Text("加载邮件...")
+            Text(LocalizedStringKey("加载邮件..."))
                 .font(.system(size: 15))
                 .foregroundColor(ApocalypseTheme.textSecondary)
             Spacer()
@@ -186,11 +186,11 @@ struct MailboxContentView: View {
                 .font(.system(size: 60))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
-            Text("邮箱为空")
+            Text(LocalizedStringKey("邮箱为空"))
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text("购买物品后奖励将发送到这里")
+            Text(LocalizedStringKey("购买物品后奖励将发送到这里"))
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
@@ -400,11 +400,11 @@ struct POIContentView: View {
                 .font(.system(size: 60))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
-            Text("没有找到该类型的地点")
+            Text(LocalizedStringKey("没有找到该类型的地点"))
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text("尝试选择其他分类")
+            Text(LocalizedStringKey("尝试选择其他分类"))
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
@@ -505,7 +505,7 @@ struct POICardNew: View {
                         HStack(spacing: 4) {
                             Image(systemName: "eye.fill")
                                 .font(.system(size: 10))
-                            Text("已发现")
+                            Text(LocalizedStringKey("已发现"))
                                 .font(.system(size: 12))
                         }
                         .foregroundColor(ApocalypseTheme.textSecondary)
@@ -517,7 +517,7 @@ struct POICardNew: View {
                         HStack(spacing: 4) {
                             Image(systemName: "questionmark.circle")
                                 .font(.system(size: 10))
-                            Text("未发现")
+                            Text(LocalizedStringKey("未发现"))
                                 .font(.system(size: 12))
                         }
                         .foregroundColor(ApocalypseTheme.textMuted)
@@ -554,7 +554,7 @@ struct POICardNew: View {
             HStack(spacing: 4) {
                 Image(systemName: "shippingbox.fill")
                     .font(.system(size: 10))
-                Text("有物资")
+                Text(LocalizedStringKey("有物资"))
                     .font(.system(size: 12))
             }
             .foregroundColor(ApocalypseTheme.success)
@@ -562,7 +562,7 @@ struct POICardNew: View {
             HStack(spacing: 4) {
                 Image(systemName: "shippingbox")
                     .font(.system(size: 10))
-                Text("已空")
+                Text(LocalizedStringKey("已空"))
                     .font(.system(size: 12))
             }
             .foregroundColor(ApocalypseTheme.textMuted)
@@ -570,7 +570,7 @@ struct POICardNew: View {
             HStack(spacing: 4) {
                 Image(systemName: "questionmark.circle")
                     .font(.system(size: 10))
-                Text("待搜索")
+                Text(LocalizedStringKey("待搜索"))
                     .font(.system(size: 12))
             }
             .foregroundColor(ApocalypseTheme.info)
@@ -708,7 +708,7 @@ struct BackpackContentView: View {
                         .font(.system(size: 14))
                         .foregroundColor(ApocalypseTheme.primary)
 
-                    Text("背包容量")
+                    Text(LocalizedStringKey("背包容量"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textPrimary)
                 }
@@ -827,7 +827,7 @@ struct BackpackContentView: View {
             ProgressView()
                 .scaleEffect(1.5)
 
-            Text("加载背包数据...")
+            Text(LocalizedStringKey("加载背包数据..."))
                 .font(.system(size: 15))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -846,7 +846,7 @@ struct BackpackContentView: View {
                 .font(.system(size: 60))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
-            Text("没有找到相关物品")
+            Text(LocalizedStringKey("没有找到相关物品"))
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -966,7 +966,7 @@ struct BackpackItemCardNew: View {
                 Button {
                     print("使用: \(definition.name)")
                 } label: {
-                    Text("使用")
+                    Text(LocalizedStringKey("使用"))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white)
                         .frame(width: 48, height: 26)
@@ -979,7 +979,7 @@ struct BackpackItemCardNew: View {
                 Button {
                     print("存储: \(definition.name)")
                 } label: {
-                    Text("存储")
+                    Text(LocalizedStringKey("存储"))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textSecondary)
                         .frame(width: 48, height: 26)
@@ -1215,7 +1215,7 @@ struct TradeContentView: View {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 18))
 
-                Text("发布新挂单")
+                Text(LocalizedStringKey("发布新挂单"))
                     .font(.system(size: 16, weight: .semibold))
             }
             .foregroundColor(.white)

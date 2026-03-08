@@ -1,9 +1,6 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
-    "": {},
-    "·": {},
-    "· %@": {},
     "· 创建者": {
       "localizations": {
         "en": {
@@ -52,7 +49,6 @@
         }
       }
     },
-    "(001-999)": {},
     "(可选)": {
       "localizations": {
         "en": {
@@ -117,8 +113,6 @@
         }
       }
     },
-    "/": {},
-    "/ %@": {},
     "/ 年": {
       "extractionState": "stale",
       "localizations": {
@@ -237,7 +231,6 @@
         }
       }
     },
-    "%lld": {},
     "%lld / %lld": {
       "localizations": {
         "en": {
@@ -360,9 +353,6 @@
         }
       }
     },
-    "%lld/50": {},
-    "%lld/100": {},
-    "%lld%%": {},
     "%llds": {
       "localizations": {
         "en": {
@@ -459,8 +449,6 @@
         }
       }
     },
-    "•": {},
-    "• %@": {},
     "• %lld天后过期": {
       "localizations": {
         "en": {
@@ -717,7 +705,6 @@
         }
       }
     },
-    "×%lld": {},
     "○ 未追踪": {
       "localizations": {
         "en": {
@@ -750,8 +737,6 @@
         }
       }
     },
-    "001": {},
-    "99+": {},
     "Day 33 实现": {
       "localizations": {
         "en": {
@@ -768,7 +753,6 @@
         }
       }
     },
-    "DOOMSDAY LORD": {},
     "EARTH LORD": {
       "extractionState": "manual",
       "localizations": {
@@ -838,7 +822,6 @@
         }
       }
     },
-    "Lv.%lld": {},
     "PTT 通话": {
       "localizations": {
         "en": {

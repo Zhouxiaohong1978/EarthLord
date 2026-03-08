@@ -16,7 +16,7 @@ struct DangerLevelConfig {
     let color: Color
 
     var text: String {
-        String(localized: textKey)
+        NSLocalizedString(textKey, comment: "")
     }
 
     static func from(level: Int) -> DangerLevelConfig {

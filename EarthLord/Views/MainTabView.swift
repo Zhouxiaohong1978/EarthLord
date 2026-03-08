@@ -42,35 +42,35 @@ struct MainTabView: View {
                 MapTabView()
                     .tabItem {
                         Image(systemName: "map.fill")
-                        Text("地图")
+                        Text(LocalizedStringKey("地图"))
                     }
                     .tag(0)
 
                 TerritoryTabView()
                     .tabItem {
                         Image(systemName: "flag.fill")
-                        Text("领地")
+                        Text(LocalizedStringKey("领地"))
                     }
                     .tag(1)
 
                 ExplorationTabView()
                     .tabItem {
                         Image(systemName: "shippingbox.fill")
-                        Text("资源")
+                        Text(LocalizedStringKey("资源"))
                     }
                     .tag(2)
 
                 CommunicationTabView()
                     .tabItem {
                         Image(systemName: "antenna.radiowaves.left.and.right")
-                        Text("通讯")
+                        Text(LocalizedStringKey("通讯"))
                     }
                     .tag(3)
 
                 ProfileTabView()
                     .tabItem {
                         Image(systemName: "person.fill")
-                        Text("个人")
+                        Text(LocalizedStringKey("个人"))
                     }
                     .tag(4)
             }

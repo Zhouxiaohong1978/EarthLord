@@ -18,7 +18,7 @@ struct MoreTabView: View {
                 }
                 .scrollContentBackground(.hidden)
             }
-            .navigationTitle("更多")
+            .navigationTitle(LocalizedStringKey("更多"))
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
         }

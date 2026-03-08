@@ -284,7 +284,7 @@ enum CommunicationSection: String, CaseIterable, Identifiable {
 
     /// 本地化显示名称
     var displayName: String {
-        return rawValue
+        String(localized: rawValue)
     }
 
     /// 分区图标

@@ -21,7 +21,7 @@ struct CommunicationTabView: View {
                 // 顶部导航
                 VStack(spacing: 0) {
                     HStack {
-                        Text("通讯中心")
+                        Text(LocalizedStringKey("通讯中心"))
                             .font(.title2).fontWeight(.bold)
                             .foregroundColor(ApocalypseTheme.textPrimary)
 

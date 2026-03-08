@@ -18,6 +18,9 @@ enum TradeOfferFilter: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// 显示名称（本地化）
+    var displayName: LocalizedStringKey { LocalizedStringKey(rawValue) }
+
     /// 对应的状态
     var status: TradeOfferStatus? {
         switch self {
@@ -67,7 +70,7 @@ struct MyTradeOffersView: View {
                 }
             }
         }
-        .navigationTitle("我的挂单")
+        .navigationTitle(LocalizedStringKey("我的挂单"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -127,7 +130,7 @@ struct MyTradeOffersView: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Text(filter.rawValue)
+                Text(filter.displayName)
                     .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
 
                 if count > 0 {

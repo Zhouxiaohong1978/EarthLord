@@ -40,6 +40,12 @@ final class AuthManager: ObservableObject {
     /// 验证码是否已验证（等待设置密码）
     @Published var otpVerified: Bool = false
 
+    /// 注册验证码是否已发送（等待用户输入 OTP）
+    @Published var registerOTPSent: Bool = false
+
+    /// 待验证的注册邮箱（内部使用）
+    private(set) var pendingRegisterEmail: String = ""
+
     /// 关联账号的用户 ID 列表（包括当前用户自己）
     @Published var linkedUserIds: Set<String> = []
 
@@ -182,81 +188,110 @@ final class AuthManager: ObservableObject {
 
     /// 发送注册验证码
     /// - Parameter email: 用户邮箱
-    func sendRegisterOTP(email: String) async {
+    /// 注册新用户（邮箱+密码+用户名）
+    func signUp(email: String, password: String, username: String) async {
         isLoading = true
         errorMessage = nil
 
+        print("📝 开始注册: \(email), 用户名: \(username)")
+
+        // 先检查用户名是否已被占用
         do {
-            // 使用 signInWithOTP 发送验证码，shouldCreateUser: true 表示创建新用户
-            try await supabase.auth.signInWithOTP(
+            let available: Bool = try await supabase
+                .rpc("check_username_available", params: ["p_username": username])
+                .execute()
+                .value
+            if !available {
+                errorMessage = "用户名「\(username)」已被使用，请换一个"
+                isLoading = false
+                return
+            }
+        } catch {
+            print("⚠️ 用户名检查失败，继续注册: \(error)")
+        }
+
+        do {
+            let response = try await supabase.auth.signUp(
                 email: email,
-                shouldCreateUser: true
+                password: password,
+                data: username.isEmpty ? nil : ["username": .string(username)]
             )
 
-            otpSent = true
-            print("📧 注册验证码已发送到: \(email)")
+            // 检查邮箱是否已被注册（Supabase 对已存在的邮箱返回 identities 为空）
+            if response.user.identities?.isEmpty ?? true {
+                errorMessage = "该邮箱已被注册，请直接登录"
+                print("⚠️ 邮箱已被注册: \(email)")
+                isLoading = false
+                return
+            }
+
+            // 注册成功
+            if let session = response.session {
+                currentUser = session.user
+                isAuthenticated = true
+                print("✅ 注册成功，已自动登录")
+            } else {
+                // Supabase 配置了邮箱验证，需要用户输入 OTP
+                pendingRegisterEmail = email
+                registerOTPSent = true
+                print("✅ 注册请求成功，等待用户输入邮箱验证码: \(email)")
+            }
         } catch {
-            errorMessage = "发送验证码失败: \(error.localizedDescription)"
-            print("❌ 发送注册验证码失败: \(error)")
+            errorMessage = "注册失败: \(error.localizedDescription)"
+            print("❌ 注册失败: \(error)")
         }
 
         isLoading = false
     }
+
+    // MARK: - 注册 OTP 验证
 
     /// 验证注册验证码
-    /// - Parameters:
-    ///   - email: 用户邮箱
-    ///   - code: 验证码
-    func verifyRegisterOTP(email: String, code: String) async {
+    /// - Parameter code: 用户输入的 6 位验证码
+    func verifyRegisterOTP(code: String) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            // 验证 OTP，type 为 .email
             let session = try await supabase.auth.verifyOTP(
-                email: email,
+                email: pendingRegisterEmail,
                 token: code,
-                type: .email
+                type: .signup
             )
-
-            // 验证成功后，用户已登录，但需要设置密码
             currentUser = session.user
-            otpVerified = true
-            needsPasswordSetup = true
-            // 注意：isAuthenticated 保持 false，直到设置密码完成
-
-            print("✅ 注册验证码验证成功，等待设置密码")
+            registerOTPSent = false
+            pendingRegisterEmail = ""
+            isAuthenticated = true
+            print("✅ 注册验证码验证成功")
         } catch {
-            errorMessage = "验证码验证失败: \(error.localizedDescription)"
-            print("❌ 验证注册验证码失败: \(error)")
+            errorMessage = "验证码错误或已过期，请重试"
+            print("❌ 注册验证码验证失败: \(error)")
         }
 
         isLoading = false
     }
 
-    /// 完成注册（设置密码）
-    /// - Parameter password: 用户密码
-    func completeRegistration(password: String) async {
+    /// 重新发送注册验证码
+    func resendRegisterOTP() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            // 更新用户密码
-            try await supabase.auth.update(user: Auth.UserAttributes(password: password))
-
-            // 密码设置成功，完成注册流程
-            needsPasswordSetup = false
-            otpVerified = false
-            otpSent = false
-            isAuthenticated = true
-
-            print("✅ 注册完成，密码已设置")
+            try await supabase.auth.resend(email: pendingRegisterEmail, type: .signup)
+            print("📧 注册验证码已重新发送到: \(pendingRegisterEmail)")
         } catch {
-            errorMessage = "设置密码失败: \(error.localizedDescription)"
-            print("❌ 设置密码失败: \(error)")
+            errorMessage = "重发验证码失败: \(error.localizedDescription)"
+            print("❌ 重发注册验证码失败: \(error)")
         }
 
         isLoading = false
+    }
+
+    /// 重置注册 OTP 状态
+    func resetRegisterOTPState() {
+        registerOTPSent = false
+        pendingRegisterEmail = ""
+        errorMessage = nil
     }
 
     // MARK: - 登录方法
@@ -553,6 +588,8 @@ final class AuthManager: ObservableObject {
         otpSent = false
         otpVerified = false
         needsPasswordSetup = false
+        registerOTPSent = false
+        pendingRegisterEmail = ""
         errorMessage = nil
     }
 

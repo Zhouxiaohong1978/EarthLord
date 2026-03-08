@@ -220,7 +220,7 @@ struct SubscriptionConfirmSheet: View {
                 .foregroundColor(ApocalypseTheme.primary)
                 .frame(width: 20)
 
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textPrimary)
         }
@@ -232,7 +232,7 @@ struct SubscriptionConfirmSheet: View {
                 .font(.caption2)
                 .foregroundColor(ApocalypseTheme.primary)
 
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textPrimary)
         }

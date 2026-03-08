@@ -85,11 +85,16 @@ final class LanguageManager: ObservableObject {
         print("   当前语言: \(currentLanguage.displayName)")
         print("   语言代码: \(currentLocale)")
 
-        // 监听语言变化
+        // 监听语言变化，同步更新 currentLocale 和保存设置
         $currentLanguage
+            .dropFirst() // 跳过初始化时的值
             .sink { [weak self] language in
                 self?.saveLanguage()
-                self?.updateLocale()
+                // 同步更新 currentLocale，确保 UI 层感知到变化
+                if let languageCode = language.languageCode {
+                    self?.currentLocale = languageCode
+                    print("🔄 语言已切换: \(languageCode)")
+                }
             }
             .store(in: &cancellables)
     }
@@ -100,7 +105,12 @@ final class LanguageManager: ObservableObject {
     /// - Parameter language: 目标语言
     func changeLanguage(to language: AppLanguage) {
         print("🌐 切换语言: \(language.displayName)")
+        // 直接同时更新两个属性，确保 .id() 和 .environment() 同时生效
         currentLanguage = language
+        if let languageCode = language.languageCode {
+            currentLocale = languageCode
+            print("🔄 语言代码已更新: \(languageCode)")
+        }
     }
 
     /// 获取本地化字符串
@@ -130,17 +140,6 @@ final class LanguageManager: ObservableObject {
     private func saveLanguage() {
         UserDefaults.standard.set(currentLanguage.rawValue, forKey: userDefaultsKey)
         print("💾 语言设置已保存: \(currentLanguage.rawValue)")
-    }
-
-    /// 更新语言代码
-    private func updateLocale() {
-        if let languageCode = currentLanguage.languageCode {
-            // 延迟一帧更新，确保 SwiftUI 能够正确响应变化
-            DispatchQueue.main.async {
-                self.currentLocale = languageCode
-                print("🔄 语言代码已更新: \(languageCode)")
-            }
-        }
     }
 }
 

@@ -12,21 +12,25 @@ import SwiftUI
 
 /// 危险等级显示配置
 struct DangerLevelConfig {
-    let text: String
+    let textKey: String
     let color: Color
+
+    var text: String {
+        String(localized: textKey)
+    }
 
     static func from(level: Int) -> DangerLevelConfig {
         switch level {
         case 1:
-            return DangerLevelConfig(text: "安全", color: ApocalypseTheme.success)
+            return DangerLevelConfig(textKey: "安全", color: ApocalypseTheme.success)
         case 2:
-            return DangerLevelConfig(text: "低危", color: ApocalypseTheme.info)
+            return DangerLevelConfig(textKey: "低危", color: ApocalypseTheme.info)
         case 3:
-            return DangerLevelConfig(text: "中危", color: ApocalypseTheme.warning)
+            return DangerLevelConfig(textKey: "中危", color: ApocalypseTheme.warning)
         case 4, 5:
-            return DangerLevelConfig(text: "高危", color: ApocalypseTheme.danger)
+            return DangerLevelConfig(textKey: "高危", color: ApocalypseTheme.danger)
         default:
-            return DangerLevelConfig(text: "未知", color: ApocalypseTheme.textMuted)
+            return DangerLevelConfig(textKey: "未知", color: ApocalypseTheme.textMuted)
         }
     }
 }
@@ -189,7 +193,7 @@ struct POIDetailView: View {
             InfoRowView(
                 icon: "location.fill",
                 iconColor: ApocalypseTheme.primary,
-                title: "距离",
+                title: LocalizedStringKey("距离"),
                 value: "\(distance) 米",
                 valueColor: ApocalypseTheme.textPrimary
             )
@@ -201,7 +205,7 @@ struct POIDetailView: View {
             InfoRowView(
                 icon: "shippingbox.fill",
                 iconColor: ApocalypseTheme.warning,
-                title: "物资状态",
+                title: LocalizedStringKey("物资状态"),
                 value: resourceStatusText,
                 valueColor: resourceStatusColor
             )
@@ -214,7 +218,7 @@ struct POIDetailView: View {
             InfoRowView(
                 icon: "exclamationmark.circle.fill",
                 iconColor: dangerConfig.color,
-                title: "危险等级",
+                title: LocalizedStringKey("危险等级"),
                 value: dangerConfig.text,
                 valueColor: dangerConfig.color
             )
@@ -226,7 +230,7 @@ struct POIDetailView: View {
             InfoRowView(
                 icon: "doc.text.fill",
                 iconColor: ApocalypseTheme.textSecondary,
-                title: "来源",
+                title: LocalizedStringKey("来源"),
                 value: dataSource,
                 valueColor: ApocalypseTheme.textPrimary
             )
@@ -241,15 +245,15 @@ struct POIDetailView: View {
     private var resourceStatusText: String {
         switch poi.status {
         case .hasResources:
-            return "有物资"
+            return String(localized: "有物资")
         case .looted:
-            return "已清空"
+            return String(localized: "已清空")
         case .discovered:
-            return "待搜索"
+            return String(localized: "待搜索")
         case .undiscovered:
-            return "未探索"
+            return String(localized: "未探索")
         case .dangerous:
-            return "危险区"
+            return String(localized: "危险区")
         }
     }
 
@@ -273,7 +277,7 @@ struct POIDetailView: View {
 
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("地点描述")
+            Text(LocalizedStringKey("地点描述"))
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -285,7 +289,7 @@ struct POIDetailView: View {
             // 预估资源
             if !poi.estimatedResources.isEmpty {
                 HStack(spacing: 8) {
-                    Text("可能存在:")
+                    Text(LocalizedStringKey("可能存在:"))
                         .font(.system(size: 13))
                         .foregroundColor(ApocalypseTheme.textMuted)
 
@@ -330,7 +334,7 @@ struct POIDetailView: View {
                             .font(.system(size: 18, weight: .semibold))
                     }
 
-                    Text(isExploring ? "搜寻中..." : "搜寻此POI")
+                    Text(LocalizedStringKey(isExploring ? "搜寻中..." : "搜寻此POI"))
                         .font(.system(size: 17, weight: .bold))
                 }
                 .foregroundColor(.white)
@@ -355,7 +359,7 @@ struct POIDetailView: View {
 
             // 已清空提示
             if poi.status == .looted {
-                Text("此地点已被搜空，暂时无法搜寻")
+                Text(LocalizedStringKey("此地点已被搜空，暂时无法搜寻"))
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textMuted)
             }
@@ -365,7 +369,7 @@ struct POIDetailView: View {
                 // 标记已发现
                 SecondaryButton(
                     icon: "eye.fill",
-                    title: "标记已发现"
+                    title: LocalizedStringKey("标记已发现")
                 ) {
                     print("标记已发现: \(poi.name)")
                 }
@@ -373,7 +377,7 @@ struct POIDetailView: View {
                 // 标记无物资
                 SecondaryButton(
                     icon: "xmark.circle.fill",
-                    title: "标记无物资"
+                    title: LocalizedStringKey("标记无物资")
                 ) {
                     print("标记无物资: \(poi.name)")
                 }
@@ -398,7 +402,7 @@ struct POIDetailView: View {
 struct InfoRowView: View {
     let icon: String
     let iconColor: Color
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     let valueColor: Color
 
@@ -431,7 +435,7 @@ struct InfoRowView: View {
 
 struct SecondaryButton: View {
     let icon: String
-    let title: String
+    let title: LocalizedStringKey
     let action: () -> Void
 
     var body: some View {

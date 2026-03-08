@@ -266,7 +266,7 @@ struct SubscriptionResultView: View {
                 .foregroundColor(ApocalypseTheme.primary)
                 .frame(width: 16)
 
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textPrimary)
         }

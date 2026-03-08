@@ -180,7 +180,7 @@ struct SubscriptionCard: View {
                 .foregroundColor(highlight ? ApocalypseTheme.primary : ApocalypseTheme.textSecondary)
                 .frame(width: 16)
 
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(.caption)
                 .foregroundColor(highlight ? ApocalypseTheme.primary : ApocalypseTheme.textSecondary)
         }

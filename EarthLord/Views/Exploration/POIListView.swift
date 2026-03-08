@@ -78,6 +78,9 @@ enum POIFilterType: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// 显示名称（本地化）
+    var displayName: LocalizedStringKey { LocalizedStringKey(rawValue) }
+
     /// 转换为 POIType（全部返回 nil）
     var poiType: POIType? {
         switch self {
@@ -157,7 +160,7 @@ struct POIListView: View {
                 }
             }
         }
-        .navigationTitle("附近地点")
+        .navigationTitle(LocalizedStringKey("附近地点"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -171,11 +174,11 @@ struct POIListView: View {
                 .font(.system(size: 60))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
-            Text("附近暂无兴趣点")
+            Text(LocalizedStringKey("附近暂无兴趣点"))
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text("点击搜索按钮发现周围的废墟")
+            Text(LocalizedStringKey("点击搜索按钮发现周围的废墟"))
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textMuted)
                 .multilineTextAlignment(.center)
@@ -196,11 +199,11 @@ struct POIListView: View {
                 .font(.system(size: 60))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
-            Text("没有找到该类型的地点")
+            Text(LocalizedStringKey("没有找到该类型的地点"))
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text("尝试选择其他分类")
+            Text(LocalizedStringKey("尝试选择其他分类"))
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
@@ -251,7 +254,7 @@ struct POIListView: View {
                         .font(.system(size: 18, weight: .semibold))
                 }
 
-                Text(isSearching ? "搜索中..." : "搜索附近POI")
+                Text(LocalizedStringKey(isSearching ? "搜索中..." : "搜索附近POI"))
                     .font(.system(size: 16, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -298,7 +301,7 @@ struct POIListView: View {
             HStack(spacing: 10) {
                 ForEach(POIFilterType.allCases) { filter in
                     FilterChip(
-                        title: filter.rawValue,
+                        title: filter.displayName.key,
                         isSelected: selectedFilter == filter
                     ) {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -352,7 +355,7 @@ struct FilterChip: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
                 .foregroundColor(isSelected ? .white : ApocalypseTheme.textSecondary)
                 .padding(.horizontal, 16)
@@ -415,7 +418,7 @@ struct POICard: View {
                     HStack(spacing: 2) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 10))
-                        Text("危险")
+                        Text(LocalizedStringKey("危险"))
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(ApocalypseTheme.warning)
@@ -454,15 +457,15 @@ struct POICard: View {
     private func statusInfo(for status: POIStatus) -> (String, Color) {
         switch status {
         case .undiscovered:
-            return ("未发现", ApocalypseTheme.textMuted)
+            return (String(localized: "未发现"), ApocalypseTheme.textMuted)
         case .discovered:
-            return ("已发现", ApocalypseTheme.info)
+            return (String(localized: "已发现"), ApocalypseTheme.info)
         case .hasResources:
-            return ("有物资", ApocalypseTheme.success)
+            return (String(localized: "有物资"), ApocalypseTheme.success)
         case .looted:
-            return ("已搜空", ApocalypseTheme.textSecondary)
+            return (String(localized: "已搜空"), ApocalypseTheme.textSecondary)
         case .dangerous:
-            return ("危险", ApocalypseTheme.danger)
+            return (String(localized: "危险"), ApocalypseTheme.danger)
         }
     }
 }

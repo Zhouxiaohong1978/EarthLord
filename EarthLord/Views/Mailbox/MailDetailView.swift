@@ -54,18 +54,18 @@ struct MailDetailView: View {
                     .padding(16)
                 }
             }
-            .navigationTitle("邮件详情")
+            .navigationTitle(LocalizedStringKey("邮件详情"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("关闭") {
+                    Button(LocalizedStringKey("关闭")) {
                         dismiss()
                     }
                     .foregroundColor(ApocalypseTheme.primary)
                 }
             }
-            .alert("领取结果", isPresented: $showingClaimResult) {
-                Button("确定") {
+            .alert(LocalizedStringKey("领取结果"), isPresented: $showingClaimResult) {
+                Button(LocalizedStringKey("确定")) {
                     if claimResult?.isFullyClaimed == true {
                         dismiss()
                     }
@@ -79,8 +79,8 @@ struct MailDetailView: View {
                     }
                 }
             }
-            .alert("错误", isPresented: .constant(errorMessage != nil)) {
-                Button("确定") {
+            .alert(LocalizedStringKey("错误"), isPresented: .constant(errorMessage != nil)) {
+                Button(LocalizedStringKey("确定")) {
                     errorMessage = nil
                 }
             } message: {
@@ -128,7 +128,7 @@ struct MailDetailView: View {
                     Text("•")
                         .foregroundColor(ApocalypseTheme.textSecondary)
 
-                    Text("\(days)天后过期")
+                    Text("\(days)\(String(localized: "天后过期"))")
                         .font(.caption)
                         .foregroundColor(days <= 7 ? .orange : ApocalypseTheme.textSecondary)
                 }
@@ -138,7 +138,7 @@ struct MailDetailView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
-                    Text("已于 \(formatDate(mail.claimedAt)) 领取")
+                    Text("\(String(localized: "已于")) \(formatDate(mail.claimedAt)) \(String(localized: "领取"))")
                         .font(.subheadline)
                         .foregroundColor(.green)
                 }
@@ -152,7 +152,7 @@ struct MailDetailView: View {
     // MARK: - 邮件内容
     private func mailContent(_ content: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("邮件内容")
+            Text(LocalizedStringKey("邮件内容"))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -169,7 +169,7 @@ struct MailDetailView: View {
     // MARK: - 物品列表
     private var itemList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("附件物品 (\(mail.totalItemCount)件)")
+            Text("\(String(localized: "附件物品")) (\(mail.totalItemCount)\(String(localized: "件")))")
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -193,7 +193,7 @@ struct MailDetailView: View {
             HStack {
                 Image(systemName: "backpack.fill")
                     .foregroundColor(canClaimAll ? .green : .orange)
-                Text("背包容量")
+                Text(LocalizedStringKey("背包容量"))
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(ApocalypseTheme.textPrimary)
@@ -208,7 +208,7 @@ struct MailDetailView: View {
                     Image(systemName: "exclamationmark.circle")
                         .font(.caption)
                         .foregroundColor(.orange)
-                    Text("背包空间不足，剩余 \(remainingSlots) 个位置，邮件包含 \(mailItemTypes) 种物品")
+                    Text(LocalizedStringKey("背包空间不足，剩余 \(remainingSlots) 个位置，邮件包含 \(mailItemTypes) 种物品"))
                         .font(.caption)
                         .foregroundColor(.orange)
                 }
@@ -217,7 +217,7 @@ struct MailDetailView: View {
                     Image(systemName: "checkmark.circle")
                         .font(.caption)
                         .foregroundColor(.green)
-                    Text("背包空间充足，可领取全部物品")
+                    Text(LocalizedStringKey("背包空间充足，可领取全部物品"))
                         .font(.caption)
                         .foregroundColor(.green)
                 }
@@ -241,7 +241,7 @@ struct MailDetailView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Image(systemName: "gift.fill")
-                    Text("领取物品")
+                    Text(LocalizedStringKey("领取物品"))
                 }
             }
             .frame(maxWidth: .infinity)
@@ -258,7 +258,7 @@ struct MailDetailView: View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(.red)
-            Text("邮件已过期")
+            Text(LocalizedStringKey("邮件已过期"))
                 .font(.subheadline)
                 .foregroundColor(.red)
         }

@@ -14,7 +14,6 @@ enum ResourceSegment: String, CaseIterable {
     case poi = "POI"
     case backpack = "背包"
     case mailbox = "邮箱"
-    case territory = "领地"
     case trade = "交易"
 }
 
@@ -82,7 +81,7 @@ struct ExplorationTabView: View {
                         selectedSegment = segment
                     }
                 } label: {
-                    Text(segment.rawValue)
+                    Text(LocalizedStringKey(segment.rawValue))
                         .font(.system(size: 15, weight: selectedSegment == segment ? .semibold : .medium))
                         .foregroundColor(selectedSegment == segment ? ApocalypseTheme.textPrimary : ApocalypseTheme.textSecondary)
                         .frame(maxWidth: .infinity)
@@ -116,8 +115,6 @@ struct ExplorationTabView: View {
             BackpackContentView()
         case .mailbox:
             MailboxContentView()
-        case .territory:
-            PlaceholderContentView(title: "领地", icon: "flag.fill")
         case .trade:
             TradeContentView()
         }

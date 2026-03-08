@@ -23,10 +23,14 @@ struct AuthView: View {
     @State private var loginPassword: String = ""
 
     /// 注册表单
+    @State private var registerUsername: String = ""
     @State private var registerEmail: String = ""
-    @State private var registerCode: String = ""
     @State private var registerPassword: String = ""
-    @State private var registerConfirmPassword: String = ""
+
+    /// 注册 OTP 验证
+    @State private var registerOTPCode: String = ""
+    @State private var registerResendCountdown: Int = 0
+    @State private var registerResendTimer: Timer?
 
     /// 重发验证码倒计时
     @State private var resendCountdown: Int = 0
@@ -40,6 +44,9 @@ struct AuthView: View {
     @State private var forgotConfirmPassword: String = ""
     @State private var forgotStep: Int = 1
     @State private var forgotResendCountdown: Int = 0
+
+    /// 邮箱已注册提示
+    @State private var showEmailExistsAlert: Bool = false
 
     /// Toast 提示
     @State private var showToast: Bool = false
@@ -93,13 +100,40 @@ struct AuthView: View {
                 toastView
             }
         }
+        .sheet(isPresented: Binding(
+            get: { authManager.registerOTPSent },
+            set: { if !$0 { authManager.resetRegisterOTPState(); registerOTPCode = "" } }
+        )) {
+            registerOTPSheet
+        }
         .sheet(isPresented: $showForgotPassword) {
             forgotPasswordSheet
         }
+        .onChange(of: authManager.registerOTPSent) { sent in
+            if sent {
+                registerOTPCode = ""
+                startRegisterResendCountdown()
+            }
+        }
         .onChange(of: authManager.errorMessage) { newValue in
             if let message = newValue {
-                showToastMessage(message)
+                if message.contains("该邮箱已被注册") {
+                    showEmailExistsAlert = true
+                    authManager.clearError()
+                } else {
+                    showToastMessage(message)
+                }
             }
+        }
+        .alert("该邮箱已注册", isPresented: $showEmailExistsAlert) {
+            Button("去登录") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedTab = 0
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("此邮箱已有账号，请直接登录。")
         }
     }
 
@@ -241,162 +275,43 @@ struct AuthView: View {
         }
     }
 
-    // MARK: - 注册视图（三步流程）
+    // MARK: - 注册视图
 
     private var registerView: some View {
-        VStack(spacing: 20) {
-            // 根据状态显示不同步骤
-            if authManager.needsPasswordSetup && authManager.otpVerified {
-                // 第三步：设置密码
-                registerStep3View
-            } else if authManager.otpSent && !authManager.otpVerified {
-                // 第二步：验证码验证
-                registerStep2View
-            } else {
-                // 第一步：输入邮箱
-                registerStep1View
-            }
-
-            // 步骤指示器
-            stepIndicator
-        }
-    }
-
-    /// 注册第一步：输入邮箱
-    private var registerStep1View: some View {
-        VStack(spacing: 20) {
-            Text("第一步：输入邮箱")
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
+        VStack(spacing: 16) {
+            CustomTextField(
+                icon: "person.fill",
+                placeholder: "用户名",
+                text: $registerUsername
+            )
 
             CustomTextField(
                 icon: "envelope.fill",
-                placeholder: "请输入邮箱",
+                placeholder: "邮箱",
                 text: $registerEmail,
                 keyboardType: .emailAddress
             )
 
-            PrimaryButton(title: "发送验证码") {
-                Task {
-                    await authManager.sendRegisterOTP(email: registerEmail)
-                    if authManager.otpSent {
-                        startResendCountdown()
-                    }
-                }
-            }
-            .disabled(registerEmail.isEmpty || !isValidEmail(registerEmail))
-        }
-    }
-
-    /// 注册第二步：验证码验证
-    private var registerStep2View: some View {
-        VStack(spacing: 20) {
-            Text("第二步：输入验证码")
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            Text(String(format: NSLocalizedString("验证码已发送至 %@", comment: ""), registerEmail))
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textSecondary)
-
-            // 验证码输入框
-            CustomTextField(
-                icon: "number",
-                placeholder: "6位验证码",
-                text: $registerCode,
-                keyboardType: .numberPad
-            )
-
-            HStack(spacing: 12) {
-                // 验证按钮
-                PrimaryButton(title: "验证") {
-                    Task {
-                        await authManager.verifyRegisterOTP(email: registerEmail, code: registerCode)
-                    }
-                }
-                .disabled(registerCode.count != 6)
-
-                // 重发按钮
-                Button {
-                    Task {
-                        await authManager.sendRegisterOTP(email: registerEmail)
-                        if authManager.otpSent {
-                            startResendCountdown()
-                        }
-                    }
-                } label: {
-                    Text(resendCountdown > 0 ? "\(resendCountdown)s" : "重发")
-                        .font(.subheadline)
-                        .foregroundColor(resendCountdown > 0 ? ApocalypseTheme.textMuted : ApocalypseTheme.primary)
-                        .frame(width: 60)
-                }
-                .disabled(resendCountdown > 0)
-            }
-        }
-    }
-
-    /// 注册第三步：设置密码
-    private var registerStep3View: some View {
-        VStack(spacing: 20) {
-            Text("第三步：设置密码")
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            Text("验证成功！请设置您的登录密码")
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.success)
-
             CustomSecureField(
                 icon: "lock.fill",
-                placeholder: "设置密码（至少6位）",
+                placeholder: "密码（至少6位）",
                 text: $registerPassword
             )
 
-            CustomSecureField(
-                icon: "lock.fill",
-                placeholder: "确认密码",
-                text: $registerConfirmPassword
-            )
-
-            // 密码不匹配提示
-            if !registerConfirmPassword.isEmpty && registerPassword != registerConfirmPassword {
-                Text("两次输入的密码不一致")
-                    .font(.caption)
-                    .foregroundColor(ApocalypseTheme.danger)
-            }
-
-            PrimaryButton(title: "完成注册") {
+            PrimaryButton(title: "注册") {
                 Task {
-                    await authManager.completeRegistration(password: registerPassword)
+                    await authManager.signUp(
+                        email: registerEmail,
+                        password: registerPassword,
+                        username: registerUsername.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
                 }
             }
             .disabled(
-                registerPassword.count < 6 ||
-                registerPassword != registerConfirmPassword
+                registerUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                !isValidEmail(registerEmail) ||
+                registerPassword.count < 6
             )
-        }
-    }
-
-    /// 步骤指示器
-    private var stepIndicator: some View {
-        HStack(spacing: 8) {
-            ForEach(1...3, id: \.self) { step in
-                Circle()
-                    .fill(currentRegisterStep >= step ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
-                    .frame(width: 8, height: 8)
-            }
-        }
-        .padding(.top, 10)
-    }
-
-    /// 当前注册步骤
-    private var currentRegisterStep: Int {
-        if authManager.needsPasswordSetup && authManager.otpVerified {
-            return 3
-        } else if authManager.otpSent {
-            return 2
-        } else {
-            return 1
         }
     }
 
@@ -483,6 +398,101 @@ struct AuthView: View {
     /// 收起键盘
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    // MARK: - 注册验证码弹窗
+
+    private var registerOTPSheet: some View {
+        NavigationStack {
+            ZStack {
+                ApocalypseTheme.background
+                    .ignoresSafeArea()
+
+                VStack(spacing: 28) {
+                    // 图标
+                    Image(systemName: "envelope.badge.fill")
+                        .font(.system(size: 52))
+                        .foregroundColor(ApocalypseTheme.primary)
+                        .padding(.top, 8)
+
+                    // 标题 + 说明
+                    VStack(spacing: 8) {
+                        Text("验证邮箱")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+
+                        Text("验证码已发送至")
+                            .font(.subheadline)
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+
+                        Text(authManager.pendingRegisterEmail)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(ApocalypseTheme.primary)
+                    }
+
+                    // 验证码输入框
+                    CustomTextField(
+                        icon: "number",
+                        placeholder: "请输入6位验证码",
+                        text: $registerOTPCode,
+                        keyboardType: .numberPad
+                    )
+                    .padding(.horizontal, 24)
+
+                    // 确认按钮
+                    PrimaryButton(title: "确认注册") {
+                        Task {
+                            await authManager.verifyRegisterOTP(code: registerOTPCode)
+                        }
+                    }
+                    .disabled(registerOTPCode.count != 6 || authManager.isLoading)
+                    .padding(.horizontal, 24)
+
+                    // 重发验证码
+                    Button {
+                        Task {
+                            await authManager.resendRegisterOTP()
+                            startRegisterResendCountdown()
+                        }
+                    } label: {
+                        if registerResendCountdown > 0 {
+                            Text("\(registerResendCountdown)s 后可重发")
+                                .font(.subheadline)
+                                .foregroundColor(ApocalypseTheme.textMuted)
+                        } else {
+                            Text("没收到？重新发送")
+                                .font(.subheadline)
+                                .foregroundColor(ApocalypseTheme.primary)
+                        }
+                    }
+                    .disabled(registerResendCountdown > 0 || authManager.isLoading)
+
+                    Spacer()
+                }
+                .padding(.top, 24)
+
+                // 加载遮罩
+                if authManager.isLoading {
+                    loadingOverlay
+                }
+            }
+            .navigationTitle("邮箱验证")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") {
+                        registerResendTimer?.invalidate()
+                        registerResendCountdown = 0
+                        authManager.resetRegisterOTPState()
+                        registerOTPCode = ""
+                    }
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 
     // MARK: - 忘记密码弹窗
@@ -700,6 +710,19 @@ struct AuthView: View {
                 showToast = false
             }
             authManager.clearError()
+        }
+    }
+
+    /// 开始注册验证码重发倒计时
+    private func startRegisterResendCountdown() {
+        registerResendCountdown = 60
+        registerResendTimer?.invalidate()
+        registerResendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            if registerResendCountdown > 0 {
+                registerResendCountdown -= 1
+            } else {
+                registerResendTimer?.invalidate()
+            }
         }
     }
 

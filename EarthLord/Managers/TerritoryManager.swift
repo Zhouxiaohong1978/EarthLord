@@ -190,16 +190,16 @@ final class TerritoryManager {
     /// 加载当前用户的领地（包括关联账号的领地）
     /// - Returns: Territory 数组
     func loadMyTerritories() async throws -> [Territory] {
-        guard AuthManager.shared.currentUser != nil else {
+        guard let userId = AuthManager.shared.currentUser?.id else {
             throw TerritoryError.notAuthenticated
         }
 
         print("📥 开始加载我的领地...")
 
-        // 不手动过滤 user_id，依赖 RLS 策略返回关联账号的数据
         let response: [Territory] = try await supabase
             .from("territories")
             .select()
+            .eq("user_id", value: userId.uuidString)
             .eq("is_active", value: true)
             .execute()
             .value

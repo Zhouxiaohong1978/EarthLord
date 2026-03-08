@@ -26,96 +26,60 @@ struct StoreView: View {
     @State private var purchaseResultMessage = ""
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                ApocalypseTheme.background.ignoresSafeArea()
+        ZStack {
+            ApocalypseTheme.background.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // 导航栏
-                    navigationBar
-
-                    if purchaseManager.isLoadingProducts {
-                        loadingView
-                    } else if purchaseManager.availableProducts.isEmpty {
-                        emptyView
-                    } else {
-                        productsView
-                    }
-                }
+            if purchaseManager.isLoadingProducts {
+                loadingView
+            } else if purchaseManager.availableProducts.isEmpty {
+                emptyView
+            } else {
+                productsView
             }
-            .navigationBarHidden(true)
-            .sheet(isPresented: $showingPurchaseConfirm) {
-                if let product = selectedProduct {
-                    PurchaseConfirmSheet(
-                        product: product,
-                        onConfirm: {
-                            Task {
-                                await handlePurchase(product)
-                            }
-                        },
-                        onCancel: {
-                            showingPurchaseConfirm = false
-                        }
-                    )
-                }
+        }
+        .navigationTitle("物资商城")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("关闭") { dismiss() }
+                    .foregroundColor(ApocalypseTheme.primary)
             }
-            .sheet(isPresented: $showingPurchaseResult) {
-                PurchaseResultView(
-                    isSuccess: purchaseResultSuccess,
-                    message: purchaseResultMessage,
-                    onDismiss: {
-                        showingPurchaseResult = false
-                        // 购买成功时，发送通知跳转到邮箱
-                        if purchaseResultSuccess {
-                            dismiss() // 先关闭商城
-                            // 延迟发送通知，确保商城已关闭
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                NotificationCenter.default.post(name: .navigateToMailbox, object: nil)
-                            }
-                        }
+        }
+        .sheet(isPresented: $showingPurchaseConfirm) {
+            if let product = selectedProduct {
+                PurchaseConfirmSheet(
+                    product: product,
+                    onConfirm: {
+                        Task { await handlePurchase(product) }
+                    },
+                    onCancel: {
+                        showingPurchaseConfirm = false
                     }
                 )
             }
         }
+        .sheet(isPresented: $showingPurchaseResult) {
+            PurchaseResultView(
+                isSuccess: purchaseResultSuccess,
+                message: purchaseResultMessage,
+                onDismiss: {
+                    showingPurchaseResult = false
+                    if purchaseResultSuccess {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            NotificationCenter.default.post(name: .navigateToMailbox, object: nil)
+                        }
+                    }
+                }
+            )
+        }
         .onAppear {
-            // 延迟1秒加载商品，避免与其他初始化操作并发导致真机崩溃
             Task {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
                 await purchaseManager.loadProducts()
             }
         }
-    }
-
-    // MARK: - 导航栏
-    private var navigationBar: some View {
-        HStack {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(ApocalypseTheme.primary)
-            }
-
-            Text("商城")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            Spacer()
-
-            // 恢复购买按钮
-            Button(action: {
-                Task {
-                    await purchaseManager.restorePurchases()
-                }
-            }) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 18))
-                    .foregroundColor(ApocalypseTheme.primary)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(ApocalypseTheme.cardBackground)
     }
 
     // MARK: - 商品列表

@@ -54,7 +54,7 @@ struct MailboxView: View {
                     .foregroundColor(ApocalypseTheme.primary)
             }
 
-            Text("邮箱")
+            Text(LocalizedStringKey("邮箱"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
@@ -79,15 +79,15 @@ struct MailboxView: View {
                         .font(.system(size: 18))
                         .foregroundColor(.red)
                 }
-                .alert("确认删除", isPresented: $showingDeleteConfirm) {
-                    Button("取消", role: .cancel) {}
-                    Button("删除", role: .destructive) {
+                .alert(LocalizedStringKey("确认删除"), isPresented: $showingDeleteConfirm) {
+                    Button(LocalizedStringKey("取消"), role: .cancel) {}
+                    Button(LocalizedStringKey("删除"), role: .destructive) {
                         Task {
                             try? await mailboxManager.deleteClaimedMails()
                         }
                     }
                 } message: {
-                    Text("删除所有已领取的邮件？")
+                    Text(LocalizedStringKey("删除所有已领取的邮件？"))
                 }
             }
         }
@@ -119,11 +119,11 @@ struct MailboxView: View {
                 .font(.system(size: 60))
                 .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
 
-            Text("暂无邮件")
+            Text(LocalizedStringKey("暂无邮件"))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("购买的物资包会发送到这里")
+            Text(LocalizedStringKey("购买的物资包会发送到这里"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 

@@ -28,12 +28,12 @@ struct TradeHubView: View {
                             TradeMarketView()
                         } label: {
                             entryCard(
-                                title: "交易市场",
-                                subtitle: "浏览其他玩家的挂单",
+                                title: LocalizedStringKey("交易市场"),
+                                subtitle: LocalizedStringKey("浏览其他玩家的挂单"),
                                 icon: "storefront.fill",
                                 iconColor: ApocalypseTheme.primary,
                                 count: tradeManager.availableOffers.count,
-                                countLabel: "可用挂单"
+                                countLabel: LocalizedStringKey("可用挂单")
                             )
                         }
 
@@ -42,12 +42,12 @@ struct TradeHubView: View {
                             MyTradeOffersView()
                         } label: {
                             entryCard(
-                                title: "我的挂单",
-                                subtitle: "管理您发布的挂单",
+                                title: LocalizedStringKey("我的挂单"),
+                                subtitle: LocalizedStringKey("管理您发布的挂单"),
                                 icon: "list.bullet.rectangle.fill",
                                 iconColor: ApocalypseTheme.info,
                                 count: activeOffersCount,
-                                countLabel: "进行中"
+                                countLabel: LocalizedStringKey("进行中")
                             )
                         }
 
@@ -56,12 +56,12 @@ struct TradeHubView: View {
                             TradeHistoryView()
                         } label: {
                             entryCard(
-                                title: "交易历史",
-                                subtitle: "查看已完成的交易",
+                                title: LocalizedStringKey("交易历史"),
+                                subtitle: LocalizedStringKey("查看已完成的交易"),
                                 icon: "clock.arrow.circlepath",
                                 iconColor: ApocalypseTheme.success,
                                 count: tradeManager.tradeHistory.count,
-                                countLabel: "笔交易"
+                                countLabel: LocalizedStringKey("笔交易")
                             )
                         }
                     }
@@ -73,7 +73,7 @@ struct TradeHubView: View {
                 .padding(16)
             }
         }
-        .navigationTitle("交易中心")
+        .navigationTitle(LocalizedStringKey("交易中心"))
         .navigationBarTitleDisplayMode(.large)
         .task {
             await tradeManager.refreshAll()
@@ -124,11 +124,11 @@ struct TradeHubView: View {
                 .font(.system(size: 18))
                 .foregroundColor(color)
 
-            Text(value)
+            Text(verbatim: value)
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(.system(size: 11))
                 .foregroundColor(ApocalypseTheme.textMuted)
         }
@@ -138,12 +138,12 @@ struct TradeHubView: View {
     // MARK: - 入口卡片
 
     private func entryCard(
-        title: String,
-        subtitle: String,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey,
         icon: String,
         iconColor: Color,
         count: Int,
-        countLabel: String
+        countLabel: LocalizedStringKey
     ) -> some View {
         HStack(spacing: 14) {
             // 图标
@@ -204,7 +204,7 @@ struct TradeHubView: View {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 18))
 
-                Text("发布新挂单")
+                Text(LocalizedStringKey("发布新挂单"))
                     .font(.system(size: 16, weight: .semibold))
             }
             .foregroundColor(.white)

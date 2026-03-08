@@ -3,645 +3,1004 @@
 //  EarthLord
 //
 //  Created by 周晓红 on 2025/12/25.
+//  Redesigned: 头像居中 + 2×2操作按钮 + 子Tab统计
 //
 
 import SwiftUI
 import Supabase
+import PhotosUI
 
 struct ProfileTabView: View {
-    /// 认证管理器
+
     @ObservedObject private var authManager = AuthManager.shared
-
-    /// 订阅管理器
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
-
-    /// 每日礼包管理器
     @ObservedObject private var dailyRewardManager = DailyRewardManager.shared
+    @ObservedObject private var buildingManager = BuildingManager.shared
+    @ObservedObject private var explorationStatsManager = ExplorationStatsManager.shared
 
-    /// 显示退出确认弹窗
-    @State private var showLogoutAlert = false
-
-    /// 显示删除账户确认弹窗
-    @State private var showDeleteAccountSheet = false
-
-    /// 删除账户确认输入文本
-    @State private var deleteConfirmationText = ""
-
-    /// 是否正在删除账户
-    @State private var isDeletingAccount = false
-
-    /// 删除账户错误信息
-    @State private var deleteErrorMessage: String?
-
-    /// 显示删除错误提示
-    @State private var showDeleteError = false
-
-
-    /// 是否已预加载数据
     @State private var hasPreloaded = false
+    @State private var myTerritories: [Territory] = []
+    @State private var showEditProfile = false
+    @State private var selectedTab: ProfileSubTab = .stats
+    @State private var statsTimeFilter: StatsTimeFilter = .week
+    @State private var localAvatar: UIImage? = nil
+
+    enum StatsTimeFilter: String, CaseIterable {
+        case today = "今日"
+        case week  = "本周"
+        case month = "本月"
+        case all   = "全部"
+
+        var startDate: Date? {
+            let cal = Calendar.current
+            let now = Date()
+            switch self {
+            case .today: return cal.startOfDay(for: now)
+            case .week:  return cal.dateInterval(of: .weekOfYear, for: now)?.start
+            case .month: return cal.dateInterval(of: .month, for: now)?.start
+            case .all:   return nil
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                ApocalypseTheme.background
-                    .ignoresSafeArea()
+                ApocalypseTheme.background.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 12) {
-                        // 用户头像和信息
-                        userInfoSection
+                    VStack(spacing: 0) {
+                        // 顶部：头像 + 用户名 + 身份
+                        headerSection
+                            .padding(.top, 16)
 
-                        // 菜单列表
-                        menuSection
+                        // 数据统计行
+                        statsInlineRow
+                            .padding(.top, 20)
+                            .padding(.horizontal, 20)
 
-                        // 退出登录按钮
-                        logoutButton
+                        // 操作按钮 2×2
+                        actionButtons
+                            .padding(.top, 18)
+                            .padding(.horizontal, 16)
 
-                        // 删除账户按钮
-                        deleteAccountButton
-                            .padding(.bottom, 120)
+                        // 子 Tab 栏
+                        subTabBar
+                            .padding(.top, 22)
+                            .padding(.horizontal, 16)
+
+                        // Tab 内容
+                        subTabContent
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+
+                        Spacer().frame(height: 100)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
                 }
                 .scrollIndicators(.hidden)
             }
-            .navigationTitle("个人中心")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $showEditProfile) {
+                EditProfileSheet()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .avatarUpdated)) { _ in
+                if let uid = authManager.currentUser?.id.uuidString {
+                    localAvatar = AvatarStore.load(for: uid)
+                }
+            }
             .onAppear {
-                // 预加载订阅和礼包数据，避免导航时才发起网络请求
+                if let uid = authManager.currentUser?.id.uuidString {
+                    localAvatar = AvatarStore.load(for: uid)
+                }
                 guard !hasPreloaded else { return }
+
                 hasPreloaded = true
-                // 延迟3秒确保其他Manager初始化完成，避免并发请求导致真机崩溃
                 Task {
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    // 严格串行：每个操作完成后再执行下一个
                     await subscriptionManager.loadSubscriptions()
                     try? await Task.sleep(nanoseconds: 500_000_000)
                     await subscriptionManager.refreshSubscriptionStatus()
                     try? await Task.sleep(nanoseconds: 500_000_000)
                     await dailyRewardManager.checkTodayStatus()
-                    // 最后启动 PurchaseManager 交易监听
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    if let list = try? await TerritoryManager.shared.loadMyTerritories() {
+                        myTerritories = list
+                    }
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    await explorationStatsManager.refreshStats()
+                    _ = try? await explorationStatsManager.getExplorationHistory(limit: 200)
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await buildingManager.refreshBuildings()
+                    try? await Task.sleep(nanoseconds: 500_000_000)
                     PurchaseManager.shared.startTransactionListenerIfNeeded()
                 }
-            }
-            .alert("确认退出", isPresented: $showLogoutAlert) {
-                Button("取消", role: .cancel) { }
-                Button("退出", role: .destructive) {
-                    Task {
-                        await authManager.signOut()
-                    }
-                }
-            } message: {
-                Text("确定要退出登录吗？")
-            }
-            .sheet(isPresented: $showDeleteAccountSheet) {
-                deleteAccountConfirmationView
-            }
-            .alert("删除失败", isPresented: $showDeleteError) {
-                Button("确定", role: .cancel) { }
-            } message: {
-                Text(deleteErrorMessage ?? "未知错误")
             }
         }
     }
 
-    // MARK: - 用户信息区域
+    // MARK: - 头像 + 用户名 + 身份
 
-    private var userInfoSection: some View {
+    private var headerSection: some View {
         VStack(spacing: 10) {
             // 头像
             ZStack {
                 Circle()
-                    .fill(ApocalypseTheme.primary)
-                    .frame(width: 80, height: 80)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.5, green: 0.3, blue: 0.9),
+                                Color(red: 0.3, green: 0.5, blue: 1.0)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 88, height: 88)
+                    .shadow(color: Color.purple.opacity(0.5), radius: 14)
 
-                // 显示用户名首字符
-                Text(avatarText)
-                    .font(.system(size: 38, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .padding(.top, 12)
-
-            // 用户名和订阅徽章
-            HStack(spacing: 6) {
-                Text(displayName)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                // 订阅档位徽章
-                if !subscriptionManager.currentTier.badgeIcon.isEmpty {
-                    Text(subscriptionManager.currentTier.badgeIcon)
-                        .font(.title3)
+                if let img = localAvatar {
+                    // 本地自定义照片
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 88, height: 88)
+                        .clipShape(Circle())
+                } else if let icon = authManager.currentUser?.userMetadata["avatar_icon"]?.stringValue,
+                          icon != "person.fill" {
+                    Image(systemName: icon)
+                        .font(.system(size: 38))
+                        .foregroundColor(.white)
+                } else {
+                    Text(avatarText)
+                        .font(.system(size: 42, weight: .bold))
+                        .foregroundColor(.white)
                 }
             }
 
-            // 订阅档位名称
-            if subscriptionManager.currentTier != .free {
-                Text(subscriptionManager.currentTier.displayName)
-                    .font(.caption)
-                    .foregroundColor(ApocalypseTheme.primary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(ApocalypseTheme.primary.opacity(0.15))
-                    )
-            }
+            // 用户名
+            Text(displayName)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(ApocalypseTheme.textPrimary)
 
-            // 邮箱
-            Text(authManager.currentUser?.email ?? "未设置邮箱")
-                .font(.footnote)
-                .foregroundColor(ApocalypseTheme.textSecondary)
-
-            // 用户ID
-            if let userId = authManager.currentUser?.id.uuidString {
-                Text(String(format: NSLocalizedString("ID: %@...", comment: ""), String(userId.prefix(8))))
-                    .font(.caption2)
-                    .foregroundColor(ApocalypseTheme.textMuted)
-            }
+            // 身份徽章
+            identityBadge
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// 身份徽章
+    private var identityBadge: some View {
+        let tier = subscriptionManager.currentTier
+        let (label, bg): (String, Color) = {
+            switch tier {
+            case .free:     return ("幸存者", Color(red: 0.35, green: 0.28, blue: 0.18))
+            case .explorer: return ("探索者", Color(red: 0.1, green: 0.35, blue: 0.55))
+            case .lord:     return ("领主",   Color(red: 0.5, green: 0.38, blue: 0.05))
+            }
+        }()
+        let textColor: Color = {
+            switch tier {
+            case .free:     return Color(red: 0.9, green: 0.75, blue: 0.45)
+            case .explorer: return ApocalypseTheme.info
+            case .lord:     return Color(red: 1, green: 0.85, blue: 0.2)
+            }
+        }()
+
+        return Text(LocalizedStringKey(label))
+            .font(.callout)
+            .fontWeight(.semibold)
+            .foregroundColor(textColor)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 8).fill(bg))
+    }
+
+    // MARK: - 内联统计行（存活 | 领地 | 建筑）
+
+    private var statsInlineRow: some View {
+        HStack(spacing: 0) {
+            inlineStat(
+                icon: "calendar.badge.clock",
+                value: "\(survivalDays)\(String(localized: "天"))",
+                label: "存活",
+                color: ApocalypseTheme.info
+            )
+            statDivider
+            inlineStat(
+                icon: "flag.fill",
+                value: "\(myTerritories.count)",
+                label: "领地",
+                color: ApocalypseTheme.info
+            )
+            statDivider
+            inlineStat(
+                icon: "building.2.fill",
+                value: "\(buildingManager.playerBuildings.count)",
+                label: "建筑",
+                color: ApocalypseTheme.info
+            )
+        }
         .padding(.vertical, 16)
+        .background(ApocalypseTheme.cardBackground)
+        .cornerRadius(14)
+    }
+
+    private func inlineStat(icon: String, value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.body)
+                .foregroundColor(color)
+            Text(verbatim: value)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(ApocalypseTheme.textPrimary)
+            Text(LocalizedStringKey(label))
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var statDivider: some View {
+        Rectangle()
+            .fill(ApocalypseTheme.textMuted.opacity(0.25))
+            .frame(width: 1, height: 40)
+    }
+
+    /// 存活天数
+    private var survivalDays: Int {
+        guard let created = authManager.currentUser?.createdAt else { return 0 }
+        return max(0, Calendar.current.dateComponents([.day], from: created, to: Date()).day ?? 0)
+    }
+
+    // MARK: - 2×2 操作按钮
+
+    private var actionButtons: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                // 编辑资料（蓝色）
+                Button { showEditProfile = true } label: {
+                    actionButtonLabel(
+                        icon: "pencil",
+                        title: "编辑资料",
+                        color: Color(red: 0.18, green: 0.44, blue: 0.95)
+                    )
+                }
+
+                // 设置（深灰）
+                NavigationLink { SettingsDetailView() } label: {
+                    actionButtonLabel(
+                        icon: "gearshape.fill",
+                        title: "设置",
+                        color: Color(red: 0.22, green: 0.22, blue: 0.26)
+                    )
+                }
+            }
+
+            HStack(spacing: 10) {
+                // 查看订阅（橙色）
+                NavigationLink { SubscriptionView() } label: {
+                    actionButtonLabel(
+                        icon: "star.fill",
+                        title: subscriptionManager.isSubscribed ? "管理订阅" : "查看订阅",
+                        color: Color(red: 0.9, green: 0.55, blue: 0.1)
+                    )
+                }
+
+                // 购买资源包（绿色）
+                NavigationLink { StoreView() } label: {
+                    actionButtonLabel(
+                        icon: "cart.fill",
+                        title: "购买资源包",
+                        color: Color(red: 0.15, green: 0.68, blue: 0.38)
+                    )
+                }
+            }
+        }
+    }
+
+    private func actionButtonLabel(icon: String, title: String, color: Color) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.callout)
+                .fontWeight(.medium)
+            Text(LocalizedStringKey(title))
+                .font(.callout)
+                .fontWeight(.semibold)
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(color))
+    }
+
+    // MARK: - 子 Tab 栏
+
+    enum ProfileSubTab: String, CaseIterable {
+        case stats    = "统计"
+        case rank     = "排行榜"
+        case achieve  = "成就"
+        case physique = "体征"
+    }
+
+    private var subTabBar: some View {
+        HStack(spacing: 4) {
+            ForEach(ProfileSubTab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    Text(LocalizedStringKey(tab.rawValue))
+                        .font(.subheadline)
+                        .fontWeight(selectedTab == tab ? .semibold : .regular)
+                        .foregroundColor(selectedTab == tab ? .white : ApocalypseTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            selectedTab == tab
+                                ? RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.success)
+                                : RoundedRectangle(cornerRadius: 10).fill(Color.clear)
+                        )
+                }
+            }
+        }
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: 13).fill(ApocalypseTheme.cardBackground))
+    }
+
+    // MARK: - 子 Tab 内容
+
+    @ViewBuilder
+    private var subTabContent: some View {
+        switch selectedTab {
+        case .stats:    statsContent
+        case .rank:     comingSoonPlaceholder(icon: "chart.bar.fill", title: "排行榜", subtitle: "即将推出")
+        case .achieve:  comingSoonPlaceholder(icon: "trophy.fill", title: "成就系统", subtitle: "即将推出")
+        case .physique: comingSoonPlaceholder(icon: "figure.walk", title: "体征数据", subtitle: "即将推出")
+        }
+    }
+
+    /// 统计内容
+    private var statsContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+
+            // 标题
+            VStack(alignment: .leading, spacing: 2) {
+                Text("综合统计")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                Text("数据驱动，砥砺前行")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+
+            // 时间筛选器
+            HStack(spacing: 0) {
+                ForEach(StatsTimeFilter.allCases, id: \.self) { filter in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            statsTimeFilter = filter
+                        }
+                    } label: {
+                        Text(LocalizedStringKey(filter.rawValue))
+                            .font(.subheadline)
+                            .fontWeight(statsTimeFilter == filter ? .semibold : .regular)
+                            .foregroundColor(statsTimeFilter == filter ? .white : ApocalypseTheme.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 7)
+                            .background(
+                                statsTimeFilter == filter
+                                    ? RoundedRectangle(cornerRadius: 8).fill(ApocalypseTheme.info)
+                                    : RoundedRectangle(cornerRadius: 8).fill(Color.clear)
+                            )
+                    }
+                }
+            }
+            .padding(3)
+            .background(RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.cardBackground))
+
+            // 距离 + 面积 主指标卡
+            HStack(spacing: 10) {
+                bigMetricCard(
+                    icon: "figure.walk",
+                    iconColor: ApocalypseTheme.info,
+                    value: filteredDistance,
+                    label: "距离"
+                )
+                bigMetricCard(
+                    icon: "map.fill",
+                    iconColor: ApocalypseTheme.success,
+                    value: filteredArea,
+                    label: "面积"
+                )
+            }
+
+            // 次级数据网格
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                miniStatCard(icon: "flag.fill",       iconColor: ApocalypseTheme.primary, value: "\(myTerritories.count)",                   label: "圈地总数")
+                miniStatCard(icon: "building.2.fill", iconColor: ApocalypseTheme.info,    value: "\(buildingManager.playerBuildings.count)", label: "建筑总数")
+            }
+
+            // 每日礼包（订阅用户）
+            if subscriptionManager.isSubscribed {
+                NavigationLink { DailyRewardView() } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "gift.fill")
+                            .font(.title3)
+                            .foregroundColor(ApocalypseTheme.warning)
+                            .frame(width: 36, height: 36)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(ApocalypseTheme.warning.opacity(0.15)))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("每日礼包")
+                                .font(.callout).fontWeight(.medium)
+                                .foregroundColor(ApocalypseTheme.textPrimary)
+                            Text(dailyRewardManager.hasClaimedToday ? "今日已领取" : "今日礼包待领取")
+                                .font(.caption)
+                                .foregroundColor(dailyRewardManager.hasClaimedToday ? ApocalypseTheme.textSecondary : ApocalypseTheme.warning)
+                        }
+                        Spacer()
+                        if !dailyRewardManager.hasClaimedToday {
+                            Circle().fill(ApocalypseTheme.danger).frame(width: 8, height: 8)
+                        }
+                        Image(systemName: "chevron.right").font(.caption).foregroundColor(ApocalypseTheme.textMuted)
+                    }
+                    .padding(14)
+                    .background(ApocalypseTheme.cardBackground)
+                    .cornerRadius(12)
+                }
+            }
+
+            // 呼号设置
+            NavigationLink { CallsignEditView().environmentObject(authManager) } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.title3).foregroundColor(ApocalypseTheme.info)
+                        .frame(width: 36, height: 36)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(ApocalypseTheme.info.opacity(0.15)))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("呼号设置").font(.callout).fontWeight(.medium).foregroundColor(ApocalypseTheme.textPrimary)
+                        Text(CommunicationManager.shared.userCallsign ?? "未设置呼号")
+                            .font(.caption)
+                            .foregroundColor(CommunicationManager.shared.userCallsign == nil ? ApocalypseTheme.warning : ApocalypseTheme.info)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundColor(ApocalypseTheme.textMuted)
+                }
+                .padding(14)
+                .background(ApocalypseTheme.cardBackground)
+                .cornerRadius(12)
+            }
+
+            // 查看详细统计
+            NavigationLink {
+                ExplorationLogView()
+            } label: {
+                HStack {
+                    Text("查看详细统计")
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(ApocalypseTheme.info)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.info)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    /// 时间筛选后的探索距离
+    private var filteredDistance: String {
+        let history = explorationStatsManager.history
+        let filtered: [ExplorationHistoryItem]
+        if let start = statsTimeFilter.startDate {
+            filtered = history.filter { $0.startTime >= start }
+        } else {
+            filtered = history
+        }
+        let total = filtered.reduce(0.0) { $0 + $1.distance }
+        if total >= 1000 {
+            return String(format: "%.1f km", total / 1000)
+        }
+        return String(format: "%.0f m", total)
+    }
+
+    /// 时间筛选后的领地面积
+    private var filteredArea: String {
+        let isoFormatter = ISO8601DateFormatter()
+        let filtered: [Territory]
+        if let start = statsTimeFilter.startDate {
+            filtered = myTerritories.filter { t in
+                guard let dateStr = t.completedAt ?? t.createdAt,
+                      let date = isoFormatter.date(from: dateStr) else { return false }
+                return date >= start
+            }
+        } else {
+            filtered = myTerritories
+        }
+        let total = filtered.reduce(0.0) { $0 + $1.area }
+        if total >= 1_000_000 {
+            return String(format: "%.2f km²", total / 1_000_000)
+        }
+        return String(format: "%.0f m²", total)
+    }
+
+    private func bigMetricCard(icon: String, iconColor: Color, value: String, label: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(iconColor)
+            Text(verbatim: value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(ApocalypseTheme.textPrimary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Text(LocalizedStringKey(label))
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(ApocalypseTheme.cardBackground)
+        .cornerRadius(14)
+    }
+
+    private func miniStatCard(icon: String, iconColor: Color, value: String, label: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.callout)
+                .foregroundColor(iconColor)
+                .frame(width: 32, height: 32)
+                .background(RoundedRectangle(cornerRadius: 8).fill(iconColor.opacity(0.15)))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: value)
+                    .font(.callout)
+                    .fontWeight(.bold)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text(LocalizedStringKey(label))
+                    .font(.caption2)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+            Spacer()
+        }
+        .padding(12)
         .background(ApocalypseTheme.cardBackground)
         .cornerRadius(12)
     }
 
-    /// 头像显示文字（用户名首字符）
-    private var avatarText: String {
-        let name = displayName
-        if let first = name.first {
-            return String(first).uppercased()
+    private func comingSoonPlaceholder(icon: String, title: String, subtitle: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 36))
+                .foregroundColor(ApocalypseTheme.textMuted)
+            Text(LocalizedStringKey(title))
+                .font(.headline)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+            Text(LocalizedStringKey(subtitle))
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 50)
+        .background(ApocalypseTheme.cardBackground)
+        .cornerRadius(14)
+    }
+
+    // MARK: - 辅助
+
+    private var avatarText: String {
+        if let first = displayName.first { return String(first).uppercased() }
         return "U"
     }
 
-    /// 显示名称
     private var displayName: String {
-        // 优先使用 user_metadata 中的 username
         if let username = authManager.currentUser?.userMetadata["username"]?.stringValue,
-           !username.isEmpty {
-            return username
-        }
-        // 其次使用 email 的前缀
+           !username.isEmpty { return username }
         if let email = authManager.currentUser?.email {
             return String(email.split(separator: "@").first ?? "")
         }
         return "用户"
     }
+}
 
-    // MARK: - 菜单区域
+// MARK: - 编辑资料 Sheet
 
-    private var menuSection: some View {
-        VStack(spacing: 0) {
-            // 订阅特权
-            NavigationLink {
-                SubscriptionView()
-            } label: {
-                subscriptionMenuItem
-            }
-            menuDivider
+struct EditProfileSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var authManager = AuthManager.shared
 
-            // 每日礼包
-            NavigationLink {
-                DailyRewardView()
-            } label: {
-                dailyRewardMenuItem
-            }
-            menuDivider
+    // 可选的预设头像图标（SF Symbols，末日风格）
+    static let presetAvatarIcons: [String] = [
+        "person.fill",
+        "figure.walk",
+        "figure.run",
+        "figure.hiking",
+        "figure.strengthtraining.traditional",
+        "figure.martial.arts",
+        "shield.fill",
+        "bolt.fill",
+        "star.fill",
+        "crown.fill"
+    ]
 
-            // Day 36: 呼号设置
-            NavigationLink {
-                CallsignEditView()
-                    .environmentObject(authManager)
-            } label: {
-                callsignMenuItem
-            }
-            menuDivider
-            NavigationLink {
-                SettingsDetailView()
-            } label: {
-                menuItemContent(icon: "gearshape.fill", title: "设置", subtitle: "账号与隐私设置", color: ApocalypseTheme.primary)
-            }
-            menuDivider
-            menuItem(icon: "bell.fill", title: "通知", subtitle: "消息提醒设置", color: ApocalypseTheme.warning)
-            menuDivider
-            menuItem(icon: "shield.fill", title: "安全", subtitle: "密码与登录安全", color: ApocalypseTheme.danger)
-            menuDivider
-            menuItem(icon: "questionmark.circle.fill", title: "帮助", subtitle: "常见问题与反馈", color: ApocalypseTheme.info)
-            menuDivider
-            menuItem(icon: "info.circle.fill", title: "关于", subtitle: "版本信息", color: ApocalypseTheme.success)
-        }
-        .background(ApocalypseTheme.cardBackground)
-        .cornerRadius(12)
-    }
+    @State private var username: String = ""
+    @State private var bio: String = ""
+    @State private var selectedAvatarIcon: String = "person.fill"
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var pendingCustomImage: UIImage? = nil   // 待保存的自定义照片
+    @State private var isSaving = false
+    @State private var saveError: String?
+    @State private var showErrorAlert = false
 
-    /// 订阅菜单项
-    private var subscriptionMenuItem: some View {
-        HStack(spacing: 12) {
-            Text(subscriptionManager.currentTier.badgeIcon.isEmpty ? "👑" : subscriptionManager.currentTier.badgeIcon)
-                .font(.title3)
-                .frame(width: 22)
+    private var supabase: SupabaseClient { SupabaseManager.shared.client }
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 5)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("幸存者特权")
-                    .font(.callout)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                HStack(spacing: 4) {
-                    Text(subscriptionManager.currentTier.displayName)
-                        .font(.caption2)
-                        .foregroundColor(subscriptionManager.currentTier == .free ? ApocalypseTheme.textSecondary : ApocalypseTheme.primary)
-
-                    // 过期提示
-                    if subscriptionManager.isExpiringSoon {
-                        Text("· 即将过期")
-                            .font(.caption2)
-                            .foregroundColor(ApocalypseTheme.warning)
-                    }
-                }
-            }
-
-            Spacer()
-
-            // 未订阅时显示"立即订阅"
-            if !subscriptionManager.isSubscribed {
-                Text("立即订阅")
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(ApocalypseTheme.primary)
-                    )
-            }
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textMuted)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-    }
-
-    /// 每日礼包菜单项
-    private var dailyRewardMenuItem: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "gift.fill")
-                .font(.body)
-                .foregroundColor(ApocalypseTheme.warning)
-                .frame(width: 22)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("每日礼包")
-                    .font(.callout)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                if subscriptionManager.isSubscribed {
-                    Text("订阅专属")
-                        .font(.caption2)
-                        .foregroundColor(ApocalypseTheme.primary)
-                } else {
-                    Text("订阅后可领取")
-                        .font(.caption2)
-                        .foregroundColor(ApocalypseTheme.textSecondary)
-                }
-            }
-
-            Spacer()
-
-            // 可领取提示
-            if subscriptionManager.isSubscribed && !dailyRewardManager.hasClaimedToday {
-                Circle()
-                    .fill(ApocalypseTheme.danger)
-                    .frame(width: 8, height: 8)
-            }
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textMuted)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-    }
-
-    /// 呼号菜单项
-    private var callsignMenuItem: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.body)
-                .foregroundColor(ApocalypseTheme.info)
-                .frame(width: 22)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("呼号设置")
-                    .font(.callout)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                Text(CommunicationManager.shared.userCallsign ?? "未设置")
-                    .font(.caption2)
-                    .foregroundColor(ApocalypseTheme.primary)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textMuted)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-    }
-
-    private var menuDivider: some View {
-        Divider()
-            .background(ApocalypseTheme.textMuted.opacity(0.3))
-            .padding(.leading, 56)
-    }
-
-    private func menuItemContent(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, color: Color) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.body)
-                .foregroundColor(color)
-                .frame(width: 22)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.callout)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundColor(ApocalypseTheme.textSecondary)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textMuted)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-    }
-
-    private func menuItem(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey, color: Color) -> some View {
-        menuItemContent(icon: icon, title: title, subtitle: subtitle, color: color)
-    }
-
-    // MARK: - 退出登录按钮
-
-    private var logoutButton: some View {
-        Button {
-            showLogoutAlert = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.callout)
-                Text("退出登录")
-                    .font(.callout)
-                    .fontWeight(.medium)
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(ApocalypseTheme.primary)
-            .cornerRadius(10)
-        }
-        .padding(.top, 6)
-    }
-
-    // MARK: - 删除账户按钮
-
-    private var deleteAccountButton: some View {
-        Button {
-            print("🔴 用户点击删除账户按钮")
-            showDeleteAccountSheet = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "trash.fill")
-                    .font(.callout)
-                Text("删除账户")
-                    .font(.callout)
-                    .fontWeight(.medium)
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(ApocalypseTheme.danger)
-            .cornerRadius(10)
-        }
-        .padding(.top, 4)
-    }
-
-    // MARK: - 删除账户确认视图
-
-    private var deleteAccountConfirmationView: some View {
+    var body: some View {
         NavigationStack {
-            ZStack {
-                ApocalypseTheme.background
-                    .ignoresSafeArea()
+            ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
 
-                VStack(spacing: 24) {
-                    // 警告图标
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(ApocalypseTheme.danger)
-                        .padding(.top, 40)
+                        // ── 基本信息 ──────────────────────────────
+                        sectionLabel("基本信息")
 
-                    // 警告标题
-                    Text("永久删除账户")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(ApocalypseTheme.textPrimary)
-
-                    // 警告信息
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("此操作将：")
-                            .font(.headline)
+                        TextField("用户名", text: $username)
                             .foregroundColor(ApocalypseTheme.textPrimary)
-
-                        warningItem(text: "永久删除您的账户和所有数据")
-                        warningItem(text: "删除您的个人信息和设置")
-                        warningItem(text: "此操作不可撤销")
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ApocalypseTheme.danger.opacity(0.1))
-                    .cornerRadius(12)
-
-                    // 确认输入框
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("请输入「删除」以确认")
-                                .font(.subheadline)
-                                .foregroundColor(ApocalypseTheme.textSecondary)
-
-                            Spacer()
-
-                            // 显示匹配状态
-                            if !deleteConfirmationText.isEmpty {
-                                let trimmed = deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines)
-                                if trimmed == "删除" {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(ApocalypseTheme.success)
-                                } else {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(ApocalypseTheme.danger)
-                                }
-                            }
-                        }
-
-                        TextField("删除", text: $deleteConfirmationText)
-                            .font(.body)
-                            .foregroundColor(ApocalypseTheme.textPrimary)
-                            .padding()
-                            .background(ApocalypseTheme.cardBackground)
-                            .cornerRadius(8)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
-                            .onChange(of: deleteConfirmationText) { newValue in
-                                print("📝 输入变化: [\(newValue)]")
-                                print("   字符数: \(newValue.count)")
-                                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                                print("   去空格后: [\(trimmed)] (字符数: \(trimmed.count))")
+                            .padding()
+                            .background(ApocalypseTheme.cardBackground)
+                            .cornerRadius(12)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 24)
 
-                                // 打印每个字符的 Unicode 值用于调试
-                                if !trimmed.isEmpty {
-                                    print("   Unicode 值:", trimmed.unicodeScalars.map { String(format: "U+%04X", $0.value) }.joined(separator: " "))
+                        // ── 选择头像 ──────────────────────────────
+                        sectionLabel("选择头像")
+
+                        VStack(spacing: 0) {
+                            // 预设图标网格
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(Self.presetAvatarIcons, id: \.self) { icon in
+                                    Button {
+                                        withAnimation(.easeInOut(duration: 0.15)) {
+                                            selectedAvatarIcon = icon
+                                        }
+                                    } label: {
+                                        ZStack {
+                                            Circle()
+                                                .fill(selectedAvatarIcon == icon
+                                                    ? Color(red: 0.18, green: 0.44, blue: 0.95)
+                                                    : Color(white: 0.18))
+                                                .frame(width: 56, height: 56)
+                                            Image(systemName: icon)
+                                                .font(.title3)
+                                                .foregroundColor(selectedAvatarIcon == icon ? .white : Color(white: 0.55))
+                                        }
+                                    }
                                 }
-
-                                print("   匹配结果: \(trimmed == "删除")")
-                                print("   按钮状态: \(isDeleteButtonEnabled ? "启用" : "禁用")")
                             }
-                    }
+                            .padding(16)
 
-                    Spacer()
-
-                    // 按钮组
-                    VStack(spacing: 12) {
-                        // 确认删除按钮
-                        Button {
-                            Task {
-                                await performDeleteAccount()
+                            // 自定义照片预览（选图后显示）
+                            if let img = pendingCustomImage {
+                                HStack(spacing: 12) {
+                                    Image(uiImage: img)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 56, height: 56)
+                                        .clipShape(Circle())
+                                        .overlay(Circle().stroke(ApocalypseTheme.info, lineWidth: 2))
+                                    Text("已选择自定义头像")
+                                        .font(.caption)
+                                        .foregroundColor(ApocalypseTheme.info)
+                                    Spacer()
+                                    Button {
+                                        pendingCustomImage = nil
+                                        selectedPhotoItem = nil
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(ApocalypseTheme.textMuted)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
                             }
-                        } label: {
-                            if isDeletingAccount {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                            } else {
-                                Text("确认删除账户")
-                                    .font(.body)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                            }
-                        }
-                        .background(isDeleteButtonEnabled ? ApocalypseTheme.danger : ApocalypseTheme.textMuted)
-                        .cornerRadius(12)
-                        .disabled(!isDeleteButtonEnabled || isDeletingAccount)
 
-                        // 取消按钮
-                        Button {
-                            print("🔵 用户取消删除账户")
-                            dismissDeleteSheet()
-                        } label: {
-                            Text("取消")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(ApocalypseTheme.textPrimary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
+                            Divider().background(ApocalypseTheme.textMuted.opacity(0.3))
+
+                            // 从相册选择
+                            PhotosPicker(selection: $selectedPhotoItem,
+                                         matching: .images,
+                                         photoLibrary: .shared()) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "photo.on.rectangle")
+                                        .foregroundColor(ApocalypseTheme.info)
+                                    Text("从相册选择")
+                                        .font(.callout)
+                                        .foregroundColor(ApocalypseTheme.info)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 13)
+                            }
+                            .onChange(of: selectedPhotoItem) { item in
+                                guard let item else { return }
+                                Task {
+                                    if let data = try? await item.loadTransferable(type: Data.self),
+                                       let img = UIImage(data: data) {
+                                        // 裁剪为正方形并缩放到 300x300
+                                        pendingCustomImage = img.squareCropped(size: 300)
+                                    }
+                                }
+                            }
                         }
                         .background(ApocalypseTheme.cardBackground)
                         .cornerRadius(12)
-                        .disabled(isDeletingAccount)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 24)
+
+                        // ── 个性签名 ──────────────────────────────
+                        sectionLabel("个性签名")
+
+                        ZStack(alignment: .topLeading) {
+                            TextEditor(text: $bio)
+                                .foregroundColor(ApocalypseTheme.textPrimary)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
+                                .frame(minHeight: 90)
+                                .padding(12)
+
+                            if bio.isEmpty {
+                                Text("介绍一下自己吧…")
+                                    .foregroundColor(ApocalypseTheme.textMuted)
+                                    .padding(.top, 20)
+                                    .padding(.leading, 16)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                        .background(ApocalypseTheme.cardBackground)
+                        .cornerRadius(12)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 24)
+
+                        // ── 账户信息 ──────────────────────────────
+                        sectionLabel("账户信息")
+
+                        VStack(spacing: 0) {
+                            infoRow(
+                                label: "用户 ID",
+                                value: authManager.currentUser.map {
+                                    String($0.id.uuidString.prefix(8)).uppercased() + "..."
+                                } ?? "-"
+                            )
+                            Divider().background(ApocalypseTheme.textMuted.opacity(0.3)).padding(.leading, 16)
+                            infoRow(
+                                label: "注册邮箱",
+                                value: authManager.currentUser?.email ?? "-"
+                            )
+                        }
+                        .background(ApocalypseTheme.cardBackground)
+                        .cornerRadius(12)
+                        .padding(.horizontal, 16)
+
+                        Spacer().frame(height: 40)
                     }
+                    .padding(.top, 16)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 30)
-            }
-            .navigationTitle("删除账户")
+                .scrollDismissesKeyboard(.interactively)
+                .background(ApocalypseTheme.background.ignoresSafeArea())
+            .navigationTitle("编辑个人资料")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                        .font(.callout)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(ApocalypseTheme.cardBackground))
+                }
+                ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        print("🔵 用户点击关闭按钮")
-                        dismissDeleteSheet()
+                        Task { await saveProfile() }
                     } label: {
-                        Image(systemName: "xmark")
-                            .foregroundColor(ApocalypseTheme.textSecondary)
+                        if isSaving {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("保存")
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(ApocalypseTheme.textPrimary)
+                        }
                     }
-                    .disabled(isDeletingAccount)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Capsule().fill(ApocalypseTheme.cardBackground))
+                    .disabled(username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
                 }
             }
-            .interactiveDismissDisabled(isDeletingAccount)
+            .onAppear {
+                loadCurrentValues()
+            }
+            .alert("保存失败", isPresented: $showErrorAlert, presenting: saveError) { _ in
+                Button("好") { }
+            } message: { err in
+                Text(err)
+            }
         }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
     }
 
-    // MARK: - 辅助视图
+    // MARK: - 组件
 
-    private func warningItem(text: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "circle.fill")
-                .font(.system(size: 6))
-                .foregroundColor(ApocalypseTheme.danger)
-            Text(text)
-                .font(.subheadline)
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.subheadline)
+            .foregroundColor(ApocalypseTheme.textSecondary)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
+    }
+
+    private func infoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.callout)
                 .foregroundColor(ApocalypseTheme.textPrimary)
+            Spacer()
+            Text(value)
+                .font(.callout)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+                .lineLimit(1)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
     }
 
-    // MARK: - 辅助方法
+    // MARK: - 逻辑
 
-    /// 删除按钮是否可用
-    private var isDeleteButtonEnabled: Bool {
-        deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines) == "删除"
+    private func loadCurrentValues() {
+        let meta = authManager.currentUser?.userMetadata
+        let stored = meta?["username"]?.stringValue ?? ""
+        if stored.isEmpty, let email = authManager.currentUser?.email {
+            username = String(email.split(separator: "@").first ?? "")
+        } else {
+            username = stored
+        }
+        bio = meta?["bio"]?.stringValue ?? ""
+        selectedAvatarIcon = meta?["avatar_icon"]?.stringValue ?? "person.fill"
     }
 
-    /// 执行删除账户
-    private func performDeleteAccount() async {
-        let trimmed = deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines)
-        print("🔴 开始执行删除账户操作")
-        print("📝 确认文本：[\(deleteConfirmationText)]")
-        print("📝 去空格后：[\(trimmed)]")
+    private func saveProfile() async {
+        let trimmed = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
 
-        guard trimmed == "删除" else {
-            print("❌ 确认文本不匹配")
-            return
-        }
-
-        isDeletingAccount = true
+        isSaving = true
 
         do {
-            print("📞 调用 AuthManager.deleteAccount()")
-            try await authManager.deleteAccount()
-            print("✅ 账户删除成功，关闭弹窗")
-            dismissDeleteSheet()
+            // 检查用户名是否可用（跳过自己当前的用户名）
+            let currentUsername = authManager.currentUser?.userMetadata["username"]?.stringValue ?? ""
+            if trimmed != currentUsername {
+                let available: Bool = try await supabase
+                    .rpc("check_username_available", params: ["p_username": trimmed])
+                    .execute()
+                    .value
+                if !available {
+                    saveError = "用户名「\(trimmed)」已被使用，请换一个"
+                    showErrorAlert = true
+                    isSaving = false
+                    return
+                }
+            }
+
+            // 更新 auth metadata
+            try await supabase.auth.update(
+                user: Auth.UserAttributes(data: [
+                    "username":    .string(trimmed),
+                    "bio":         .string(bio),
+                    "avatar_icon": .string(selectedAvatarIcon)
+                ])
+            )
+
+            // 更新 profiles 表
+            if let userId = authManager.currentUser?.id {
+                try await supabase
+                    .from("profiles")
+                    .update(["username": trimmed, "bio": bio])
+                    .eq("id", value: userId.uuidString)
+                    .execute()
+            }
+
+            // 保存自定义头像到本地
+            if let img = pendingCustomImage,
+               let uid = authManager.currentUser?.id.uuidString {
+                AvatarStore.save(img, for: uid)
+                NotificationCenter.default.post(name: .avatarUpdated, object: nil)
+            }
+
+            // 刷新本地 currentUser（避免 checkSession 对第三方登录用户产生副作用）
+            if let session = try? await supabase.auth.session {
+                await MainActor.run { authManager.currentUser = session.user }
+            }
+
+            isSaving = false
+            dismiss()
         } catch {
-            print("❌ 删除账户失败: \(error)")
-            print("❌ 错误详情: \(error.localizedDescription)")
-            deleteErrorMessage = error.localizedDescription
-            showDeleteError = true
-            isDeletingAccount = false
+            saveError = "保存失败：\(error.localizedDescription)"
+            showErrorAlert = true
+            isSaving = false
         }
     }
+}
 
-    /// 关闭删除账户弹窗
-    private func dismissDeleteSheet() {
-        showDeleteAccountSheet = false
-        deleteConfirmationText = ""
-        isDeletingAccount = false
+// MARK: - Notification 扩展
+
+extension Notification.Name {
+    static let avatarUpdated = Notification.Name("avatarUpdated")
+}
+
+// MARK: - UIImage 工具扩展
+
+extension UIImage {
+    /// 居中裁剪为正方形并缩放到指定边长
+    func squareCropped(size: CGFloat) -> UIImage {
+        let minSide = min(self.size.width, self.size.height)
+        let cropRect = CGRect(
+            x: (self.size.width  - minSide) / 2,
+            y: (self.size.height - minSide) / 2,
+            width: minSide, height: minSide
+        )
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format).image { _ in
+            if let cgImg = self.cgImage?.cropping(to: CGRect(
+                x: cropRect.origin.x * self.scale,
+                y: cropRect.origin.y * self.scale,
+                width: cropRect.width  * self.scale,
+                height: cropRect.height * self.scale
+            )) {
+                UIImage(cgImage: cgImg, scale: self.scale, orientation: self.imageOrientation)
+                    .draw(in: CGRect(origin: .zero, size: CGSize(width: size, height: size)))
+            }
+        }
+    }
+}
+
+// MARK: - 本地头像存储工具
+
+enum AvatarStore {
+    /// 保存头像图片到本地（按用户ID命名）
+    static func save(_ image: UIImage, for userId: String) {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+        let url = fileURL(for: userId)
+        try? data.write(to: url, options: .atomic)
+    }
+
+    /// 读取本地头像
+    static func load(for userId: String) -> UIImage? {
+        let url = fileURL(for: userId)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return UIImage(data: data)
+    }
+
+    /// 删除本地头像
+    static func delete(for userId: String) {
+        try? FileManager.default.removeItem(at: fileURL(for: userId))
+    }
+
+    private static func fileURL(for userId: String) -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("avatar_\(userId).jpg")
     }
 }
 

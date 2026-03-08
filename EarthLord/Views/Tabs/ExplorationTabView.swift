@@ -1105,21 +1105,21 @@ struct TradeContentView: View {
         HStack(spacing: 16) {
             tradeStatItem(
                 value: "\(tradeManager.availableOffers.count)",
-                label: "市场挂单",
+                label: LocalizedStringKey("市场挂单"),
                 icon: "cart.fill",
                 color: ApocalypseTheme.primary
             )
 
             tradeStatItem(
                 value: "\(activeOffersCount)",
-                label: "我的挂单",
+                label: LocalizedStringKey("我的挂单"),
                 icon: "tag.fill",
                 color: ApocalypseTheme.info
             )
 
             tradeStatItem(
                 value: "\(tradeManager.tradeHistory.count)",
-                label: "交易次数",
+                label: LocalizedStringKey("交易次数"),
                 icon: "arrow.left.arrow.right",
                 color: ApocalypseTheme.success
             )
@@ -1131,7 +1131,7 @@ struct TradeContentView: View {
         )
     }
 
-    private func tradeStatItem(value: String, label: String, icon: String, color: Color) -> some View {
+    private func tradeStatItem(value: String, label: LocalizedStringKey, icon: String, color: Color) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 18))

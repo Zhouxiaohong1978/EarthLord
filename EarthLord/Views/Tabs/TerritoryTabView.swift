@@ -53,7 +53,7 @@ struct TerritoryTabView: View {
                     territoryListView
                 }
             }
-            .navigationTitle("我的领地")
+            .navigationTitle(LocalizedStringKey("我的领地"))
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(ApocalypseTheme.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)

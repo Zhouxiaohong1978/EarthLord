@@ -205,21 +205,21 @@ struct ProfileTabView: View {
             inlineStat(
                 icon: "calendar.badge.clock",
                 value: "\(survivalDays)\(String(localized: "天"))",
-                label: "存活",
+                label: LocalizedStringKey("存活"),
                 color: ApocalypseTheme.info
             )
             statDivider
             inlineStat(
                 icon: "flag.fill",
                 value: "\(myTerritories.count)",
-                label: "领地",
+                label: LocalizedStringKey("领地"),
                 color: ApocalypseTheme.info
             )
             statDivider
             inlineStat(
                 icon: "building.2.fill",
                 value: "\(buildingManager.playerBuildings.count)",
-                label: "建筑",
+                label: LocalizedStringKey("建筑"),
                 color: ApocalypseTheme.info
             )
         }
@@ -410,20 +410,20 @@ struct ProfileTabView: View {
                     icon: "figure.walk",
                     iconColor: ApocalypseTheme.info,
                     value: filteredDistance,
-                    label: "距离"
+                    label: LocalizedStringKey("距离")
                 )
                 bigMetricCard(
                     icon: "map.fill",
                     iconColor: ApocalypseTheme.success,
                     value: filteredArea,
-                    label: "面积"
+                    label: LocalizedStringKey("面积")
                 )
             }
 
             // 次级数据网格
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                miniStatCard(icon: "flag.fill",       iconColor: ApocalypseTheme.primary, value: "\(myTerritories.count)",                   label: "圈地总数")
-                miniStatCard(icon: "building.2.fill", iconColor: ApocalypseTheme.info,    value: "\(buildingManager.playerBuildings.count)", label: "建筑总数")
+                miniStatCard(icon: "flag.fill",       iconColor: ApocalypseTheme.primary, value: "\(myTerritories.count)",                   label: LocalizedStringKey("圈地总数"))
+                miniStatCard(icon: "building.2.fill", iconColor: ApocalypseTheme.info,    value: "\(buildingManager.playerBuildings.count)", label: LocalizedStringKey("建筑总数"))
             }
 
             // 每日礼包（订阅用户）
@@ -653,7 +653,7 @@ struct EditProfileSheet: View {
                         // ── 基本信息 ──────────────────────────────
                         sectionLabel("基本信息")
 
-                        TextField("用户名", text: $username)
+                        TextField(LocalizedStringKey("用户名"), text: $username)
                             .foregroundColor(ApocalypseTheme.textPrimary)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
@@ -776,14 +776,14 @@ struct EditProfileSheet: View {
 
                         VStack(spacing: 0) {
                             infoRow(
-                                label: "用户 ID",
+                                label: LocalizedStringKey("用户 ID"),
                                 value: authManager.currentUser.map {
                                     String($0.id.uuidString.prefix(8)).uppercased() + "..."
                                 } ?? "-"
                             )
                             Divider().background(ApocalypseTheme.textMuted.opacity(0.3)).padding(.leading, 16)
                             infoRow(
-                                label: "注册邮箱",
+                                label: LocalizedStringKey("注册邮箱"),
                                 value: authManager.currentUser?.email ?? "-"
                             )
                         }
@@ -852,7 +852,7 @@ struct EditProfileSheet: View {
             .padding(.bottom, 8)
     }
 
-    private func infoRow(label: String, value: String) -> some View {
+    private func infoRow(label: LocalizedStringKey, value: String) -> some View {
         HStack {
             Text(label)
                 .font(.callout)

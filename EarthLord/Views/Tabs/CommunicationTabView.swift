@@ -53,7 +53,7 @@ struct CommunicationTabView: View {
                                 VStack(spacing: 4) {
                                     Image(systemName: section.iconName)
                                         .font(.system(size: 20))
-                                    Text(section.rawValue)
+                                    Text(LocalizedStringKey(section.rawValue))
                                         .font(.caption)
                                         .fontWeight(.medium)
                                 }

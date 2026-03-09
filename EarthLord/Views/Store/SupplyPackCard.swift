@@ -57,7 +57,7 @@ struct SupplyPackCard: View {
             // 物品列表
             if let config = packConfig {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("包含物品")
+                    Text("store.contains")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(ApocalypseTheme.textPrimary)
@@ -76,7 +76,7 @@ struct SupplyPackCard: View {
                         Divider()
                             .background(ApocalypseTheme.textSecondary.opacity(0.1))
 
-                        Text("额外奖励（概率获得）")
+                        Text("store.bonus.label")
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(ApocalypseTheme.primary)
@@ -108,7 +108,7 @@ struct SupplyPackCard: View {
             Button(action: onPurchase) {
                 HStack {
                     Image(systemName: "bag.fill")
-                    Text("购买")
+                    Text("store.buy")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -138,8 +138,8 @@ struct PackItemRow: View {
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.primary)
 
-            // 物品名称
-            Text(itemId)
+            // 物品名称（本地化）
+            Text(itemId.localizedItemName)
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 

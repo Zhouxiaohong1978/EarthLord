@@ -37,12 +37,12 @@ struct StoreView: View {
                 productsView
             }
         }
-        .navigationTitle("物资商城")
+        .navigationTitle(String(localized: "store.title"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("关闭") { dismiss() }
+                Button(String(localized: "store.close")) { dismiss() }
                     .foregroundColor(ApocalypseTheme.primary)
             }
         }
@@ -109,11 +109,11 @@ struct StoreView: View {
                 .foregroundColor(ApocalypseTheme.primary)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("购买说明")
+                Text("store.info.title")
                     .font(.headline)
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
-                Text("购买的物品将发送到邮箱，请及时领取")
+                Text("store.info.desc")
                     .font(.subheadline)
                     .foregroundColor(ApocalypseTheme.textSecondary)
             }
@@ -131,7 +131,7 @@ struct StoreView: View {
             Spacer()
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
-            Text("加载商品中...")
+            Text("store.loading")
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
                 .padding(.top, 8)
@@ -148,11 +148,11 @@ struct StoreView: View {
                 .font(.system(size: 60))
                 .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
 
-            Text("暂无商品")
+            Text("store.empty")
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("请稍后再试")
+            Text("store.empty.retry")
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -171,7 +171,7 @@ struct StoreView: View {
             switch purchaseManager.purchaseState {
             case .success:
                 purchaseResultSuccess = true
-                purchaseResultMessage = "购买成功！物品已发送到邮箱，请查收。"
+                purchaseResultMessage = String(localized: "store.purchase.success")
                 showingPurchaseResult = true
 
             case .cancelled:
@@ -189,7 +189,7 @@ struct StoreView: View {
 
         } catch {
             purchaseResultSuccess = false
-            purchaseResultMessage = "购买失败：\(error.localizedDescription)"
+            purchaseResultMessage = "\(String(localized: "error.purchase.failed"))：\(error.localizedDescription)"
             showingPurchaseResult = true
         }
     }

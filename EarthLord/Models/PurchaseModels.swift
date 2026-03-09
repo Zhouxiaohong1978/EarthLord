@@ -10,80 +10,61 @@ import StoreKit
 
 // MARK: - 物资包产品定义
 
-/// 物资包产品枚举
 enum SupplyPackProduct: String, CaseIterable, Identifiable {
-    case starterPack = "com.earthlord.starter_pack"
-    case explorerPack = "com.earthlord.explorer_pack"
-    case builderPack = "com.earthlord.builder_pack"
-    case premiumPack = "com.earthlord.premium_pack"
+    case survivorPack    = "com.earthlord.survivor_pack"
+    case constructorPack = "com.earthlord.constructor_pack"
+    case engineerPack    = "com.earthlord.engineer_pack"
+    case rarePack        = "com.earthlord.rare_pack"
 
     var id: String { rawValue }
 
-    /// 本地化显示名称
     var displayName: String {
         switch self {
-        case .starterPack: return "新手物资包"
-        case .explorerPack: return "探索物资包"
-        case .builderPack: return "建设物资包"
-        case .premiumPack: return "高级物资包"
+        case .survivorPack:    return String(localized: "pack.survivor.name")
+        case .constructorPack: return String(localized: "pack.constructor.name")
+        case .engineerPack:    return String(localized: "pack.engineer.name")
+        case .rarePack:        return String(localized: "pack.rare.name")
         }
     }
 
-    /// 商品描述
-    var description: String {
-        switch self {
-        case .starterPack:
-            return "包含矿泉水×5、罐头食品×3、绷带×2"
-        case .explorerPack:
-            return "包含手电筒×1、绳子×2、矿泉水×3、高级搜刮券×1"
-        case .builderPack:
-            return "包含木材×20、废金属×15、玻璃×10、建筑加速令×2"
-        case .premiumPack:
-            return "包含稀有装备×1、传奇物品×1、各类资源若干、背包扩容×10"
-        }
-    }
-
-    /// 参考价格（人民币）
     var priceInCNY: Int {
         switch self {
-        case .starterPack: return 6
-        case .explorerPack: return 12
-        case .builderPack: return 18
-        case .premiumPack: return 30
+        case .survivorPack:    return 6
+        case .constructorPack: return 18
+        case .engineerPack:    return 30
+        case .rarePack:        return 68
         }
     }
 
-    /// 图标名称
     var iconName: String {
         switch self {
-        case .starterPack: return "gift.fill"
-        case .explorerPack: return "map.fill"
-        case .builderPack: return "hammer.fill"
-        case .premiumPack: return "crown.fill"
+        case .survivorPack:    return "leaf.fill"
+        case .constructorPack: return "hammer.fill"
+        case .engineerPack:    return "wrench.and.screwdriver.fill"
+        case .rarePack:        return "crown.fill"
         }
     }
 
-    /// 图标颜色
     var iconColor: String {
         switch self {
-        case .starterPack: return "green"
-        case .explorerPack: return "blue"
-        case .builderPack: return "orange"
-        case .premiumPack: return "purple"
+        case .survivorPack:    return "green"
+        case .constructorPack: return "blue"
+        case .engineerPack:    return "purple"
+        case .rarePack:        return "orange"
         }
     }
 }
 
-// MARK: - 物资包内容配置
+// MARK: - 物资包物品
 
-/// 物资包物品
 struct PackItem: Codable, Equatable {
     let itemId: String
     let quantity: Int
-    let quality: String?  // ItemQuality 的字符串形式
+    let quality: String?
 }
 
-/// 物资包内容配置
+// MARK: - 物资包配置
+
 struct SupplyPackConfig {
     let product: SupplyPackProduct
     let baseItems: [PackItem]
@@ -91,77 +72,137 @@ struct SupplyPackConfig {
 
     struct BonusItem {
         let item: PackItem
-        let probability: Int  // 概率（1-100）
+        let probability: Int
     }
 }
 
 // MARK: - 物资包配置常量
 
 extension SupplyPackConfig {
-    /// 所有物资包配置
     static let all: [SupplyPackProduct: SupplyPackConfig] = [
-        .starterPack: SupplyPackConfig(
-            product: .starterPack,
-            baseItems: [
-                PackItem(itemId: "water_bottle", quantity: 5, quality: nil),
-                PackItem(itemId: "canned_food", quantity: 3, quality: "normal"),
-                PackItem(itemId: "bandage", quantity: 2, quality: nil)
-            ],
-            bonusItems: []
-        ),
 
-        .explorerPack: SupplyPackConfig(
-            product: .explorerPack,
+        // ¥6 / $0.99 — 解决Tier1建造卡点
+        .survivorPack: SupplyPackConfig(
+            product: .survivorPack,
             baseItems: [
-                PackItem(itemId: "flashlight", quantity: 1, quality: "good"),
-                PackItem(itemId: "rope", quantity: 2, quality: nil),
-                PackItem(itemId: "water_bottle", quantity: 3, quality: nil)
+                PackItem(itemId: "wood",         quantity: 80,  quality: nil),
+                PackItem(itemId: "stone",        quantity: 80,  quality: nil),
+                PackItem(itemId: "canned_food",  quantity: 15,  quality: nil),
+                PackItem(itemId: "water_bottle", quantity: 20,  quality: nil),
+                PackItem(itemId: "bread",        quantity: 10,  quality: nil),
+                PackItem(itemId: "bandage",      quantity: 8,   quality: nil)
             ],
             bonusItems: [
-                BonusItem(
-                    item: PackItem(itemId: "flashlight", quantity: 1, quality: "legendary"),
-                    probability: 10
-                )
+                BonusItem(item: PackItem(itemId: "cloth", quantity: 20, quality: nil), probability: 25)
             ]
         ),
 
-        .builderPack: SupplyPackConfig(
-            product: .builderPack,
+        // ¥18 / $2.99 — 解决Tier1→2过渡缺金属/布料/工具
+        .constructorPack: SupplyPackConfig(
+            product: .constructorPack,
             baseItems: [
-                PackItem(itemId: "wood", quantity: 20, quality: nil),
-                PackItem(itemId: "scrap_metal", quantity: 15, quality: nil),
-                PackItem(itemId: "glass", quantity: 10, quality: nil)
+                PackItem(itemId: "scrap_metal",    quantity: 100, quality: nil),
+                PackItem(itemId: "wood",           quantity: 60,  quality: nil),
+                PackItem(itemId: "stone",          quantity: 50,  quality: nil),
+                PackItem(itemId: "cloth",          quantity: 40,  quality: nil),
+                PackItem(itemId: "tool",           quantity: 2,   quality: "good"),
+                PackItem(itemId: "medicine",       quantity: 20,  quality: nil),
+                PackItem(itemId: "build_speedup",  quantity: 5,   quality: nil)
             ],
             bonusItems: [
-                BonusItem(
-                    item: PackItem(itemId: "consumable_build_speedup", quantity: 3, quality: nil),
-                    probability: 15
-                )
+                BonusItem(item: PackItem(itemId: "electronic_component", quantity: 10, quality: nil), probability: 20)
             ]
         ),
 
-        .premiumPack: SupplyPackConfig(
-            product: .premiumPack,
+        // ¥30 / $4.99 — 解决Tier2→3缺电子元件
+        .engineerPack: SupplyPackConfig(
+            product: .engineerPack,
             baseItems: [
-                PackItem(itemId: "equipment_rare", quantity: 1, quality: "rare"),
-                PackItem(itemId: "wood", quantity: 10, quality: nil),
-                PackItem(itemId: "scrap_metal", quantity: 10, quality: nil),
-                PackItem(itemId: "water_bottle", quantity: 5, quality: nil),
-                PackItem(itemId: "canned_food", quantity: 5, quality: nil)
+                PackItem(itemId: "electronic_component", quantity: 20, quality: nil),
+                PackItem(itemId: "scrap_metal",          quantity: 80, quality: nil),
+                PackItem(itemId: "wood",                 quantity: 40, quality: nil),
+                PackItem(itemId: "stone",                quantity: 30, quality: nil),
+                PackItem(itemId: "build_speedup",        quantity: 10, quality: nil),
+                PackItem(itemId: "tool",                 quantity: 3,  quality: "good")
             ],
             bonusItems: [
-                BonusItem(
-                    item: PackItem(itemId: "equipment_legendary", quantity: 1, quality: "legendary"),
-                    probability: 20
-                )
+                BonusItem(item: PackItem(itemId: "antibiotics", quantity: 10, quality: nil), probability: 25),
+                BonusItem(item: PackItem(itemId: "fuel",        quantity: 8,  quality: nil), probability: 25)
+            ]
+        ),
+
+        // ¥68 / $9.99 — 解决Tier3高级建筑缺稀有材料
+        .rarePack: SupplyPackConfig(
+            product: .rarePack,
+            baseItems: [
+                PackItem(itemId: "electronic_component", quantity: 30, quality: nil),
+                PackItem(itemId: "satellite_module",     quantity: 3,  quality: nil),
+                PackItem(itemId: "fuel",                 quantity: 15, quality: nil),
+                PackItem(itemId: "antibiotics",          quantity: 15, quality: nil),
+                PackItem(itemId: "build_speedup",        quantity: 15, quality: nil)
+            ],
+            bonusItems: [
+                BonusItem(item: PackItem(itemId: "equipment_rare",  quantity: 1, quality: "rare"),      probability: 30),
+                BonusItem(item: PackItem(itemId: "blueprint_epic",  quantity: 1, quality: nil),          probability: 30),
+                BonusItem(item: PackItem(itemId: "blueprint_basic", quantity: 2, quality: nil),          probability: 55)
             ]
         )
     ]
 }
 
+// MARK: - 物品名称本地化
+
+extension String {
+    var localizedItemName: String {
+        switch self {
+        case "water_bottle":          return String(localized: "item.water_bottle")
+        case "canned_food":           return String(localized: "item.canned_food")
+        case "bread":                 return String(localized: "item.bread")
+        case "bandage":               return String(localized: "item.bandage")
+        case "medicine":              return String(localized: "item.medicine")
+        case "first_aid_kit":         return String(localized: "item.first_aid_kit")
+        case "antibiotics":           return String(localized: "item.antibiotics")
+        case "wood":                  return String(localized: "item.wood")
+        case "stone":                 return String(localized: "item.stone")
+        case "scrap_metal":           return String(localized: "item.scrap_metal")
+        case "cloth":                 return String(localized: "item.cloth")
+        case "seeds":                 return String(localized: "item.seeds")
+        case "nails":                 return String(localized: "item.nails")
+        case "glass":                 return String(localized: "item.glass")
+        case "rope":                  return String(localized: "item.rope")
+        case "flashlight":            return String(localized: "item.flashlight")
+        case "tool":                  return String(localized: "item.tool")
+        case "toolbox":               return String(localized: "item.toolbox")
+        case "build_speedup":         return String(localized: "item.build_speedup")
+        case "electronic_component":  return String(localized: "item.electronic_component")
+        case "satellite_module":      return String(localized: "item.satellite_module")
+        case "fuel":                  return String(localized: "item.fuel")
+        case "scavenge_pass":         return String(localized: "item.scavenge_pass")
+        case "blueprint_basic":       return String(localized: "item.blueprint_basic")
+        case "blueprint_epic":        return String(localized: "item.blueprint_epic")
+        case "equipment_rare":        return String(localized: "item.equipment_rare")
+        case "equipment_epic":        return String(localized: "item.equipment_epic")
+        default:                      return self
+        }
+    }
+
+    var localizedQualityKey: String {
+        switch self.lowercased() {
+        case "broken":    return "quality.broken"
+        case "worn":      return "quality.worn"
+        case "normal":    return "quality.normal"
+        case "good":      return "quality.good"
+        case "excellent": return "quality.excellent"
+        case "rare":      return "quality.rare"
+        case "epic":      return "quality.epic"
+        case "legendary": return "quality.legendary"
+        default:          return self
+        }
+    }
+}
+
 // MARK: - 购买订单模型
 
-/// 购买订单（本地模型）
 struct Purchase: Identifiable, Codable {
     let id: UUID
     let userId: UUID
@@ -179,7 +220,9 @@ struct Purchase: Identifiable, Codable {
     let updatedAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case id, userId = "user_id", productId = "product_id"
+        case id
+        case userId = "user_id"
+        case productId = "product_id"
         case transactionId = "transaction_id"
         case originalTransactionId = "original_transaction_id"
         case purchaseDate = "purchase_date"
@@ -191,7 +234,6 @@ struct Purchase: Identifiable, Codable {
     }
 }
 
-/// 购买订单数据库模型
 struct PurchaseDB: Codable {
     let id: String?
     let userId: String
@@ -225,7 +267,6 @@ struct PurchaseDB: Codable {
 
 // MARK: - 购买状态
 
-/// 购买状态
 enum PurchaseState {
     case idle
     case purchasing
@@ -236,7 +277,6 @@ enum PurchaseState {
 
 // MARK: - 购买错误
 
-/// 购买错误类型
 enum PurchaseError: LocalizedError {
     case notAuthenticated
     case productNotFound
@@ -248,91 +288,54 @@ enum PurchaseError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notAuthenticated:
-            return "用户未登录"
+            return String(localized: "error.purchase.not_authenticated")
         case .productNotFound:
-            return "商品不存在"
+            return String(localized: "error.purchase.product_not_found")
         case .purchaseFailed(let message):
-            return "购买失败: \(message)"
+            return "\(String(localized: "error.purchase.failed_prefix")): \(message)"
         case .verificationFailed:
-            return "交易验证失败"
+            return String(localized: "error.purchase.verification_failed")
         case .deliveryFailed(let message):
-            return "发货失败: \(message)"
+            return "\(String(localized: "error.purchase.delivery_failed_prefix")): \(message)"
         case .invalidTransaction:
-            return "无效的交易"
+            return String(localized: "error.purchase.invalid_transaction")
         }
     }
 }
 
-// MARK: - 订阅系统模型
+// MARK: - 订阅商品枚举
 
-/// 订阅商品枚举
 enum SubscriptionProduct: String, CaseIterable, Identifiable {
-    // 探索者（基础版）
     case explorerMonthly = "com.earthlord.sub.basic.monthly"
-    case explorerYearly = "com.earthlord.sub.basic.yearly"
-
-    // 领主（高级版）
-    case lordMonthly = "com.earthlord.sub.premium.monthly"
-    case lordYearly = "com.earthlord.sub.premium.yearly"
+    case explorerYearly  = "com.earthlord.sub.basic.yearly"
+    case lordMonthly     = "com.earthlord.sub.premium.monthly"
+    case lordYearly      = "com.earthlord.sub.premium.yearly"
 
     var id: String { rawValue }
 
-    /// 显示名称
     var displayName: String {
         switch self {
-        case .explorerMonthly: return "探索者·月卡"
-        case .explorerYearly: return "探索者·年卡"
-        case .lordMonthly: return "领主·月卡"
-        case .lordYearly: return "领主·年卡"
+        case .explorerMonthly: return String(localized: "sub.explorer.monthly")
+        case .explorerYearly:  return String(localized: "sub.explorer.yearly")
+        case .lordMonthly:     return String(localized: "sub.lord.monthly")
+        case .lordYearly:      return String(localized: "sub.lord.yearly")
         }
     }
 
-    /// 简短名称
     var shortName: String {
         switch self {
-        case .explorerMonthly, .explorerYearly: return "探索者"
-        case .lordMonthly, .lordYearly: return "领主"
+        case .explorerMonthly, .explorerYearly: return String(localized: "tier.explorer")
+        case .lordMonthly, .lordYearly:         return String(localized: "tier.lord")
         }
     }
 
-    /// 价格（人民币）
-    var price: Int {
-        switch self {
-        case .explorerMonthly: return 12
-        case .explorerYearly: return 88
-        case .lordMonthly: return 25
-        case .lordYearly: return 168
-        }
-    }
-
-    /// 月均价格
-    var monthlyEquivalent: Double {
-        switch self {
-        case .explorerMonthly: return 12.0
-        case .explorerYearly: return 7.3
-        case .lordMonthly: return 25.0
-        case .lordYearly: return 14.0
-        }
-    }
-
-    /// 优惠百分比（仅年卡）
-    var savingsPercent: Int? {
-        switch self {
-        case .explorerYearly: return 39
-        case .lordYearly: return 44
-        default: return nil
-        }
-    }
-
-    /// 订阅档位
     var tier: SubscriptionTier {
         switch self {
         case .explorerMonthly, .explorerYearly: return .explorer
-        case .lordMonthly, .lordYearly: return .lord
+        case .lordMonthly, .lordYearly:         return .lord
         }
     }
 
-    /// 是否为年卡
     var isYearly: Bool {
         switch self {
         case .explorerYearly, .lordYearly: return true
@@ -340,92 +343,123 @@ enum SubscriptionProduct: String, CaseIterable, Identifiable {
         }
     }
 
-    /// 订阅周期（天数）
-    var durationInDays: Int {
-        isYearly ? 365 : 30
+    var savingsPercent: Int? {
+        switch self {
+        case .explorerYearly: return 39
+        case .lordYearly:     return 44
+        default:              return nil
+        }
     }
+
+    var durationInDays: Int { isYearly ? 365 : 30 }
 }
 
-/// 订阅档位
-enum SubscriptionTier: String, Codable {
-    case free = "free"           // 幸存者（免费）
-    case explorer = "explorer"   // 探索者（基础版）
-    case lord = "lord"          // 领主（高级版）
+// MARK: - 订阅档位
 
-    /// 显示名称
+enum SubscriptionTier: String, Codable {
+    case free     = "free"
+    case explorer = "explorer"
+    case lord     = "lord"
+
     var displayName: String {
         switch self {
-        case .free: return "幸存者"
-        case .explorer: return "探索者"
-        case .lord: return "领主"
+        case .free:     return String(localized: "tier.free")
+        case .explorer: return String(localized: "tier.explorer")
+        case .lord:     return String(localized: "tier.lord")
         }
     }
 
-    /// 徽章图标
     var badgeIcon: String {
         switch self {
-        case .free: return ""
+        case .free:     return ""
         case .explorer: return "🥉"
-        case .lord: return "🥇"
+        case .lord:     return "🥇"
         }
     }
 
-    /// 呼号前缀
     var callsignPrefix: String {
         switch self {
-        case .free: return ""
-        case .explorer: return "[探索者]"
-        case .lord: return "[领主]"
+        case .free:     return ""
+        case .explorer: return "[\(String(localized: "tier.explorer"))]"
+        case .lord:     return "[\(String(localized: "tier.lord"))]"
         }
     }
 
-    /// 背包容量
+    // MARK: 背包容量
     var backpackCapacity: Int {
         switch self {
-        case .free: return 100
+        case .free:     return 100
         case .explorer: return 200
-        case .lord: return 300
+        case .lord:     return 300
         }
     }
 
-    /// 探索范围（km）
+    // MARK: 探索范围（km）
     var explorationRadius: Double {
         switch self {
-        case .free: return 1.0
+        case .free:     return 1.0
         case .explorer: return 2.0
-        case .lord: return 3.0
+        case .lord:     return 3.0
         }
     }
 
-    /// 建造速度倍率
+    // MARK: POI搜刮冷却（小时）— 免费24h，探索者12h，领主6h
+    var poiCooldownHours: Int {
+        switch self {
+        case .free:     return 24
+        case .explorer: return 12
+        case .lord:     return 6
+        }
+    }
+
+    // MARK: 步行奖励倍率 — 免费1x，探索者1.5x，领主2x
+    var walkRewardMultiplier: Double {
+        switch self {
+        case .free:     return 1.0
+        case .explorer: return 1.5
+        case .lord:     return 2.0
+        }
+    }
+
+    // MARK: 建造速度倍率 — 仅领主有加成
     var buildSpeedMultiplier: Double {
         switch self {
-        case .free: return 1.0
-        case .explorer: return 2.0
-        case .lord: return 2.0
+        case .free:     return 1.0
+        case .explorer: return 1.0
+        case .lord:     return 2.0
         }
     }
 
-    /// 每日交易次数限制（nil表示无限）
+    // MARK: 每日交易次数限制
     var dailyTradeLimit: Int? {
         switch self {
-        case .free: return 10
+        case .free:     return 10
         case .explorer: return nil
-        case .lord: return nil
+        case .lord:     return nil
         }
     }
 
-    /// 每日庇护所收益次数限制（nil表示无限）
+    // MARK: 每日庇护所收益
     var dailyHarvestLimit: Int? {
         switch self {
-        case .free: return 10
+        case .free:     return 10
         case .explorer: return nil
-        case .lord: return nil
+        case .lord:     return nil
+        }
+    }
+
+    // MARK: 每日礼包物品数量
+    var dailyGiftCount: Int {
+        switch self {
+        case .free:     return 0
+        case .explorer: return 5
+        case .lord:     return 7
         }
     }
 }
 
-/// 用户订阅状态（本地模型）
+// MARK: - 用户订阅状态
+
 struct UserSubscription: Identifiable, Codable {
     let id: UUID
     let userId: UUID
@@ -455,20 +489,14 @@ struct UserSubscription: Identifiable, Codable {
         case updatedAt = "updated_at"
     }
 
-    /// 是否已过期
-    var isExpired: Bool {
-        Date() > expiresAt
-    }
+    var isExpired: Bool { Date() > expiresAt }
 
-    /// 剩余天数
     var daysRemaining: Int {
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.day], from: Date(), to: expiresAt)
+        let components = Calendar.current.dateComponents([.day], from: Date(), to: expiresAt)
         return max(0, components.day ?? 0)
     }
 }
 
-/// 用户订阅数据库模型
 struct SubscriptionDB: Codable {
     let id: String?
     let userId: String
@@ -498,50 +526,34 @@ struct SubscriptionDB: Codable {
         case updatedAt = "updated_at"
     }
 
-    /// 转换为本地模型
     func toUserSubscription() -> UserSubscription? {
         guard let id = id,
               let subscriptionId = UUID(uuidString: id),
               let userId = UUID(uuidString: userId),
-              let tier = SubscriptionTier(rawValue: tier) else {
-            return nil
-        }
-
-        let dateFormatter = ISO8601DateFormatter()
-        guard let purchaseDate = dateFormatter.date(from: purchaseDate),
-              let expiresAt = dateFormatter.date(from: expiresAt) else {
-            return nil
-        }
-
-        let createdDate = createdAt.flatMap { dateFormatter.date(from: $0) } ?? Date()
-        let updatedDate = updatedAt.flatMap { dateFormatter.date(from: $0) } ?? Date()
-
+              let tier = SubscriptionTier(rawValue: tier) else { return nil }
+        let fmt = ISO8601DateFormatter()
+        guard let purchaseDate = fmt.date(from: purchaseDate),
+              let expiresAt = fmt.date(from: expiresAt) else { return nil }
         return UserSubscription(
-            id: subscriptionId,
-            userId: userId,
-            productId: productId,
-            tier: tier,
-            transactionId: transactionId,
-            originalTransactionId: originalTransactionId,
-            purchaseDate: purchaseDate,
-            expiresAt: expiresAt,
-            isActive: isActive,
-            autoRenew: autoRenew,
-            createdAt: createdDate,
-            updatedAt: updatedDate
+            id: subscriptionId, userId: userId, productId: productId, tier: tier,
+            transactionId: transactionId, originalTransactionId: originalTransactionId,
+            purchaseDate: purchaseDate, expiresAt: expiresAt,
+            isActive: isActive, autoRenew: autoRenew,
+            createdAt: fmt.date(from: createdAt ?? "") ?? Date(),
+            updatedAt: fmt.date(from: updatedAt ?? "") ?? Date()
         )
     }
 }
 
-/// 订阅状态
+// MARK: - 订阅状态 & 错误
+
 enum SubscriptionStatus {
-    case notSubscribed              // 未订阅
-    case active(tier: SubscriptionTier)  // 订阅中
-    case expired(tier: SubscriptionTier) // 已过期
-    case cancelled(tier: SubscriptionTier) // 已取消
+    case notSubscribed
+    case active(tier: SubscriptionTier)
+    case expired(tier: SubscriptionTier)
+    case cancelled(tier: SubscriptionTier)
 }
 
-/// 订阅错误
 enum SubscriptionError: LocalizedError {
     case notAuthenticated
     case productNotFound
@@ -552,18 +564,12 @@ enum SubscriptionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notAuthenticated:
-            return "用户未登录"
-        case .productNotFound:
-            return "订阅商品不存在"
-        case .subscribeFailed(let message):
-            return "订阅失败: \(message)"
-        case .verificationFailed:
-            return "订阅验证失败"
-        case .alreadySubscribed:
-            return "您已经订阅了此服务"
-        case .invalidSubscription:
-            return "无效的订阅"
+        case .notAuthenticated:   return String(localized: "error.purchase.not_authenticated")
+        case .productNotFound:    return String(localized: "error.purchase.product_not_found")
+        case .subscribeFailed(let msg): return "\(String(localized: "error.sub.failed_prefix")): \(msg)"
+        case .verificationFailed: return String(localized: "error.purchase.verification_failed")
+        case .alreadySubscribed:  return String(localized: "error.sub.already_subscribed")
+        case .invalidSubscription:return String(localized: "error.sub.invalid")
         }
     }
 }

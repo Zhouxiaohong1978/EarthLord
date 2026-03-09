@@ -4,63 +4,108 @@
       "id": "campfire",
       "template_id": "campfire",
       "name": "篝火",
+      "name_en": "Campfire",
       "category": "survival",
       "tier": 1,
       "description": "基础的火源设施，提供照明和取暖功能。可以用来烹饪食物和驱散野兽。",
+      "description_en": "A basic fire source providing light and warmth. Used for cooking food and keeping threats away.",
       "icon": "flame.fill",
       "required_resources": {
         "wood": 30,
         "stone": 20
       },
-      "build_time_seconds": 30,
+      "build_time_seconds": 10,
       "max_per_territory": 3,
       "max_level": 3
     },
     {
       "id": "shelter",
       "template_id": "shelter",
-      "name": "庇护所",
+      "name": "简易帐篷",
+      "name_en": "Simple Shelter",
       "category": "survival",
       "tier": 1,
       "description": "简易的避难场所，可以遮风挡雨。提供基础的休息功能，恢复体力。",
+      "description_en": "A basic shelter to block wind and rain. Provides rest to restore stamina.",
       "icon": "house.fill",
       "required_resources": {
         "wood": 50,
-        "stone": 30
+        "cloth": 30
       },
-      "build_time_seconds": 60,
+      "build_time_seconds": 30,
       "max_per_territory": 1,
       "max_level": 5
+    },
+    {
+      "id": "water_barrel",
+      "template_id": "water_barrel",
+      "name": "储水桶",
+      "name_en": "Water Barrel",
+      "category": "survival",
+      "tier": 1,
+      "description": "用于存储饮用水的大型桶，维持长期水源供应。",
+      "description_en": "A large barrel for storing drinking water to maintain a long-term water supply.",
+      "icon": "drop.fill",
+      "required_resources": {
+        "scrap_metal": 20,
+        "wood": 10
+      },
+      "build_time_seconds": 20,
+      "max_per_territory": 3,
+      "max_level": 3
     },
     {
       "id": "storage_small",
       "template_id": "storage_small",
       "name": "小仓库",
+      "name_en": "Small Storage",
       "category": "storage",
-      "tier": 1,
+      "tier": 2,
       "description": "小型储物设施，可以安全存放物资。增加领地的物资存储上限。",
+      "description_en": "A small storage facility to safely store supplies and increase territory capacity.",
       "icon": "archivebox.fill",
       "required_resources": {
-        "wood": 40,
-        "scrap_metal": 20
+        "wood": 100,
+        "scrap_metal": 50
       },
-      "build_time_seconds": 45,
+      "build_time_seconds": 120,
       "max_per_territory": 2,
+      "max_level": 3
+    },
+    {
+      "id": "workbench",
+      "template_id": "workbench",
+      "name": "工作台",
+      "name_en": "Workbench",
+      "category": "production",
+      "tier": 2,
+      "description": "用于合成和制作道具的工作台，解锁高级合成配方。",
+      "description_en": "A crafting station for making tools and items, unlocking advanced recipes.",
+      "icon": "wrench.and.screwdriver.fill",
+      "required_resources": {
+        "wood": 80,
+        "scrap_metal": 40,
+        "tool": 1
+      },
+      "build_time_seconds": 180,
+      "max_per_territory": 1,
       "max_level": 3
     },
     {
       "id": "farm_simple",
       "template_id": "farm_simple",
       "name": "简易农田",
+      "name_en": "Simple Farm",
       "category": "production",
-      "tier": 1,
+      "tier": 2,
       "description": "基础的农业设施，可以种植蔬菜和粮食。提供稳定的食物来源。",
+      "description_en": "A basic farming plot for growing vegetables and crops, providing a stable food source.",
       "icon": "leaf.fill",
       "required_resources": {
-        "wood": 20,
-        "stone": 10
+        "wood": 60,
+        "seeds": 10
       },
-      "build_time_seconds": 35,
+      "build_time_seconds": 300,
       "max_per_territory": 4,
       "max_level": 3
     },
@@ -68,16 +113,55 @@
       "id": "solar_panel",
       "template_id": "solar_panel",
       "name": "太阳能板",
+      "name_en": "Solar Panel",
       "category": "energy",
-      "tier": 2,
+      "tier": 3,
       "description": "利用太阳能发电的设备。为其他设施提供电力支持，是进阶建筑的基础。",
+      "description_en": "A solar-powered electricity generator. Provides power for advanced facilities.",
       "icon": "sun.max.fill",
       "required_resources": {
-        "scrap_metal": 60,
-        "glass": 40
+        "scrap_metal": 100,
+        "electronic_component": 20
       },
-      "build_time_seconds": 90,
+      "build_time_seconds": 600,
       "max_per_territory": 2,
+      "max_level": 3
+    },
+    {
+      "id": "radio_station",
+      "template_id": "radio_station",
+      "name": "营地电台",
+      "name_en": "Camp Radio",
+      "category": "communication",
+      "tier": 3,
+      "description": "强大的通讯设备，可与10公里范围内的幸存者通讯，建立联盟联络。",
+      "description_en": "A powerful communication device to contact survivors within 10km and form alliances.",
+      "icon": "antenna.radiowaves.left.and.right",
+      "required_resources": {
+        "scrap_metal": 150,
+        "electronic_component": 30,
+        "satellite_module": 1
+      },
+      "build_time_seconds": 1800,
+      "max_per_territory": 1,
+      "max_level": 3
+    },
+    {
+      "id": "storage_medium",
+      "template_id": "storage_medium",
+      "name": "中仓库",
+      "name_en": "Medium Storage",
+      "category": "storage",
+      "tier": 3,
+      "description": "大型储物设施，大幅增加领地的物资存储上限。",
+      "description_en": "A large storage facility that greatly increases territory storage capacity.",
+      "icon": "building.2.fill",
+      "required_resources": {
+        "scrap_metal": 200,
+        "wood": 100
+      },
+      "build_time_seconds": 900,
+      "max_per_territory": 1,
       "max_level": 3
     }
   ]

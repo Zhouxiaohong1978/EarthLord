@@ -57,7 +57,7 @@ struct PurchaseConfirmSheet: View {
 
                     // 价格
                     HStack(spacing: 4) {
-                        Text("价格:")
+                        Text("store.price.label")
                             .font(.headline)
                             .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -74,7 +74,7 @@ struct PurchaseConfirmSheet: View {
                     // 物品预览
                     if let config = packConfig {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("将获得以下物品")
+                            Text("store.contains")
                                 .font(.headline)
                                 .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -84,7 +84,7 @@ struct PurchaseConfirmSheet: View {
                                         HStack(spacing: 8) {
                                             Image(systemName: "checkmark.circle.fill")
                                                 .foregroundColor(.green)
-                                            Text("\(item.itemId) ×\(item.quantity)")
+                                            Text("\(item.itemId.localizedItemName) ×\(item.quantity)")
                                                 .font(.subheadline)
                                                 .foregroundColor(ApocalypseTheme.textPrimary)
                                         }
@@ -98,7 +98,7 @@ struct PurchaseConfirmSheet: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "star.circle.fill")
                                                     .foregroundColor(.orange)
-                                                Text("\(bonus.item.itemId) ×\(bonus.item.quantity)")
+                                                Text("\(bonus.item.itemId.localizedItemName) ×\(bonus.item.quantity)")
                                                     .font(.subheadline)
                                                     .foregroundColor(ApocalypseTheme.textPrimary)
                                                 Spacer()
@@ -121,7 +121,7 @@ struct PurchaseConfirmSheet: View {
                     HStack(spacing: 8) {
                         Image(systemName: "envelope.fill")
                             .foregroundColor(ApocalypseTheme.primary)
-                        Text("物品将发送到邮箱")
+                        Text("store.info.desc")
                             .font(.caption)
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }
@@ -135,7 +135,7 @@ struct PurchaseConfirmSheet: View {
                             dismiss()
                             onConfirm()
                         }) {
-                            Text("确认购买")
+                            Text("store.purchase.confirm")
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -149,7 +149,7 @@ struct PurchaseConfirmSheet: View {
                             dismiss()
                             onCancel()
                         }) {
-                            Text("取消")
+                            Text("store.close")
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)

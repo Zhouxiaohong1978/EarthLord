@@ -90,22 +90,26 @@ enum RewardTier: String, Codable {
     case silver = "silver"
     /// 金级（1000-2000米）
     case gold = "gold"
-    /// 钻石级（2000米以上）
+    /// 钻石级（2000-5000米）
     case diamond = "diamond"
+    /// 传奇级（5000米以上）
+    case legendary = "legendary"
 
     /// 获取等级显示名称
     var displayName: String {
         switch self {
         case .none:
-            return "无奖励"
+            return String(localized: "reward.tier.none", defaultValue: "无奖励")
         case .bronze:
-            return "铜级"
+            return String(localized: "reward.tier.bronze", defaultValue: "铜级")
         case .silver:
-            return "银级"
+            return String(localized: "reward.tier.silver", defaultValue: "银级")
         case .gold:
-            return "金级"
+            return String(localized: "reward.tier.gold", defaultValue: "金级")
         case .diamond:
-            return "钻石级"
+            return String(localized: "reward.tier.diamond", defaultValue: "钻石级")
+        case .legendary:
+            return String(localized: "reward.tier.legendary", defaultValue: "传奇级")
         }
     }
 
@@ -122,70 +126,92 @@ enum RewardTier: String, Codable {
             return "star.fill"
         case .diamond:
             return "sparkles"
+        case .legendary:
+            return "crown.fill"
         }
     }
 
-    /// 获取物品数量
+    /// 获取基础物品数量（不含订阅加成）
     var itemCount: Int {
         switch self {
         case .none:
             return 0
         case .bronze:
-            return 1
-        case .silver:
             return 2
-        case .gold:
+        case .silver:
             return 3
-        case .diamond:
+        case .gold:
             return 5
+        case .diamond:
+            return 7
+        case .legendary:
+            return 10
         }
+    }
+
+    /// 根据订阅档位计算实际物品数量
+    func adjustedItemCount(for subscriptionTier: SubscriptionTier) -> Int {
+        let multiplier = subscriptionTier.walkRewardMultiplier
+        return max(itemCount, Int((Double(itemCount) * multiplier).rounded(.up)))
     }
 
     /// 获取普通物品概率
     var commonProbability: Double {
         switch self {
-        case .none:
-            return 0
-        case .bronze:
-            return 0.90
-        case .silver:
-            return 0.70
-        case .gold:
-            return 0.50
-        case .diamond:
-            return 0.30
+        case .none:     return 0
+        case .bronze:   return 0.75
+        case .silver:   return 0.55
+        case .gold:     return 0.35
+        case .diamond:  return 0.20
+        case .legendary: return 0.10
+        }
+    }
+
+    /// 获取非普通物品概率
+    var uncommonProbability: Double {
+        switch self {
+        case .none:     return 0
+        case .bronze:   return 0.20
+        case .silver:   return 0.25
+        case .gold:     return 0.25
+        case .diamond:  return 0.25
+        case .legendary: return 0.20
         }
     }
 
     /// 获取稀有物品概率
     var rareProbability: Double {
         switch self {
-        case .none:
-            return 0
-        case .bronze:
-            return 0.10
-        case .silver:
-            return 0.25
-        case .gold:
-            return 0.35
-        case .diamond:
-            return 0.40
+        case .none:     return 0
+        case .bronze:   return 0.05
+        case .silver:   return 0.15
+        case .gold:     return 0.25
+        case .diamond:  return 0.30
+        case .legendary: return 0.30
         }
     }
 
     /// 获取史诗物品概率
     var epicProbability: Double {
         switch self {
-        case .none:
-            return 0
-        case .bronze:
-            return 0
-        case .silver:
-            return 0.05
-        case .gold:
-            return 0.15
-        case .diamond:
-            return 0.30
+        case .none:     return 0
+        case .bronze:   return 0
+        case .silver:   return 0.05
+        case .gold:     return 0.13
+        case .diamond:  return 0.20
+        case .legendary: return 0.30
+        }
+    }
+
+    /// 获取传奇物品概率
+    var legendaryProbability: Double {
+        switch self {
+        case .none:     return 0
+        case .bronze:   return 0
+        case .silver:   return 0
+        case .gold:     return 0.02
+        case .diamond:  return 0.05
+        case .legendary: return 0.10
         }
     }
 
@@ -200,56 +226,46 @@ enum RewardTier: String, Codable {
             return .silver
         case 1000..<2000:
             return .gold
-        default:
+        case 2000..<5000:
             return .diamond
+        default:
+            return .legendary
         }
     }
 
     /// 获取等级颜色
     var color: String {
         switch self {
-        case .none:
-            return "gray"
-        case .bronze:
-            return "brown"
-        case .silver:
-            return "silver"
-        case .gold:
-            return "gold"
-        case .diamond:
-            return "cyan"
+        case .none:      return "gray"
+        case .bronze:    return "brown"
+        case .silver:    return "silver"
+        case .gold:      return "gold"
+        case .diamond:   return "cyan"
+        case .legendary: return "purple"
         }
     }
 
     /// 获取下一等级所需的最小距离
     var nextTierThreshold: Double? {
         switch self {
-        case .none:
-            return 200
-        case .bronze:
-            return 500
-        case .silver:
-            return 1000
-        case .gold:
-            return 2000
-        case .diamond:
-            return nil  // 已是最高等级
+        case .none:      return 200
+        case .bronze:    return 500
+        case .silver:    return 1000
+        case .gold:      return 2000
+        case .diamond:   return 5000
+        case .legendary: return nil  // 已是最高等级
         }
     }
 
     /// 获取下一等级
     var nextTier: RewardTier? {
         switch self {
-        case .none:
-            return .bronze
-        case .bronze:
-            return .silver
-        case .silver:
-            return .gold
-        case .gold:
-            return .diamond
-        case .diamond:
-            return nil  // 已是最高等级
+        case .none:      return .bronze
+        case .bronze:    return .silver
+        case .silver:    return .gold
+        case .gold:      return .diamond
+        case .diamond:   return .legendary
+        case .legendary: return nil  // 已是最高等级
         }
     }
 

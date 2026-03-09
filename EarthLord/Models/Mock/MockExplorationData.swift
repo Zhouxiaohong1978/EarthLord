@@ -464,6 +464,222 @@ struct MockExplorationData {
             description: "坚固的尼龙绳，可用于攀爬、捆绑等多种用途。",
             maxStack: 10,
             hasQuality: true
+        ),
+
+        // 食物
+        ItemDefinition(
+            id: "bread",
+            name: "面包",
+            category: .food,
+            weight: 0.2,
+            volume: 0.2,
+            rarity: .common,
+            description: "末日前的烘焙食品，密封保存，适合随身携带。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+
+        // 建造材料
+        ItemDefinition(
+            id: "stone",
+            name: "石头",
+            category: .material,
+            weight: 3.0,
+            volume: 2.0,
+            rarity: .common,
+            description: "从废墟中收集的石块，建造基础设施的必需材料。",
+            maxStack: 50,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "cloth",
+            name: "布料",
+            category: .material,
+            weight: 0.5,
+            volume: 1.0,
+            rarity: .common,
+            description: "废弃衣物和织物，可用于制作帐篷和庇护所。",
+            maxStack: 50,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "seeds",
+            name: "种子",
+            category: .material,
+            weight: 0.1,
+            volume: 0.1,
+            rarity: .uncommon,
+            description: "各类植物种子，是建造农田、维持粮食供应的关键。",
+            maxStack: 30,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "nails",
+            name: "钉子",
+            category: .material,
+            weight: 0.3,
+            volume: 0.2,
+            rarity: .common,
+            description: "金属钉子，建造和修缮设施的基本配件。",
+            maxStack: 100,
+            hasQuality: false
+        ),
+
+        // 工具
+        ItemDefinition(
+            id: "tool",
+            name: "工具",
+            category: .tool,
+            weight: 1.5,
+            volume: 1.0,
+            rarity: .uncommon,
+            description: "锤子、扳手等工具的统称，建造工作台必需。",
+            stackable: false,
+            maxStack: 5,
+            hasQuality: true
+        ),
+        ItemDefinition(
+            id: "toolbox",
+            name: "工具箱",
+            category: .tool,
+            weight: 3.0,
+            volume: 2.0,
+            rarity: .rare,
+            description: "完整的工具套装，大幅提升建造和修缮效率。",
+            stackable: false,
+            maxStack: 2,
+            hasQuality: true
+        ),
+
+        // 消耗品
+        ItemDefinition(
+            id: "build_speedup",
+            name: "建筑加速令",
+            category: .misc,
+            weight: 0.0,
+            volume: 0.0,
+            rarity: .rare,
+            description: "神秘的加速装置，使用后可大幅缩短建造时间。",
+            maxStack: 50,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "first_aid_kit",
+            name: "急救包",
+            category: .medical,
+            weight: 0.5,
+            volume: 0.4,
+            rarity: .uncommon,
+            description: "比绷带更全面的急救套装，可处理中等程度的伤口。",
+            maxStack: 10,
+            hasQuality: true
+        ),
+        ItemDefinition(
+            id: "antibiotics",
+            name: "抗生素",
+            category: .medical,
+            weight: 0.1,
+            volume: 0.1,
+            rarity: .epic,
+            description: "末日后极为稀缺的抗感染药物，价值极高。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+
+        // 稀有材料
+        ItemDefinition(
+            id: "electronic_component",
+            name: "电子元件",
+            category: .material,
+            weight: 0.2,
+            volume: 0.2,
+            rarity: .rare,
+            description: "从废弃电子设备中拆卸的元件，建造高级设施必需。",
+            maxStack: 30,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "satellite_module",
+            name: "卫星模块",
+            category: .material,
+            weight: 1.0,
+            volume: 0.8,
+            rarity: .legendary,
+            description: "极其稀有的通讯卫星组件，升级营地电台必需。",
+            maxStack: 10,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "fuel",
+            name: "燃料",
+            category: .material,
+            weight: 2.0,
+            volume: 2.0,
+            rarity: .epic,
+            description: "珍贵的液体燃料，驱动高级设备的动力来源。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+
+        // 特殊道具
+        ItemDefinition(
+            id: "scavenge_pass",
+            name: "搜刮令",
+            category: .misc,
+            weight: 0.0,
+            volume: 0.0,
+            rarity: .epic,
+            description: "使用后可对指定POI进行一次无视冷却的搜刮。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "blueprint_basic",
+            name: "基础图纸",
+            category: .misc,
+            weight: 0.1,
+            volume: 0.1,
+            rarity: .rare,
+            description: "记录了基础建筑设计的图纸，可解锁新建筑方案。",
+            maxStack: 10,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "blueprint_epic",
+            name: "史诗图纸",
+            category: .misc,
+            weight: 0.1,
+            volume: 0.1,
+            rarity: .epic,
+            description: "记录了高级建筑设计的珍贵图纸，解锁顶级建筑方案。",
+            maxStack: 5,
+            hasQuality: false
+        ),
+
+        // 装备
+        ItemDefinition(
+            id: "equipment_rare",
+            name: "稀有装备",
+            category: .misc,
+            weight: 1.0,
+            volume: 0.8,
+            rarity: .rare,
+            description: "末日中难得一见的精良装备，可直接使用或用于交易。",
+            stackable: false,
+            maxStack: 5,
+            hasQuality: true
+        ),
+        ItemDefinition(
+            id: "equipment_epic",
+            name: "史诗装备",
+            category: .misc,
+            weight: 1.2,
+            volume: 1.0,
+            rarity: .epic,
+            description: "极为罕见的高品质装备，末日中的珍宝。",
+            stackable: false,
+            maxStack: 3,
+            hasQuality: true
         )
     ]
 

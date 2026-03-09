@@ -1,4 +1,14 @@
 {
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
   "identifier" : "F1A2B3C4",
   "nonRenewingSubscriptions" : [
 
@@ -10,65 +20,91 @@
       "internalID" : "1001",
       "localizations" : [
         {
-          "description" : "包含矿泉水×5、罐头食品×3、绷带×2",
-          "displayName" : "新手物资包",
-          "locale" : "zh_CN"
-        }
-      ],
-      "productID" : "com.earthlord.starter_pack",
-      "referenceName" : "新手物资包",
-      "type" : "Consumable"
-    },
-    {
-      "displayPrice" : "12.00",
-      "familyShareable" : false,
-      "internalID" : "1002",
-      "localizations" : [
+          "description" : "木材×80、石头×80、罐头×15、矿泉水×20、面包×10、绷带×8（布料×20有25%概率）",
+          "displayName" : "幸存者礼包",
+          "locale" : "zh_Hans"
+        },
         {
-          "description" : "包含手电筒×1、绳子×2、矿泉水×3、高级搜刮券×1",
-          "displayName" : "探索物资包",
-          "locale" : "zh_CN"
+          "description" : "Wood×80, Stone×80, Canned Food×15, Water×20, Bread×10, Bandage×8 (+Cloth×20 25% chance)",
+          "displayName" : "Survivor Pack",
+          "locale" : "en_US"
         }
       ],
-      "productID" : "com.earthlord.explorer_pack",
-      "referenceName" : "探索物资包",
+      "productID" : "com.earthlord.survivor_pack",
+      "referenceName" : "Survivor Pack",
       "type" : "Consumable"
     },
     {
       "displayPrice" : "18.00",
       "familyShareable" : false,
-      "internalID" : "1003",
+      "internalID" : "1002",
       "localizations" : [
         {
-          "description" : "包含木材×20、废金属×15、玻璃×10、建筑加速令×2",
-          "displayName" : "建设物资包",
-          "locale" : "zh_CN"
+          "description" : "废金属×100、木材×60、石头×50、布料×40、工具×2、药品×20、建造加速×5（电子元件×10有20%概率）",
+          "displayName" : "建造者礼包",
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "Scrap Metal×100, Wood×60, Stone×50, Cloth×40, Tool×2, Medicine×20, Build Speedup×5 (+Electronic Component×10 20% chance)",
+          "displayName" : "Constructor Pack",
+          "locale" : "en_US"
         }
       ],
-      "productID" : "com.earthlord.builder_pack",
-      "referenceName" : "建设物资包",
+      "productID" : "com.earthlord.constructor_pack",
+      "referenceName" : "Constructor Pack",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "28.00",
+      "displayPrice" : "30.00",
+      "familyShareable" : false,
+      "internalID" : "1003",
+      "localizations" : [
+        {
+          "description" : "电子元件×20、废金属×80、木材×40、石头×30、建造加速×10、工具×3（抗生素×10/燃料×8各25%概率）",
+          "displayName" : "工程师礼包",
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "Electronic Component×20, Scrap Metal×80, Wood×40, Stone×30, Build Speedup×10, Tool×3 (+Antibiotics×10/Fuel×8 each 25% chance)",
+          "displayName" : "Engineer Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.earthlord.engineer_pack",
+      "referenceName" : "Engineer Pack",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "68.00",
       "familyShareable" : false,
       "internalID" : "1004",
       "localizations" : [
         {
-          "description" : "包含稀有装备×1、传奇物品×1、各类资源若干、背包扩容×10",
-          "displayName" : "高级物资包",
-          "locale" : "zh_CN"
+          "description" : "电子元件×30、卫星模块×3、燃料×15、抗生素×15、建造加速×15（稀有装备×1/史诗蓝图×1各30%，基础蓝图×2有55%概率）",
+          "displayName" : "稀有物资包",
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "Electronic Component×30, Satellite Module×3, Fuel×15, Antibiotics×15, Build Speedup×15 (+Rare Equipment×1/Epic Blueprint×1 each 30%, Basic Blueprint×2 at 55%)",
+          "displayName" : "Rare Supply Pack",
+          "locale" : "en_US"
         }
       ],
-      "productID" : "com.earthlord.premium_pack",
-      "referenceName" : "高级物资包",
+      "productID" : "com.earthlord.rare_pack",
+      "referenceName" : "Rare Supply Pack",
       "type" : "Consumable"
     }
   ],
   "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
     "_failTransactionsEnabled" : false,
-    "_locale" : "zh_CN",
+    "_locale" : "zh_Hans",
+    "_renewalBillingIssuesEnabled" : false,
     "_storefront" : "CHN",
+    "_storeKitError" : 0,
     "_storeKitErrors" : [
       {
         "current" : {
@@ -126,7 +162,8 @@
         "enabled" : false,
         "name" : "Offer Code Redeem Sheet"
       }
-    ]
+    ],
+    "_timeRate" : 0
   },
   "subscriptionGroups" : [
     {
@@ -135,7 +172,12 @@
         {
           "description" : "末日之主订阅特权",
           "displayName" : "末日之主特权",
-          "locale" : "zh_CN"
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "EarthLord Subscription Privileges",
+          "displayName" : "EarthLord Privileges",
+          "locale" : "en_US"
         }
       ],
       "name" : "末日之主特权",
@@ -151,18 +193,27 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "2001",
+          "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "解锁全部领主特权，背包300种、探索3km、无限交易、每日礼包",
+              "description" : "领主特权：探索奖励×2、POI冷却6小时、每日7件礼包、建造速度×2",
               "displayName" : "领主·月卡",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hans"
+            },
+            {
+              "description" : "Lord privileges: Walk rewards ×2, POI cooldown 6h, 7 daily gifts, Build speed ×2",
+              "displayName" : "Lord · Monthly",
+              "locale" : "en_US"
             }
           ],
           "productID" : "com.earthlord.sub.premium.monthly",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "领主·月卡",
+          "referenceName" : "Lord Monthly",
           "subscriptionGroupID" : "earthlord_privileges",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
           "adHocOffers" : [
@@ -175,18 +226,27 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "2002",
+          "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "领主年度特权，畅享全部权益，年付更优惠",
+              "description" : "领主年度特权，年付更优惠，畅享全部权益",
               "displayName" : "领主·年卡",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hans"
+            },
+            {
+              "description" : "Lord annual privileges, save more with yearly plan",
+              "displayName" : "Lord · Yearly",
+              "locale" : "en_US"
             }
           ],
           "productID" : "com.earthlord.sub.premium.yearly",
           "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "领主·年卡",
+          "referenceName" : "Lord Yearly",
           "subscriptionGroupID" : "earthlord_privileges",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
           "adHocOffers" : [
@@ -199,18 +259,27 @@
           "familyShareable" : false,
           "groupNumber" : 2,
           "internalID" : "2003",
+          "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "探索者特权，背包200种、探索2km、无限交易、每日礼包",
+              "description" : "探索者特权：探索奖励×1.5、POI冷却12小时、每日5件礼包",
               "displayName" : "探索者·月卡",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hans"
+            },
+            {
+              "description" : "Explorer privileges: Walk rewards ×1.5, POI cooldown 12h, 5 daily gifts",
+              "displayName" : "Explorer · Monthly",
+              "locale" : "en_US"
             }
           ],
           "productID" : "com.earthlord.sub.basic.monthly",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "探索者·月卡",
+          "referenceName" : "Explorer Monthly",
           "subscriptionGroupID" : "earthlord_privileges",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
           "adHocOffers" : [
@@ -223,18 +292,27 @@
           "familyShareable" : false,
           "groupNumber" : 2,
           "internalID" : "2004",
+          "introductoryOffer" : null,
           "localizations" : [
             {
               "description" : "探索者年度特权，年付更优惠",
               "displayName" : "探索者·年卡",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hans"
+            },
+            {
+              "description" : "Explorer annual privileges, save more with yearly plan",
+              "displayName" : "Explorer · Yearly",
+              "locale" : "en_US"
             }
           ],
           "productID" : "com.earthlord.sub.basic.yearly",
           "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "探索者·年卡",
+          "referenceName" : "Explorer Yearly",
           "subscriptionGroupID" : "earthlord_privileges",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         }
       ]
     }

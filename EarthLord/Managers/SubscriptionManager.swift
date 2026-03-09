@@ -83,8 +83,8 @@ final class SubscriptionManager: ObservableObject {
 
         do {
             let productIds = SubscriptionProduct.allCases.map { $0.rawValue }
-            // 同时测试消耗型商品，诊断StoreKit是否完全不工作
-            let consumableIds = ["com.earthlord.starter_pack", "com.earthlord.explorer_pack"]
+            // 同时请求消耗型商品，用于诊断StoreKit是否正常工作
+            let consumableIds = SupplyPackProduct.allCases.map { $0.rawValue }
             let allTestIds = productIds + consumableIds
             print("🛒 [StoreKit] 请求全部商品ID（订阅+消耗型）: \(allTestIds)")
 
@@ -437,6 +437,16 @@ final class SubscriptionManager: ObservableObject {
     /// 是否为订阅用户
     var isSubscribed: Bool {
         currentTier != .free
+    }
+
+    /// POI 搜刮冷却时间（小时）
+    var poiCooldownHours: Int {
+        currentTier.poiCooldownHours
+    }
+
+    /// 步行探索奖励倍率
+    var walkRewardMultiplier: Double {
+        currentTier.walkRewardMultiplier
     }
 
     /// 订阅是否即将过期（7天内）

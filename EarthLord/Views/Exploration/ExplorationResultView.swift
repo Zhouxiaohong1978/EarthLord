@@ -218,6 +218,8 @@ struct ExplorationResultView: View {
             return Color(red: 1.0, green: 0.84, blue: 0.0)
         case .diamond:
             return Color(red: 0.0, green: 0.9, blue: 1.0)
+        case .legendary:
+            return Color(red: 0.7, green: 0.3, blue: 1.0)
         }
     }
 

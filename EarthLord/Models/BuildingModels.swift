@@ -14,10 +14,11 @@ import CoreLocation
 
 /// 建筑分类枚举
 enum BuildingCategory: String, Codable, CaseIterable {
-    case survival = "survival"       // 生存
-    case storage = "storage"         // 储存
-    case production = "production"   // 生产
-    case energy = "energy"           // 能源
+    case survival = "survival"           // 生存
+    case storage = "storage"             // 储存
+    case production = "production"       // 生产
+    case energy = "energy"               // 能源
+    case communication = "communication" // 通讯
 
     /// 本地化显示名称
     var displayName: String {
@@ -30,6 +31,8 @@ enum BuildingCategory: String, Codable, CaseIterable {
             return String(localized: "生产")
         case .energy:
             return String(localized: "能源")
+        case .communication:
+            return String(localized: "通讯")
         }
     }
 
@@ -44,6 +47,8 @@ enum BuildingCategory: String, Codable, CaseIterable {
             return "hammer.fill"
         case .energy:
             return "bolt.fill"
+        case .communication:
+            return "antenna.radiowaves.left.and.right"
         }
     }
 
@@ -58,6 +63,8 @@ enum BuildingCategory: String, Codable, CaseIterable {
             return ApocalypseTheme.success
         case .energy:
             return ApocalypseTheme.warning
+        case .communication:
+            return ApocalypseTheme.danger
         }
     }
 }

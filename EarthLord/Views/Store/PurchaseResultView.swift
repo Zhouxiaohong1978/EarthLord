@@ -53,7 +53,7 @@ struct PurchaseResultView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "envelope.fill")
                                     .foregroundColor(ApocalypseTheme.primary)
-                                Text("请前往邮箱查收物品")
+                                Text("store.result.check.mail")
                                     .font(.subheadline)
                                     .foregroundColor(ApocalypseTheme.textPrimary)
                             }
@@ -71,7 +71,7 @@ struct PurchaseResultView: View {
                         dismiss()
                         onDismiss()
                     }) {
-                        Text(isSuccess ? "前往邮箱" : "确定")
+                        Text(isSuccess ? String(localized: "store.result.go.mailbox") : String(localized: "store.close"))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -90,7 +90,7 @@ struct PurchaseResultView: View {
     // MARK: - 计算属性
 
     private var titleText: String {
-        isSuccess ? "购买成功！" : "购买失败"
+        isSuccess ? String(localized: "store.result.success.title") : String(localized: "store.result.fail.title")
     }
 
     private var iconName: String {

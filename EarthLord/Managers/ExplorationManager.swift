@@ -169,10 +169,8 @@ final class ExplorationManager: NSObject, ObservableObject {
         locationManager?.delegate = self
         locationManager?.desiredAccuracy = kCLLocationAccuracyBest
         locationManager?.distanceFilter = minimumRecordDistance
-        // 注意: allowsBackgroundLocationUpdates 需要在 Info.plist 中配置 UIBackgroundModes 包含 "location"
-        // 以及 NSLocationAlwaysAndWhenInUseUsageDescription 权限描述
-        // 目前只使用前台定位，暂不启用后台定位
-        // locationManager?.allowsBackgroundLocationUpdates = true
+        // 启用后台定位（核心玩法，免费用户可用，需 Info.plist 配置 UIBackgroundModes: location）
+        locationManager?.allowsBackgroundLocationUpdates = true
         locationManager?.pausesLocationUpdatesAutomatically = false
 
         logger.log("位置管理器初始化完成", type: .info)
@@ -624,7 +622,11 @@ final class ExplorationManager: NSObject, ObservableObject {
             return []
         }
 
-        let itemCount = tier.itemCount
+        let subscriptionTier = SubscriptionManager.shared.currentTier
+        let itemCount = tier.adjustedItemCount(for: subscriptionTier)
+        if subscriptionTier != .free {
+            logger.log("订阅加成: \(subscriptionTier.rawValue) × \(subscriptionTier.walkRewardMultiplier) → \(itemCount) 件物品", type: .info)
+        }
         var tempRewards: [ObtainedItem] = []
 
         // 先生成所有物品
@@ -659,14 +661,23 @@ final class ExplorationManager: NSObject, ObservableObject {
     private func generateRandomItem(tier: RewardTier) -> ObtainedItem {
         let randomValue = Double.random(in: 0...1)
 
-        // 根据概率确定稀有度
+        // 根据5级概率确定稀有度
         let rarity: ItemRarity
-        if randomValue < tier.commonProbability {
+        let p0 = tier.commonProbability
+        let p1 = p0 + tier.uncommonProbability
+        let p2 = p1 + tier.rareProbability
+        let p3 = p2 + tier.epicProbability
+
+        if randomValue < p0 {
             rarity = .common
-        } else if randomValue < tier.commonProbability + tier.rareProbability {
+        } else if randomValue < p1 {
+            rarity = .uncommon
+        } else if randomValue < p2 {
             rarity = .rare
-        } else {
+        } else if randomValue < p3 {
             rarity = .epic
+        } else {
+            rarity = .legendary
         }
 
         // 从对应稀有度的物品池中随机选择
@@ -683,19 +694,24 @@ final class ExplorationManager: NSObject, ObservableObject {
         )
     }
 
-    /// 获取指定稀有度的物品池
+    /// 获取指定稀有度的物品池（GDD对齐，所有等级包含建造材料）
     private func getItemPool(for rarity: ItemRarity) -> [String] {
         switch rarity {
         case .common:
-            return ["water_bottle", "canned_food", "bandage", "wood", "scrap_metal"]
+            // 生存基础 + 核心建造材料（木头/石头）
+            return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone", "cloth"]
         case .uncommon:
-            return ["medicine", "flashlight", "rope"]
+            // 进阶建造材料 + 基础工具
+            return ["scrap_metal", "nails", "rope", "seeds", "medicine", "tool"]
         case .rare:
-            return ["first_aid_kit", "radio", "toolbox"]
+            // Tier2 建造材料 + 工具箱
+            return ["first_aid_kit", "toolbox", "fuel", "blueprint_basic", "build_speedup"]
         case .epic:
-            return ["antibiotics", "generator_part", "gas_mask"]
+            // Tier3 稀有材料 + 医疗品
+            return ["electronic_component", "antibiotics", "scavenge_pass", "equipment_rare"]
         case .legendary:
-            return ["rare_medicine", "military_gear"]
+            // 顶级材料 + 蓝图
+            return ["satellite_module", "blueprint_epic", "equipment_epic"]
         }
     }
 

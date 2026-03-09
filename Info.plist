@@ -31,6 +31,12 @@
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>《末日之主》需要获取您的位置来显示您在末日世界中的坐标，帮助您探索和圈定领地。</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>《末日之主》需要后台位置权限，在您行走时持续记录探索路径和距离，获取探索奖励。</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>SKStoreKitConfigurationFile</key>
 	<string>EarthLord</string>
 	<key>UIApplicationSceneManifest</key>

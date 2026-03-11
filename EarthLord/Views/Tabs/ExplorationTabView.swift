@@ -200,51 +200,120 @@ struct MailboxContentView: View {
     }
 }
 
-// MARK: - POI 内容视图
+// MARK: - POI 内容视图（三态：未探索/探索中/探索结束）
 
 struct POIContentView: View {
     // MARK: - 状态
 
+    @ObservedObject private var explorationManager = ExplorationManager.shared
+
     /// 当前选中的筛选类型
     @State private var selectedFilter: POIFilterType = .all
-
-    /// 是否正在搜索
-    @State private var isSearching = false
 
     /// 列表是否已显示
     @State private var listAppeared = false
 
-    /// GPS 坐标（假数据）
-    private let gpsCoordinate = (lat: 22.54, lng: 114.06)
-
     // MARK: - 计算属性
 
-    /// 已发现的POI数量
-    private var discoveredCount: Int {
-        MockExplorationData.poiList.filter { $0.status != .undiscovered }.count
+    /// 筛选后的 POI 列表（来自真实探索会话）
+    private var filteredPOIs: [POI] {
+        let pois = explorationManager.nearbyPOIs
+        if selectedFilter == .all {
+            return pois
+        } else if let type = selectedFilter.poiType {
+            return pois.filter { $0.type == type }
+        }
+        return pois
     }
 
-    /// 筛选后的 POI 列表
-    private var filteredPOIs: [POI] {
-        if selectedFilter == .all {
-            return MockExplorationData.poiList
-        } else if let type = selectedFilter.poiType {
-            return MockExplorationData.poiList.filter { $0.type == type }
-        }
-        return MockExplorationData.poiList
+    /// 已搜刮的 POI 数量
+    private var scavengedCount: Int {
+        explorationManager.scavengedPOIIds.count
     }
 
     // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 0) {
-            // 状态栏
-            statusBar
-                .padding(.top, 12)
+        Group {
+            if explorationManager.isExploring {
+                // 状态B：探索中 — 显示当前会话的 POI
+                exploringView
+            } else if let result = explorationManager.explorationResult {
+                // 状态C：探索刚结束 — 显示本次成果摘要
+                completedView(result: result)
+            } else {
+                // 状态A：未在探索 — 提示去地图页
+                idleView
+            }
+        }
+    }
 
-            // 搜索按钮
-            searchButton
-                .padding(.horizontal, 16)
+    // MARK: - 状态A：未在探索
+
+    private var idleView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: "figure.walk.circle")
+                .font(.system(size: 70))
+                .foregroundColor(ApocalypseTheme.textMuted)
+
+            Text(LocalizedStringKey("当前未在探索"))
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(ApocalypseTheme.textPrimary)
+
+            Text(LocalizedStringKey("前往地图页开始探索，发现附近可搜刮地点"))
+                .font(.system(size: 15))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            // 今日探索次数
+            if let limit = explorationManager.dailyExplorationLimit {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.badge.checkmark")
+                        .font(.system(size: 14))
+                    Text(String(format: String(localized: "今日剩余 %d/%d 次"), explorationManager.remainingExplorations ?? 0, limit))
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .foregroundColor(ApocalypseTheme.info)
+                .padding(.top, 4)
+            }
+
+            // 前往地图按钮
+            Button {
+                // 切换到地图Tab
+                NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 16))
+                    Text(LocalizedStringKey("前往地图"))
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(width: 200, height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(ApocalypseTheme.primary)
+                )
+            }
+            .padding(.top, 8)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .onAppear {
+            explorationManager.refreshTodayExplorationCount()
+        }
+    }
+
+    // MARK: - 状态B：探索中
+
+    private var exploringView: some View {
+        VStack(spacing: 0) {
+            // 探索状态栏
+            exploringStatusBar
                 .padding(.top, 12)
 
             // 筛选工具栏
@@ -253,7 +322,7 @@ struct POIContentView: View {
 
             // POI 列表
             if filteredPOIs.isEmpty {
-                emptyStateNoFilterResult
+                emptyPOIView
             } else {
                 poiList
                     .padding(.top, 8)
@@ -261,32 +330,46 @@ struct POIContentView: View {
         }
     }
 
-    // MARK: - 状态栏
-
-    private var statusBar: some View {
+    /// 探索中状态栏
+    private var exploringStatusBar: some View {
         HStack {
-            // GPS 坐标
+            // 探索状态
             HStack(spacing: 6) {
-                Image(systemName: "location.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(ApocalypseTheme.primary)
+                Circle()
+                    .fill(ApocalypseTheme.success)
+                    .frame(width: 8, height: 8)
 
-                Text(String(format: "%.2f, %.2f", gpsCoordinate.lat, gpsCoordinate.lng))
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                Text(LocalizedStringKey("探索中"))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.success)
+
+                Text("·")
+                    .foregroundColor(ApocalypseTheme.textMuted)
+
+                Text(String(format: String(localized: "已走 %@"), formatDistance(explorationManager.totalDistance)))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(ApocalypseTheme.textSecondary)
             }
 
             Spacer()
 
-            // 发现数量
+            // POI 统计
             HStack(spacing: 6) {
-                Image(systemName: "eye.fill")
+                Image(systemName: "mappin.circle.fill")
                     .font(.system(size: 12))
                     .foregroundColor(ApocalypseTheme.primary)
 
-                Text("附近发现 \(discoveredCount) 个地点")
+                Text(String(format: String(localized: "发现 %d 个地点"), explorationManager.nearbyPOIs.count))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(ApocalypseTheme.textSecondary)
+
+                if scavengedCount > 0 {
+                    Text("·")
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                    Text(String(format: String(localized: "已搜刮 %d"), scavengedCount))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.warning)
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -294,49 +377,6 @@ struct POIContentView: View {
         .background(ApocalypseTheme.cardBackground)
         .cornerRadius(10)
         .padding(.horizontal, 16)
-    }
-
-    // MARK: - 搜索按钮
-
-    private var searchButton: some View {
-        Button(action: performSearch) {
-            HStack(spacing: 12) {
-                if isSearching {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.9)
-                } else {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: 18, weight: .semibold))
-                }
-
-                Text(isSearching ? "搜索中..." : "搜索附近 POI")
-                    .font(.system(size: 16, weight: .semibold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSearching ? ApocalypseTheme.primaryDark : ApocalypseTheme.primary)
-            )
-        }
-        .disabled(isSearching)
-    }
-
-    /// 执行搜索
-    private func performSearch() {
-        isSearching = true
-        listAppeared = false
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                isSearching = false
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                listAppeared = true
-            }
-        }
     }
 
     // MARK: - 筛选工具栏
@@ -365,11 +405,12 @@ struct POIContentView: View {
         ScrollView {
             LazyVStack(spacing: 10) {
                 ForEach(Array(filteredPOIs.enumerated()), id: \.element.id) { index, poi in
+                    let isScavenged = explorationManager.scavengedPOIIds.contains(poi.id)
                     NavigationLink(destination: POIDetailView(poi: poi)) {
-                        POICardNew(poi: poi)
+                        POICardNew(poi: poi, isScavenged: isScavenged)
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .disabled(poi.status == .undiscovered)
+                    .disabled(isScavenged)
                     .opacity(listAppeared ? 1 : 0)
                     .offset(y: listAppeared ? 0 : 20)
                     .animation(
@@ -392,25 +433,108 @@ struct POIContentView: View {
 
     // MARK: - 空状态
 
-    private var emptyStateNoFilterResult: some View {
+    private var emptyPOIView: some View {
         VStack(spacing: 16) {
             Spacer()
 
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 60))
+            Image(systemName: "mappin.slash")
+                .font(.system(size: 50))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
-            Text(LocalizedStringKey("没有找到该类型的地点"))
+            Text(LocalizedStringKey("附近没有发现可搜刮地点"))
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text(LocalizedStringKey("尝试选择其他分类"))
+            Text(LocalizedStringKey("继续行走，探索更远的区域"))
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
             Spacer()
         }
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - 状态C：探索结束
+
+    private func completedView(result: ExplorationSessionResult) -> some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(ApocalypseTheme.success)
+
+            Text(LocalizedStringKey("上次探索完成"))
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(ApocalypseTheme.textPrimary)
+
+            // 摘要
+            HStack(spacing: 20) {
+                VStack(spacing: 4) {
+                    Text(formatDistance(result.distanceWalked))
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Text(LocalizedStringKey("行走距离"))
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                }
+
+                VStack(spacing: 4) {
+                    Text("\(result.obtainedItems.count)")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Text(LocalizedStringKey("获得物品"))
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                }
+
+                VStack(spacing: 4) {
+                    Text(result.rewardTier.displayName)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Text(LocalizedStringKey("奖励等级"))
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(ApocalypseTheme.cardBackground)
+            )
+
+            // 再次出发按钮
+            Button {
+                NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 16))
+                    Text(LocalizedStringKey("再次出发"))
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(width: 200, height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(ApocalypseTheme.primary)
+                )
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: - 格式化
+
+    private func formatDistance(_ meters: Double) -> String {
+        if meters >= 1000 {
+            return String(format: "%.1fkm", meters / 1000)
+        } else {
+            return "\(Int(meters))m"
+        }
     }
 }
 
@@ -467,6 +591,12 @@ extension POIFilterType {
 
 struct POICardNew: View {
     let poi: POI
+    var isScavenged: Bool = false
+
+    /// 是否为不可交互状态（未发现或已搜刮）
+    private var isDisabled: Bool {
+        poi.status == .undiscovered || isScavenged
+    }
 
     /// 是否为未发现状态
     private var isUndiscovered: Bool {
@@ -478,12 +608,12 @@ struct POICardNew: View {
             // 类型图标
             ZStack {
                 Circle()
-                    .fill(isUndiscovered ? ApocalypseTheme.textMuted.opacity(0.2) : poi.type.color.opacity(0.2))
+                    .fill(isDisabled ? ApocalypseTheme.textMuted.opacity(0.2) : poi.type.color.opacity(0.2))
                     .frame(width: 52, height: 52)
 
                 Image(systemName: poi.type.icon)
                     .font(.system(size: 22))
-                    .foregroundColor(isUndiscovered ? ApocalypseTheme.textMuted : poi.type.color)
+                    .foregroundColor(isDisabled ? ApocalypseTheme.textMuted : poi.type.color)
             }
 
             // 信息区域
@@ -491,36 +621,33 @@ struct POICardNew: View {
                 // 名称
                 Text(poi.name)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(isUndiscovered ? ApocalypseTheme.textMuted : ApocalypseTheme.textPrimary)
+                    .foregroundColor(isDisabled ? ApocalypseTheme.textMuted : ApocalypseTheme.textPrimary)
 
                 // 状态行
                 HStack(spacing: 10) {
                     // 类型
                     Text(poi.type.displayName)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(isUndiscovered ? ApocalypseTheme.textMuted : poi.type.color)
+                        .foregroundColor(isDisabled ? ApocalypseTheme.textMuted : poi.type.color)
 
-                    if !isUndiscovered {
-                        // 发现状态
+                    if isScavenged {
+                        // 已搜刮
                         HStack(spacing: 4) {
-                            Image(systemName: "eye.fill")
+                            Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 10))
-                            Text(LocalizedStringKey("已发现"))
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(ApocalypseTheme.textSecondary)
-
-                        // 物资状态
-                        resourceStatusView
-                    } else {
-                        // 未发现
-                        HStack(spacing: 4) {
-                            Image(systemName: "questionmark.circle")
-                                .font(.system(size: 10))
-                            Text(LocalizedStringKey("未发现"))
+                            Text(LocalizedStringKey("已搜刮"))
                                 .font(.system(size: 12))
                         }
                         .foregroundColor(ApocalypseTheme.textMuted)
+                    } else if !isUndiscovered {
+                        // 可搜刮
+                        HStack(spacing: 4) {
+                            Image(systemName: "magnifyingglass.circle.fill")
+                                .font(.system(size: 10))
+                            Text(LocalizedStringKey("可搜刮"))
+                                .font(.system(size: 12))
+                        }
+                        .foregroundColor(ApocalypseTheme.success)
                     }
                 }
             }
@@ -528,7 +655,11 @@ struct POICardNew: View {
             Spacer()
 
             // 右侧图标
-            if isUndiscovered {
+            if isScavenged {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+            } else if isUndiscovered {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 14))
                     .foregroundColor(ApocalypseTheme.textMuted)
@@ -543,7 +674,7 @@ struct POICardNew: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(ApocalypseTheme.cardBackground)
         )
-        .opacity(isUndiscovered ? 0.7 : 1.0)
+        .opacity(isDisabled ? 0.5 : 1.0)
     }
 
     /// 物资状态视图
@@ -618,29 +749,47 @@ struct BackpackContentView: View {
         }
     }
 
-    /// 筛选后的物品列表
-    private var filteredItems: [BackpackItem] {
+    /// 筛选后的物品列表（合并同名物品）
+    private var groupedFilteredItems: [(itemId: String, totalQuantity: Int)] {
         var items = inventoryManager.items
 
         if let category = selectedFilter.category {
             items = items.filter { item in
-                guard let definition = MockExplorationData.getItemDefinition(by: item.itemId) else {
-                    return false
-                }
+                guard let definition = MockExplorationData.getItemDefinition(by: item.itemId) else { return false }
                 return definition.category == category
             }
         }
 
         if !searchText.isEmpty {
             items = items.filter { item in
-                guard let definition = MockExplorationData.getItemDefinition(by: item.itemId) else {
-                    return false
-                }
+                guard let definition = MockExplorationData.getItemDefinition(by: item.itemId) else { return false }
                 return definition.name.localizedCaseInsensitiveContains(searchText)
             }
         }
 
-        return items
+        // 按 itemId 分组求和
+        var grouped: [String: Int] = [:]
+        for item in items {
+            grouped[item.itemId, default: 0] += item.quantity
+        }
+
+        // 按物品名排序
+        return grouped.map { (itemId: $0.key, totalQuantity: $0.value) }
+            .sorted { a, b in
+                let nameA = MockExplorationData.getItemDefinition(by: a.itemId)?.name ?? a.itemId
+                let nameB = MockExplorationData.getItemDefinition(by: b.itemId)?.name ?? b.itemId
+                return nameA < nameB
+            }
+    }
+
+    /// 筛选后的物品列表（兼容旧逻辑判断空状态）
+    private var filteredItems: [BackpackItem] {
+        inventoryManager.items.filter { item in
+            guard let definition = MockExplorationData.getItemDefinition(by: item.itemId) else { return false }
+            if let category = selectedFilter.category, definition.category != category { return false }
+            if !searchText.isEmpty, !definition.name.localizedCaseInsensitiveContains(searchText) { return false }
+            return true
+        }
     }
 
     // MARK: - Body
@@ -807,9 +956,13 @@ struct BackpackContentView: View {
     private var itemList: some View {
         ScrollView {
             LazyVStack(spacing: 10) {
-                ForEach(filteredItems) { item in
-                    if let definition = MockExplorationData.getItemDefinition(by: item.itemId) {
-                        BackpackItemCardNew(item: item, definition: definition)
+                ForEach(groupedFilteredItems, id: \.itemId) { group in
+                    if let definition = MockExplorationData.getItemDefinition(by: group.itemId) {
+                        BackpackItemCardNew(
+                            itemId: group.itemId,
+                            totalQuantity: group.totalQuantity,
+                            definition: definition
+                        )
                     }
                 }
             }
@@ -893,7 +1046,8 @@ struct BackpackFilterChip: View {
 // MARK: - 新版背包物品卡片
 
 struct BackpackItemCardNew: View {
-    let item: BackpackItem
+    let itemId: String
+    let totalQuantity: Int
     let definition: ItemDefinition
 
     var body: some View {
@@ -917,34 +1071,20 @@ struct BackpackItemCardNew: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
-                    Text("x\(item.quantity)")
+                    Text("x\(totalQuantity)")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(ApocalypseTheme.primary)
                 }
 
-                // 重量、品质、稀有度
+                // 重量、稀有度
                 HStack(spacing: 8) {
-                    // 重量
                     HStack(spacing: 4) {
                         Image(systemName: "scalemass")
                             .font(.system(size: 10))
-                        Text(String(format: "%.1fkg", definition.weight * Double(item.quantity)))
+                        Text(String(format: "%.1fkg", definition.weight * Double(totalQuantity)))
                             .font(.system(size: 12))
                     }
                     .foregroundColor(ApocalypseTheme.textSecondary)
-
-                    // 品质
-                    if let quality = item.quality {
-                        Text(quality.rawValue)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(quality.color)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(quality.color.opacity(0.15))
-                            )
-                    }
 
                     // 稀有度
                     Text(definition.rarity.rawValue)

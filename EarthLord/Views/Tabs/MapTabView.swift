@@ -42,6 +42,18 @@ struct MapTabView: View {
     /// 已加载的领地列表
     @State private var territories: [Territory] = []
 
+    /// 是否显示圈地规则说明
+    @State private var showClaimingRules = false
+
+    /// 圈地完成后：是否显示命名弹窗
+    @State private var showNamingAlert = false
+
+    /// 圈地完成后：新领地命名输入
+    @State private var newTerritoryNameInput = ""
+
+    /// 圈地完成后：待命名的领地 ID
+    @State private var pendingTerritoryId: String?
+
     // MARK: - Day 19: 碰撞检测状态
 
     /// 碰撞检测定时器
@@ -236,9 +248,7 @@ struct MapTabView: View {
         // 探索结果弹窗
         .sheet(isPresented: $showExplorationResult) {
             if let result = explorationManager.explorationResult {
-                // 转换为 Mock 模型以兼容现有 UI
-                let mockResult = convertToMockResult(result)
-                ExplorationResultView(result: mockResult)
+                ExplorationResultView(result: result)
             }
         }
         // 探索失败弹窗
@@ -256,6 +266,44 @@ struct MapTabView: View {
         // 日志查看器
         .sheet(isPresented: $showLogViewer) {
             ExplorationLogView()
+        }
+        // 圈地规则说明 Sheet
+        .sheet(isPresented: $showClaimingRules) {
+            ClaimingRulesView(
+                onCancel: {
+                    showClaimingRules = false
+                },
+                onStart: {
+                    showClaimingRules = false
+                    // 关闭 sheet 后短暂延迟再开始，避免动画冲突
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        startClaimingWithCollisionCheck()
+                    }
+                }
+            )
+            .interactiveDismissDisabled()
+            .presentationDetents([.fraction(0.82)])
+            .presentationDragIndicator(.hidden)
+        }
+        // 圈地成功命名弹窗
+        .alert("为你的领地命名", isPresented: $showNamingAlert) {
+            TextField("输入领地名称（可跳过）", text: $newTerritoryNameInput)
+            Button("跳过") {
+                newTerritoryNameInput = ""
+                pendingTerritoryId = nil
+            }
+            Button("确定") {
+                let name = newTerritoryNameInput.trimmingCharacters(in: .whitespaces)
+                if !name.isEmpty, let id = pendingTerritoryId {
+                    Task {
+                        try? await TerritoryManager.shared.updateTerritoryName(id: id, name: name)
+                    }
+                }
+                newTerritoryNameInput = ""
+                pendingTerritoryId = nil
+            }
+        } message: {
+            Text("给这块新领地起个名字吧，之后可以随时修改")
         }
     }
 
@@ -397,30 +445,83 @@ struct MapTabView: View {
     // MARK: - 底部控制栏
 
     private var bottomControlBar: some View {
-        HStack(alignment: .bottom, spacing: 12) {
-            // 左侧：圈地按钮
-            trackingButton
-
-            // 中间：定位按钮
-            Button(action: {
-                centerToUserLocation()
-            }) {
-                Image(systemName: hasLocatedUser ? "location.fill" : "location")
-                    .font(.system(size: 20))
-                    .foregroundColor(hasLocatedUser ? ApocalypseTheme.primary : ApocalypseTheme.textPrimary)
-                    .frame(width: 44, height: 44)
-                    .background(ApocalypseTheme.cardBackground.opacity(0.9))
-                    .cornerRadius(22)
-                    .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+        VStack(spacing: 8) {
+            // 圈地实时统计条（仅追踪时显示）
+            if locationManager.isTracking {
+                trackingStatsBar
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .disabled(!locationManager.isAuthorized)
-            .opacity(locationManager.isAuthorized ? 1 : 0.5)
 
-            // 右侧：探索按钮
-            exploreButton
+            // 主控制栏
+            HStack(alignment: .bottom, spacing: 12) {
+                // 左侧：圈地按钮
+                trackingButton
+
+                // 中间：定位按钮
+                Button(action: {
+                    centerToUserLocation()
+                }) {
+                    Image(systemName: hasLocatedUser ? "location.fill" : "location")
+                        .font(.system(size: 20))
+                        .foregroundColor(hasLocatedUser ? ApocalypseTheme.primary : ApocalypseTheme.textPrimary)
+                        .frame(width: 44, height: 44)
+                        .background(ApocalypseTheme.cardBackground.opacity(0.9))
+                        .cornerRadius(22)
+                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                }
+                .disabled(!locationManager.isAuthorized)
+                .opacity(locationManager.isAuthorized ? 1 : 0.5)
+
+                // 右侧：探索按钮
+                exploreButton
+            }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 24)
+    }
+
+    /// 圈地实时统计条
+    private var trackingStatsBar: some View {
+        HStack(spacing: 0) {
+            // 左：GPS 点数
+            VStack(spacing: 2) {
+                Text("\(locationManager.pathPointCount)")
+                    .font(.system(size: 22, weight: .bold).monospacedDigit())
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                Text("起始点")
+                    .font(.system(size: 11))
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+
+            Divider()
+                .frame(height: 32)
+                .background(ApocalypseTheme.textMuted.opacity(0.4))
+
+            // 右：步行距离
+            VStack(spacing: 2) {
+                Text(formatTrackingDistance(locationManager.trackingDistance))
+                    .font(.system(size: 22, weight: .bold).monospacedDigit())
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                Text("步行距离")
+                    .font(.system(size: 11))
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, 10)
+        .background(ApocalypseTheme.cardBackground.opacity(0.92))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
+    }
+
+    /// 格式化追踪距离显示
+    private func formatTrackingDistance(_ meters: Double) -> String {
+        if meters >= 1000 {
+            return String(format: "%.2f km", meters / 1000)
+        } else {
+            return String(format: "%.0f 米", meters)
+        }
     }
 
     // MARK: - 圈地按钮
@@ -541,12 +642,12 @@ struct MapTabView: View {
     /// 切换追踪状态
     private func toggleTracking() {
         if locationManager.isTracking {
-            // Day 19: 停止时完全清除碰撞监控
+            // 停止时完全清除碰撞监控
             stopCollisionMonitoring()
             locationManager.stopPathTracking()
         } else {
-            // Day 19: 开始圈地前检测起始点
-            startClaimingWithCollisionCheck()
+            // 先展示圈地规则说明，用户确认后再开始
+            showClaimingRules = true
         }
     }
 
@@ -940,7 +1041,7 @@ struct MapTabView: View {
         isUploading = true
 
         do {
-            try await TerritoryManager.shared.uploadTerritory(
+            let newTerritoryId = try await TerritoryManager.shared.uploadTerritory(
                 coordinates: locationManager.pathCoordinates,
                 area: locationManager.calculatedArea,
                 startTime: trackingStartTime ?? Date()
@@ -951,14 +1052,19 @@ struct MapTabView: View {
                 isUploading = false
                 showUploadSuccess(String(localized: "领地登记成功！"))
 
-                // Day 19: 停止碰撞监控
+                // 停止碰撞监控
                 stopCollisionMonitoring()
 
-                // 关键：上传成功后重置所有状态
+                // 重置所有圈地状态
                 locationManager.stopPathTracking(clearAllState: true)
-
-                // 重置开始时间
                 trackingStartTime = nil
+
+                // 弹出命名弹窗
+                pendingTerritoryId = newTerritoryId
+                newTerritoryNameInput = ""
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    showNamingAlert = true
+                }
             }
 
             // 刷新领地列表（在地图上显示新领地）
@@ -1266,35 +1372,6 @@ struct MapTabView: View {
     }
 
     /// 转换探索结果为 Mock 模型
-    private func convertToMockResult(_ result: ExplorationSessionResult) -> ExplorationResult {
-        // 转换物品列表
-        let obtainedItems = result.obtainedItems.map { item in
-            ObtainedItem(
-                itemId: item.itemId,
-                quantity: item.quantity,
-                quality: item.quality
-            )
-        }
-
-        // 使用真实统计数据（如果有的话）
-        let totalDistance = explorationStats?.totalDistance ?? result.distanceWalked
-        let rank = explorationStats?.distanceRank ?? 1
-
-        return ExplorationResult(
-            id: result.id,
-            startTime: result.startTime,
-            endTime: result.endTime,
-            distanceStats: DistanceStats(
-                current: result.distanceWalked,
-                total: totalDistance,
-                rank: rank
-            ),
-            discoveredPOIs: [],
-            obtainedItems: obtainedItems,
-            experienceGained: Int(result.distanceWalked / 10),  // 每10米1经验
-            rewardTier: result.rewardTier.rawValue
-        )
-    }
 }
 
 // MARK: - Preview

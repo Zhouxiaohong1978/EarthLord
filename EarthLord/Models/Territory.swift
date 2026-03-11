@@ -21,6 +21,8 @@ struct Territory: Codable, Identifiable {
     let startedAt: String?
     let completedAt: String?
     let createdAt: String?
+    let allowTrading: Bool?       // 是否允许他人发现交易（默认 true）
+    let lastActiveAt: String?     // 最后活跃时间（用于90天到期检测）
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -33,6 +35,8 @@ struct Territory: Codable, Identifiable {
         case startedAt = "started_at"
         case completedAt = "completed_at"
         case createdAt = "created_at"
+        case allowTrading = "allow_trading"
+        case lastActiveAt = "last_active_at"
     }
 
     /// 将 path 转换为 CLLocationCoordinate2D 数组
@@ -41,5 +45,69 @@ struct Territory: Codable, Identifiable {
             guard let lat = point["lat"], let lon = point["lon"] else { return nil }
             return CLLocationCoordinate2D(latitude: lat, longitude: lon)
         }
+    }
+
+    // MARK: - 到期相关计算属性
+
+    /// 解析 ISO8601 日期字符串
+    private func parseDate(_ str: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = formatter.date(from: str) { return d }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: str)
+    }
+
+    /// 圈地完成后的天数
+    var daysSinceCompleted: Int? {
+        let baseStr = completedAt ?? createdAt
+        guard let str = baseStr, let date = parseDate(str) else { return nil }
+        return Calendar.current.dateComponents([.day], from: date, to: Date()).day
+    }
+
+    /// 距离90天到期还剩几天（nil = 无法计算）
+    var daysUntilExpiry: Int? {
+        guard let days = daysSinceCompleted else { return nil }
+        return max(0, 90 - days)
+    }
+
+    /// 是否已超过90天（应被回收）
+    var isExpired: Bool {
+        guard let days = daysSinceCompleted else { return false }
+        return days > 90
+    }
+
+    /// 是否处于30天建设期内
+    var isInBuildPeriod: Bool {
+        guard let days = daysSinceCompleted else { return false }
+        return days <= 30
+    }
+
+    /// 距建设截止（30天）还剩几天，已过返回 nil
+    var daysUntilBuildDeadline: Int? {
+        guard let days = daysSinceCompleted else { return nil }
+        let remaining = 30 - days
+        return remaining > 0 ? remaining : nil
+    }
+
+    // MARK: - 到期预警等级
+
+    enum ExpiryWarningLevel {
+        case none        // 正常
+        case buildNeeded // 在建设期内且无建筑
+        case caution     // 距到期 ≤ 14天
+        case danger      // 距到期 ≤ 7天
+        case expired     // 已到期
+    }
+
+    /// 计算到期预警等级（需传入当前建筑数量）
+    func expiryWarningLevel(buildingCount: Int) -> ExpiryWarningLevel {
+        if isExpired { return .expired }
+        if let remaining = daysUntilExpiry {
+            if remaining <= 7 { return .danger }
+            if remaining <= 14 { return .caution }
+        }
+        if isInBuildPeriod && buildingCount == 0 { return .buildNeeded }
+        return .none
     }
 }

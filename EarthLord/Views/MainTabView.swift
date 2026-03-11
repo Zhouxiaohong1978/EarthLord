@@ -82,6 +82,12 @@ struct MainTabView: View {
                     selectedTab = 2
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToMapTab)) { _ in
+                // 切换到地图 Tab（index 0）
+                withAnimation {
+                    selectedTab = 0
+                }
+            }
 
             // 订阅过期横幅（仅在横幅可见时响应触摸，否则透传到 TabView）
             VStack {

@@ -403,12 +403,21 @@ enum SubscriptionTier: String, Codable {
         }
     }
 
-    // MARK: POI搜刮冷却（小时）— 免费24h，探索者12h，领主6h
-    var poiCooldownHours: Int {
+    // MARK: 每日探索次数限制 — 免费10次，付费无限
+    var dailyExplorationLimit: Int? {
         switch self {
-        case .free:     return 24
-        case .explorer: return 12
-        case .lord:     return 6
+        case .free:     return 10
+        case .explorer: return nil
+        case .lord:     return nil
+        }
+    }
+
+    // MARK: 通讯范围（km）— 免费3km，探索者30km，领主100km
+    var communicationRadius: Double {
+        switch self {
+        case .free:     return 3.0
+        case .explorer: return 30.0
+        case .lord:     return 100.0
         }
     }
 
@@ -421,11 +430,11 @@ enum SubscriptionTier: String, Codable {
         }
     }
 
-    // MARK: 建造速度倍率 — 仅领主有加成
+    // MARK: 建造速度倍率 — 付费用户2倍
     var buildSpeedMultiplier: Double {
         switch self {
         case .free:     return 1.0
-        case .explorer: return 1.0
+        case .explorer: return 2.0
         case .lord:     return 2.0
         }
     }

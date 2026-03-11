@@ -23,6 +23,12 @@ struct TerritoryDetailView: View {
     /// 是否显示信息面板
     @State private var showInfoPanel = true
 
+    /// 是否允许交易（本地状态，从 territory 初始化）
+    @State private var allowTrading: Bool = true
+
+    /// 是否正在更新交易状态
+    @State private var isUpdatingTrading = false
+
     /// 是否显示建筑浏览器
     @State private var showBuildingBrowser = false
 
@@ -124,6 +130,7 @@ struct TerritoryDetailView: View {
         .onAppear {
             loadData()
             startTimer()
+            allowTrading = territory.allowTrading ?? true
         }
         .onDisappear {
             stopTimer()
@@ -166,7 +173,6 @@ struct TerritoryDetailView: View {
             Button(String(localized: "确定")) {
                 Task { await renameTerritory() }
             }
-            .disabled(newTerritoryName.trimmingCharacters(in: .whitespaces).isEmpty)
         } message: {
             Text(String(localized: "请输入新的领地名称"))
         }
@@ -216,11 +222,20 @@ struct TerritoryDetailView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
+                    // 到期预警横幅
+                    let warningLevel = territory.expiryWarningLevel(buildingCount: territoryBuildings.count)
+                    if warningLevel != .none {
+                        expiryWarningBanner(level: warningLevel)
+                    }
+
                     // 领地名称 + 齿轮按钮
                     territoryHeader
 
                     // 领地信息卡片
                     territoryInfoCard
+
+                    // 允许交易开关
+                    tradingToggleCard
 
                     // 建筑列表区域
                     buildingListSection
@@ -395,6 +410,85 @@ struct TerritoryDetailView: View {
         }
     }
 
+    /// 到期预警横幅
+    private func expiryWarningBanner(level: Territory.ExpiryWarningLevel) -> some View {
+        let (icon, message, color): (String, String, Color) = {
+            switch level {
+            case .buildNeeded:
+                let days = territory.daysUntilBuildDeadline ?? 0
+                return ("hammer.fill",
+                        "建设期剩余 \(days) 天，请在领地内建造至少 1 个建筑，否则领地将被回收",
+                        Color.orange)
+            case .caution:
+                return ("clock.fill",
+                        "领地将在 \(territory.daysUntilExpiry ?? 0) 天后到期回收，请保持活跃",
+                        Color.yellow)
+            case .danger:
+                return ("exclamationmark.triangle.fill",
+                        "领地即将到期！仅剩 \(territory.daysUntilExpiry ?? 0) 天，请立即建造或操作",
+                        Color.red)
+            case .expired:
+                return ("xmark.circle.fill", "领地已到期，即将被系统回收", Color.red)
+            case .none:
+                return ("", "", .clear)
+            }
+        }()
+
+        return HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+            Text(message)
+                .font(.system(size: 13))
+                .lineSpacing(2)
+        }
+        .foregroundColor(level == .caution ? .black : .white)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(level == .caution ? 0.85 : 0.9))
+        .cornerRadius(10)
+    }
+
+    /// 允许交易开关卡片
+    private var tradingToggleCard: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(allowTrading ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("允许他人发现交易")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Text("进入领地 100 米范围内的玩家可见你的挂单")
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+
+                Spacer()
+
+                if isUpdatingTrading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else {
+                    Toggle("", isOn: $allowTrading)
+                        .labelsHidden()
+                        .tint(ApocalypseTheme.primary)
+                        .onChange(of: allowTrading) { newValue in
+                            Task { await updateTradingStatus(newValue) }
+                        }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(ApocalypseTheme.background)
+        )
+    }
+
     /// 危险操作区域
     private var dangerZone: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -475,7 +569,9 @@ struct TerritoryDetailView: View {
                     isActive: territory.isActive,
                     startedAt: territory.startedAt,
                     completedAt: territory.completedAt,
-                    createdAt: territory.createdAt
+                    createdAt: territory.createdAt,
+                    allowTrading: territory.allowTrading,
+                    lastActiveAt: territory.lastActiveAt
                 )
 
                 newTerritoryName = ""
@@ -517,6 +613,22 @@ struct TerritoryDetailView: View {
             }
         }
     }
+
+    /// 更新允许交易状态
+    private func updateTradingStatus(_ newValue: Bool) async {
+        isUpdatingTrading = true
+        do {
+            try await TerritoryManager.shared.updateTradingStatus(id: territory.id, allowTrading: newValue)
+        } catch {
+            // 失败时回滚 Toggle
+            await MainActor.run {
+                allowTrading = !newValue
+                errorMessage = error.localizedDescription
+                showError = true
+            }
+        }
+        isUpdatingTrading = false
+    }
 }
 
 // MARK: - Preview
@@ -538,7 +650,9 @@ struct TerritoryDetailView: View {
             isActive: true,
             startedAt: "2025-01-08T10:00:00Z",
             completedAt: "2025-01-08T10:15:00Z",
-            createdAt: "2025-01-08T10:15:30Z"
+            createdAt: "2025-01-08T10:15:30Z",
+            allowTrading: true,
+            lastActiveAt: nil
         )
     )
 }

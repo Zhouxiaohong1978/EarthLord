@@ -33,7 +33,11 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var languageCode: String? {
         switch self {
         case .system:
-            return Locale.preferredLanguages.first?.components(separatedBy: "-").first
+            // 取完整的语言标识符，避免将 "zh-Hans" 拆成 "zh" 导致匹配失败
+            let lang = Locale.preferredLanguages.first ?? "zh-Hans"
+            if lang.hasPrefix("zh") { return "zh-Hans" }
+            if lang.hasPrefix("en") { return "en" }
+            return lang
         case .chinese:
             return "zh-Hans"
         case .english:
@@ -79,7 +83,7 @@ final class LanguageManager: ObservableObject {
 
         // 初始化存储属性
         self.currentLanguage = savedLanguage
-        self.currentLocale = savedLanguage.languageCode ?? "zh-Hans"
+        self.currentLocale = savedLanguage.languageCode ?? AppLanguage.system.languageCode ?? "zh-Hans"
 
         print("🌐 LanguageManager 初始化")
         print("   当前语言: \(currentLanguage.displayName)")
@@ -105,12 +109,15 @@ final class LanguageManager: ObservableObject {
     /// - Parameter language: 目标语言
     func changeLanguage(to language: AppLanguage) {
         print("🌐 切换语言: \(language.displayName)")
-        // 直接同时更新两个属性，确保 .id() 和 .environment() 同时生效
         currentLanguage = language
         if let languageCode = language.languageCode {
             currentLocale = languageCode
             print("🔄 语言代码已更新: \(languageCode)")
         }
+        // 同步保存，防止 App 被杀死前 Combine 管道未触发
+        UserDefaults.standard.set(language.rawValue, forKey: userDefaultsKey)
+        UserDefaults.standard.synchronize()
+        print("💾 语言设置已同步保存: \(language.rawValue)")
     }
 
     /// 获取本地化字符串

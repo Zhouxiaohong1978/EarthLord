@@ -247,6 +247,9 @@ struct TerritoryTabView: View {
 
         isLoading = true
 
+        // 先执行到期回收检查
+        await TerritoryManager.shared.checkAndReclaimExpiredTerritories()
+
         do {
             myTerritories = try await TerritoryManager.shared.loadMyTerritories()
             // 按创建时间降序排列
@@ -324,12 +327,23 @@ private struct TerritoryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 顶部：名称和箭头
+            // 顶部：名称、到期徽章和箭头
             HStack {
                 // 领地名称或默认名称
                 Text(territory.name ?? String(localized: "未命名领地"))
                     .font(.headline)
                     .foregroundColor(ApocalypseTheme.textPrimary)
+
+                // 到期状态徽章（buildingCount 在卡片层无法获取，使用 0 作为保守估计）
+                if let badge = expiryBadge {
+                    Text(badge.label)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(badge.color)
+                        .cornerRadius(8)
+                }
 
                 Spacer()
 
@@ -378,6 +392,25 @@ private struct TerritoryCard: View {
         .padding(16)
         .background(ApocalypseTheme.cardBackground)
         .cornerRadius(12)
+    }
+
+    /// 到期徽章（label + color）
+    private var expiryBadge: (label: String, color: Color)? {
+        if territory.isExpired {
+            return ("已到期", .red)
+        }
+        if let days = territory.daysUntilExpiry, days <= 7 {
+            return ("剩余\(days)天", .red)
+        }
+        if let days = territory.daysUntilExpiry, days <= 14 {
+            return ("剩余\(days)天", .orange)
+        }
+        if territory.isInBuildPeriod {
+            if let days = territory.daysUntilBuildDeadline {
+                return ("建设期\(days)天", Color(red: 0.2, green: 0.6, blue: 1.0))
+            }
+        }
+        return nil
     }
 
     /// 格式化日期字符串

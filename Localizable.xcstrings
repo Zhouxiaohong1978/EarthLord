@@ -2,13 +2,34 @@
   "sourceLanguage" : "zh-Hans",
   "strings" : {
     "" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        }
+      }
     },
     "·" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "·"
+          }
+        }
+      }
     },
     "· %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %@"
+          }
+        }
+      }
     },
     "· 创建者" : {
       "localizations" : {
@@ -59,7 +80,14 @@
       }
     },
     "(001-999)" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(001-999)"
+          }
+        }
+      }
     },
     "(可选)" : {
       "localizations" : {
@@ -126,10 +154,24 @@
       }
     },
     "/" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/"
+          }
+        }
+      }
     },
     "/ %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/ %@"
+          }
+        }
+      }
     },
     "/ 年" : {
       "extractionState" : "stale",
@@ -183,6 +225,12 @@
     },
     "%@ (%lld%@)" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (%lld%@)"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -193,6 +241,12 @@
     },
     "%@ %@ %@" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -203,6 +257,12 @@
     },
     "%@ ×%lld" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ×%lld"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -213,6 +273,12 @@
     },
     "%@: %@" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -270,7 +336,14 @@
       }
     },
     "%lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
     },
     "%lld / %lld" : {
       "localizations" : {
@@ -284,6 +357,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@"
           }
         }
       }
@@ -386,6 +475,12 @@
     },
     "%lld/%lld" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -395,13 +490,33 @@
       }
     },
     "%lld/50" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/50"
+          }
+        }
+      }
     },
     "%lld/100" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/100"
+          }
+        }
+      }
     },
     "%lld%@" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -411,7 +526,14 @@
       }
     },
     "%lld%%" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%%"
+          }
+        }
+      }
     },
     "%llds" : {
       "localizations" : {
@@ -446,6 +568,7 @@
       }
     },
     "%lld件" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -511,10 +634,24 @@
       }
     },
     "•" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "•"
+          }
+        }
+      }
     },
     "• %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• %@"
+          }
+        }
+      }
     },
     "• %lld天后过期" : {
       "localizations" : {
@@ -773,7 +910,14 @@
       }
     },
     "×%lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "×%lld"
+          }
+        }
+      }
     },
     "○ 未追踪" : {
       "localizations" : {
@@ -808,7 +952,14 @@
       }
     },
     "001" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "001"
+          }
+        }
+      }
     },
     "23小时前" : {
       "extractionState" : "stale",
@@ -828,7 +979,14 @@
       }
     },
     "99+" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "99+"
+          }
+        }
+      }
     },
     "Day 33 实现" : {
       "localizations" : {
@@ -847,7 +1005,14 @@
       }
     },
     "DOOMSDAY LORD" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DOOMSDAY LORD"
+          }
+        }
+      }
     },
     "EARTH LORD" : {
       "extractionState" : "manual",
@@ -919,7 +1084,20 @@
       }
     },
     "error.purchase.delivery_failed_prefix" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delivery failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "物品发放失败"
+          }
+        }
+      }
     },
     "error.purchase.failed" : {
       "localizations" : {
@@ -938,28 +1116,132 @@
       }
     },
     "error.purchase.failed_prefix" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "购买失败"
+          }
+        }
+      }
     },
     "error.purchase.invalid_transaction" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid transaction"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无效的交易"
+          }
+        }
+      }
     },
     "error.purchase.not_authenticated" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please sign in first"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先登录"
+          }
+        }
+      }
     },
     "error.purchase.product_not_found" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Product not found"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品不存在"
+          }
+        }
+      }
     },
     "error.purchase.verification_failed" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transaction verification failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "交易验证失败"
+          }
+        }
+      }
     },
     "error.sub.already_subscribed" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already subscribed to this plan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您已订阅该方案"
+          }
+        }
+      }
     },
     "error.sub.failed_prefix" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "订阅失败"
+          }
+        }
+      }
     },
     "error.sub.invalid" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid subscription"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无效的订阅"
+          }
+        }
+      }
     },
     "error.verification.failed" : {
       "extractionState" : "stale",
@@ -1462,7 +1744,14 @@
       }
     },
     "Lv.%lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lv.%lld"
+          }
+        }
+      }
     },
     "pack.constructor.desc" : {
       "extractionState" : "stale",
@@ -2099,6 +2388,74 @@
         }
       }
     },
+    "sub.build.speed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build Speed: ×%.1f"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建造速度：×%.1f"
+          }
+        }
+      }
+    },
+    "sub.communication.radius" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Communication Radius: %.0fkm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通讯半径：%.0f km"
+          }
+        }
+      }
+    },
+    "sub.daily.exploration" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily Explorations: %d"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日探索：%d 次"
+          }
+        }
+      }
+    },
+    "sub.daily.exploration.unlimited" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlimited Daily Explorations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日探索：无限"
+          }
+        }
+      }
+    },
     "sub.daily.gifts" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2117,16 +2474,68 @@
       }
     },
     "sub.explorer.monthly" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explorer Monthly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索者月订阅"
+          }
+        }
+      }
     },
     "sub.explorer.yearly" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explorer Yearly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索者年订阅"
+          }
+        }
+      }
     },
     "sub.lord.monthly" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lord Monthly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领主月订阅"
+          }
+        }
+      }
     },
     "sub.lord.yearly" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lord Yearly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领主年订阅"
+          }
+        }
+      }
     },
     "sub.poi.cooldown" : {
       "extractionState" : "stale",
@@ -2274,6 +2683,16 @@
         }
       }
     },
+    "三层验证保护" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three-Layer Verification"
+          }
+        }
+      }
+    },
     "上传失败: %@" : {
       "localizations" : {
         "en" : {
@@ -2290,6 +2709,22 @@
         }
       }
     },
+    "上次探索完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last Exploration Complete"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次探索完成"
+          }
+        }
+      }
+    },
     "下一步" : {
       "localizations" : {
         "en" : {
@@ -2302,6 +2737,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "下一步"
+          }
+        }
+      }
+    },
+    "不能与他人领地边界重叠（5米容差）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot overlap others' territory borders (5m tolerance)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不能与他人领地边界重叠（5米容差）"
+          }
+        }
+      }
+    },
+    "不能圈占包含他人领地的区域" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot enclose areas containing others' territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不能圈占包含他人领地的区域"
           }
         }
       }
@@ -2517,6 +2984,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "中密度"
+          }
+        }
+      }
+    },
+    "为你的领地命名" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name Your Territory"
           }
         }
       }
@@ -2781,6 +3258,22 @@
         }
       }
     },
+    "今日剩余 %d/%d 次" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today: %d/%d Remaining"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "今日剩余 %1$d/%2$d 次"
+          }
+        }
+      }
+    },
     "今日可领取" : {
       "localizations" : {
         "en" : {
@@ -2960,7 +3453,6 @@
       }
     },
     "优秀" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2994,7 +3486,6 @@
       }
     },
     "传说" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3304,6 +3795,16 @@
         }
       }
     },
+    "允许他人发现交易" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visible to Nearby Players"
+          }
+        }
+      }
+    },
     "免费" : {
       "localizations" : {
         "en" : {
@@ -3433,6 +3934,22 @@
         }
       }
     },
+    "再次出发" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore Again"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再次出发"
+          }
+        }
+      }
+    },
     "最高等级" : {
       "localizations" : {
         "en" : {
@@ -3514,6 +4031,22 @@
         }
       }
     },
+    "分" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "m"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分"
+          }
+        }
+      }
+    },
     "分享日志" : {
       "localizations" : {
         "en" : {
@@ -3526,6 +4059,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "分享日志"
+          }
+        }
+      }
+    },
+    "分钟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "min"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分钟"
           }
         }
       }
@@ -3783,6 +4332,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "刷新"
+          }
+        }
+      }
+    },
+    "前往地图" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to Map"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往地图"
+          }
+        }
+      }
+    },
+    "前往地图页开始探索，发现附近可搜刮地点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to the map to start exploring and discover nearby scavengeable locations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往地图页开始探索，发现附近可搜刮地点"
           }
         }
       }
@@ -4515,6 +5096,16 @@
         }
       }
     },
+    "发现 %d 个地点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discovered %d Locations"
+          }
+        }
+      }
+    },
     "发现废墟" : {
       "localizations" : {
         "en" : {
@@ -4661,6 +5252,22 @@
         }
       }
     },
+    "可搜刮" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scavengeable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可搜刮"
+          }
+        }
+      }
+    },
     "可用: %lld" : {
       "localizations" : {
         "en" : {
@@ -4742,7 +5349,6 @@
       }
     },
     "史诗" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4936,6 +5542,16 @@
         }
       }
     },
+    "圈地规则" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory Rules"
+          }
+        }
+      }
+    },
     "地区" : {
       "localizations" : {
         "en" : {
@@ -5017,6 +5633,22 @@
         }
       }
     },
+    "基础要求" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basic Requirements"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基础要求"
+          }
+        }
+      }
+    },
     "处理中..." : {
       "localizations" : {
         "en" : {
@@ -5077,6 +5709,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "奖励"
+          }
+        }
+      }
+    },
+    "奖励等级" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reward Tier"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "奖励等级"
           }
         }
       }
@@ -5293,6 +5941,22 @@
         }
       }
     },
+    "小时" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "h"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小时"
+          }
+        }
+      }
+    },
     "尝试其他关键词" : {
       "localizations" : {
         "en" : {
@@ -5353,6 +6017,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "尝试选择其他分类"
+          }
+        }
+      }
+    },
+    "尽量走直线或简单形状，避免复杂路径" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walk in straight lines or simple shapes, avoid complex paths"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尽量走直线或简单形状，避免复杂路径"
           }
         }
       }
@@ -5567,6 +6247,32 @@
         }
       }
     },
+    "已搜刮" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scavenged"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已搜刮"
+          }
+        }
+      }
+    },
+    "已搜刮 %d" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scavenged %d"
+          }
+        }
+      }
+    },
     "已搜空" : {
       "localizations" : {
         "en" : {
@@ -5675,6 +6381,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已评价"
+          }
+        }
+      }
+    },
+    "已走 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walked %@"
           }
         }
       }
@@ -6183,6 +6899,22 @@
         }
       }
     },
+    "建议" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tips"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建议"
+          }
+        }
+      }
+    },
     "建造" : {
       "localizations" : {
         "en" : {
@@ -6508,6 +7240,22 @@
         }
       }
     },
+    "当前未在探索" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Exploring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前未在探索"
+          }
+        }
+      }
+    },
     "当前档位" : {
       "localizations" : {
         "en" : {
@@ -6636,6 +7384,22 @@
         }
       }
     },
+    "总距离不少于 50 米" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total distance at least 50 meters"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总距离不少于 50 米"
+          }
+        }
+      }
+    },
     "总面积" : {
       "localizations" : {
         "en" : {
@@ -6712,6 +7476,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "您已经评价过该交易"
+          }
+        }
+      }
+    },
+    "您的领地将经过客户端、服务器和数据库三层验证，确保公平游戏。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your territory will be verified through client, server, and database layers to ensure fair play."
           }
         }
       }
@@ -7220,6 +7994,22 @@
         }
       }
     },
+    "探索中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exploring"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索中"
+          }
+        }
+      }
+    },
     "探索和圈占领地" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7420,6 +8210,22 @@
         }
       }
     },
+    "探索过程中发生未知错误" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An unknown error occurred during exploration"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索过程中发生未知错误"
+          }
+        }
+      }
+    },
     "接受交易" : {
       "localizations" : {
         "en" : {
@@ -7501,7 +8307,6 @@
       }
     },
     "搜寻中..." : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7534,7 +8339,24 @@
         }
       }
     },
+    "搜寻此地点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search This Location"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜寻此地点"
+          }
+        }
+      }
+    },
     "搜索中..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7599,6 +8421,7 @@
       }
     },
     "搜索附近 POI" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7890,7 +8713,6 @@
       }
     },
     "普通" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8278,7 +9100,6 @@
       }
     },
     "未知" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8557,6 +9378,7 @@
       }
     },
     "标记已发现" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8573,6 +9395,7 @@
       }
     },
     "标记无物资" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8654,7 +9477,24 @@
         }
       }
     },
+    "此地点已搜刮过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This location has been scavenged"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此地点已搜刮过"
+          }
+        }
+      }
+    },
     "此地点已被搜空，暂时无法搜寻" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8698,6 +9538,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此邮箱已有账号，请直接登录。"
+          }
+        }
+      }
+    },
+    "步行圈地，保持稳定速度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walk at a steady pace"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "步行圈地，保持稳定速度"
+          }
+        }
+      }
+    },
+    "步行距离" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walking Distance"
           }
         }
       }
@@ -8990,6 +9856,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "注意：距离他人领地 %dm"
+          }
+        }
+      }
+    },
+    "注意避开他人领地（地图上显示为多边形）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avoid others' territory (shown as polygons on map)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注意避开他人领地（地图上显示为多边形）"
           }
         }
       }
@@ -10061,8 +10943,55 @@
         }
       }
     },
+    "禁止行为" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prohibited Actions"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "禁止行为"
+          }
+        }
+      }
+    },
+    "秒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "s"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秒"
+          }
+        }
+      }
+    },
+    "移动速度不能超过 15km/h（防止开车）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed must not exceed 15 km/h (no driving)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动速度不能超过 15km/h（防止开车）"
+          }
+        }
+      }
+    },
     "稀有" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10420,6 +11349,16 @@
         }
       }
     },
+    "给这块新领地起个名字吧，之后可以随时修改" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give this new territory a name. You can change it anytime."
+          }
+        }
+      }
+    },
     "统计" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10433,6 +11372,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "统计"
+          }
+        }
+      }
+    },
+    "继续行走，探索更远的区域" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep walking to explore further areas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续行走，探索更远的区域"
           }
         }
       }
@@ -10780,6 +11735,22 @@
         }
       }
     },
+    "至少需要走 10 个 GPS 点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walk at least 10 GPS points"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "至少需要走 10 个 GPS 点"
+          }
+        }
+      }
+    },
     "良好" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10911,7 +11882,6 @@
       }
     },
     "行走距离" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11854,6 +12824,32 @@
         }
       }
     },
+    "起始点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPS Points"
+          }
+        }
+      }
+    },
+    "起点和终点距离需要在 30 米内闭合" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start and end must close within 30 meters"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起点和终点距离需要在 30 米内闭合"
+          }
+        }
+      }
+    },
     "超出通讯范围" : {
       "localizations" : {
         "en" : {
@@ -11998,6 +12994,39 @@
         }
       }
     },
+    "轨迹不能自己交叉（禁止\"8字形\"）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Path cannot self-intersect (no figure-8 shape)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轨迹不能自己交叉（禁止\"8字形\"）"
+          }
+        }
+      }
+    },
+    "轨迹不能自己交叉（禁止\\\"8字形\\\"）" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Path cannot self-intersect (no figure-8 shape)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轨迹不能自己交叉（禁止\\\"8字形\\\"）"
+          }
+        }
+      }
+    },
     "轨迹不能进入他人领地！" : {
       "localizations" : {
         "en" : {
@@ -12058,6 +13087,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入消息（可选）"
+          }
+        }
+      }
+    },
+    "输入领地名称（可跳过）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter territory name (optional)"
           }
         }
       }
@@ -12207,6 +13246,16 @@
         }
       }
     },
+    "进入领地 100 米范围内的玩家可见你的挂单" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Players within 100m of your territory can see your listings"
+          }
+        }
+      }
+    },
     "进行中" : {
       "localizations" : {
         "en" : {
@@ -12348,6 +13397,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择目标频道"
+          }
+        }
+      }
+    },
+    "选择空旷、GPS 信号良好的区域" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose open areas with good GPS signal"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择空旷、GPS 信号良好的区域"
           }
         }
       }
@@ -12757,6 +13822,22 @@
         }
       }
     },
+    "附近没有发现可搜刮地点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No scavengeable locations found nearby"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附近没有发现可搜刮地点"
+          }
+        }
+      }
+    },
     "隐私政策" : {
       "localizations" : {
         "en" : {
@@ -12803,6 +13884,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "需要 StoreKit 配置文件才能预览"
+          }
+        }
+      }
+    },
+    "需要先开始探索才能搜刮" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start exploring first to scavenge"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要先开始探索才能搜刮"
           }
         }
       }
@@ -13077,6 +14174,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地登记成功！"
+          }
+        }
+      }
+    },
+    "领地面积不少于 100 平方米" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory area at least 100 sq meters"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地面积不少于 100 平方米"
           }
         }
       }

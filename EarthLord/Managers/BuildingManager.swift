@@ -190,11 +190,20 @@ final class BuildingManager: ObservableObject {
             throw BuildingError.insufficientResources(checkResult.missingResources)
         }
 
-        // 扣除资源
+        // 扣除资源（同种物品可能分散在多个品质条目中，需逐条扣除）
         for (resourceId, requiredAmount) in template.requiredResources {
-            if let inventoryItem = InventoryManager.shared.items.first(where: { $0.itemId == resourceId }) {
-                try await InventoryManager.shared.useItem(inventoryId: inventoryItem.id, quantity: requiredAmount)
-                logger.log("扣除资源: \(resourceId) x\(requiredAmount)", type: .info)
+            var remaining = requiredAmount
+            // 按数量降序排列，优先从数量多的条目扣除
+            let matchingItems = InventoryManager.shared.items
+                .filter { $0.itemId == resourceId }
+                .sorted { $0.quantity > $1.quantity }
+
+            for inventoryItem in matchingItems {
+                guard remaining > 0 else { break }
+                let deductAmount = min(inventoryItem.quantity, remaining)
+                try await InventoryManager.shared.useItem(inventoryId: inventoryItem.id, quantity: deductAmount)
+                remaining -= deductAmount
+                logger.log("扣除资源: \(resourceId) x\(deductAmount) (剩余需扣: \(remaining))", type: .info)
             }
         }
 

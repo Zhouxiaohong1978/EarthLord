@@ -53,6 +53,9 @@ final class LocationManager: NSObject, ObservableObject {
     /// 是否超速
     @Published var isOverSpeed: Bool = false
 
+    /// 圈地实时步行距离（米）
+    @Published var trackingDistance: Double = 0
+
     // MARK: - 验证状态属性
 
     /// 领地验证是否通过
@@ -103,11 +106,11 @@ final class LocationManager: NSObject, ObservableObject {
     /// 正常多边形应 > 25%，圆形约 78.5%，正方形 100%
     private let minimumCompactnessRatio: Double = 25.0
 
-    /// 速度警告阈值（km/h）
-    private let speedWarningThreshold: Double = 15.0
+    /// 速度警告阈值（km/h）- 超过此值提醒放慢
+    private let speedWarningThreshold: Double = 12.0
 
-    /// 速度暂停阈值（km/h）
-    private let speedPauseThreshold: Double = 30.0
+    /// 速度暂停阈值（km/h）- 超过此值停止追踪（防止开车圈地）
+    private let speedPauseThreshold: Double = 15.0
 
     #if DEBUG
     /// 调试模式：通过环境变量 DEBUG_LAT/DEBUG_LON 覆盖位置，便于测试距离过滤
@@ -156,14 +159,14 @@ final class LocationManager: NSObject, ObservableObject {
         locationManager.distanceFilter = 5  // 移动5米就更新（追踪时需要更频繁）
 
         #if DEBUG
-        // 测试用：自动给 Simulator 和实机分配不同坐标（相距 3.6km），用于距离过滤测试
-        isDebugLocationMode = true
+        // 测试用：仅在模拟器中使用虚假坐标，实机使用真实 GPS
         #if targetEnvironment(simulator)
+        isDebugLocationMode = true
         userLocation = CLLocationCoordinate2D(latitude: 31.2624, longitude: 121.4737)
         print("🔧 [LocationManager] DEBUG 模式 (Simulator)：位置覆盖为 (31.2624, 121.4737)")
         #else
-        userLocation = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
-        print("🔧 [LocationManager] DEBUG 模式 (实机)：位置覆盖为 (31.2304, 121.4737)")
+        isDebugLocationMode = false
+        print("🔧 [LocationManager] DEBUG 模式 (实机)：使用真实 GPS 位置")
         #endif
         #endif
     }
@@ -272,6 +275,7 @@ final class LocationManager: NSObject, ObservableObject {
             speedWarning = nil
             isOverSpeed = false
             lastLocationTimestamp = nil
+            trackingDistance = 0
             territoryValidationPassed = false
             territoryValidationError = nil
             calculatedArea = 0
@@ -287,6 +291,7 @@ final class LocationManager: NSObject, ObservableObject {
         speedWarning = nil
         isOverSpeed = false
         lastLocationTimestamp = nil
+        trackingDistance = 0
         // 重置验证状态
         territoryValidationPassed = false
         territoryValidationError = nil
@@ -325,6 +330,7 @@ final class LocationManager: NSObject, ObservableObject {
             pathCoordinates.append(location.coordinate)
             pathUpdateVersion += 1
             lastLocationTimestamp = Date()
+            trackingDistance += distance  // 累加实时步行距离
             print("📍 记录新点 #\(pathCoordinates.count): 距上个点 \(String(format: "%.1f", distance))米")
 
             // 添加日志

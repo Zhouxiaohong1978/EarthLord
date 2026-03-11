@@ -46,24 +46,24 @@ struct POIDetailView: View {
     /// 环境变量 - 返回上一页
     @Environment(\.dismiss) private var dismiss
 
-    /// 是否显示探索结果
-    @State private var showExplorationResult = false
+    /// 探索管理器
+    @ObservedObject private var explorationManager = ExplorationManager.shared
 
     /// 是否正在搜寻
-    @State private var isExploring = false
+    @State private var isScavenging = false
 
     // MARK: - 计算属性
 
-    /// POI 是否可以被搜寻
-    private var canExplore: Bool {
-        poi.status != .looted && poi.status != .undiscovered
+    /// POI 是否可以被搜寻（必须在探索中且未被搜刮过）
+    private var canScavenge: Bool {
+        explorationManager.isExploring && !explorationManager.scavengedPOIIds.contains(poi.id)
     }
 
-    /// 距离（假数据）
+    /// 距离（假数据，后续可从 ExplorationManager 计算）
     private let distance: Int = 350
 
-    /// 数据来源（假数据）
-    private let dataSource: String = "地图数据"
+    /// 数据来源
+    private let dataSource: String = "MapKit"
 
     // MARK: - Body
 
@@ -98,9 +98,11 @@ struct POIDetailView: View {
             .ignoresSafeArea(edges: .top)
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showExplorationResult) {
-            ExplorationResultView(result: MockExplorationData.sampleExplorationResult)
-                .presentationDetents([.large])
+        .sheet(isPresented: $explorationManager.showScavengeResult) {
+            if let scavengeResult = explorationManager.scavengeResult {
+                ScavengeResultSheet(result: scavengeResult)
+                    .presentationDetents([.large])
+            }
         }
         .overlay(alignment: .topLeading) {
             // 返回按钮
@@ -322,10 +324,10 @@ struct POIDetailView: View {
         VStack(spacing: 14) {
             // 主按钮：搜寻此POI
             Button {
-                performExploration()
+                performScavenge()
             } label: {
                 HStack(spacing: 10) {
-                    if isExploring {
+                    if isScavenging {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.9)
@@ -334,7 +336,7 @@ struct POIDetailView: View {
                             .font(.system(size: 18, weight: .semibold))
                     }
 
-                    Text(LocalizedStringKey(isExploring ? "搜寻中..." : "搜寻此POI"))
+                    Text(isScavenging ? LocalizedStringKey("搜寻中...") : LocalizedStringKey("搜寻此地点"))
                         .font(.system(size: 17, weight: .bold))
                 }
                 .foregroundColor(.white)
@@ -342,7 +344,7 @@ struct POIDetailView: View {
                 .frame(height: 54)
                 .background(
                     Group {
-                        if canExplore {
+                        if canScavenge {
                             LinearGradient(
                                 colors: [ApocalypseTheme.primary, ApocalypseTheme.primaryDark],
                                 startPoint: .leading,
@@ -355,44 +357,28 @@ struct POIDetailView: View {
                 )
                 .cornerRadius(14)
             }
-            .disabled(!canExplore || isExploring)
+            .disabled(!canScavenge || isScavenging)
 
-            // 已清空提示
-            if poi.status == .looted {
-                Text(LocalizedStringKey("此地点已被搜空，暂时无法搜寻"))
+            // 已搜刮提示
+            if explorationManager.scavengedPOIIds.contains(poi.id) {
+                Text(LocalizedStringKey("此地点已搜刮过"))
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textMuted)
-            }
-
-            // 小按钮区域
-            HStack(spacing: 12) {
-                // 标记已发现
-                SecondaryButton(
-                    icon: "eye.fill",
-                    title: LocalizedStringKey("标记已发现")
-                ) {
-                    print("标记已发现: \(poi.name)")
-                }
-
-                // 标记无物资
-                SecondaryButton(
-                    icon: "xmark.circle.fill",
-                    title: LocalizedStringKey("标记无物资")
-                ) {
-                    print("标记无物资: \(poi.name)")
-                }
+            } else if !explorationManager.isExploring {
+                Text(LocalizedStringKey("需要先开始探索才能搜刮"))
+                    .font(.system(size: 13))
+                    .foregroundColor(ApocalypseTheme.textMuted)
             }
         }
     }
 
-    /// 执行搜寻
-    private func performExploration() {
-        isExploring = true
+    /// 执行搜寻（调用真实的 AI 搜刮逻辑）
+    private func performScavenge() {
+        isScavenging = true
 
-        // 模拟搜寻过程
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            isExploring = false
-            showExplorationResult = true
+        Task {
+            await explorationManager.scavengePOI(poi)
+            isScavenging = false
         }
     }
 }

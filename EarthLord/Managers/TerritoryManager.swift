@@ -93,8 +93,10 @@ final class TerritoryManager {
     ///   - coordinates: 领地边界坐标点数组
     ///   - area: 领地面积（平方米）
     ///   - startTime: 圈地开始时间
+    /// - Returns: 新建领地的 ID
     /// - Throws: 上传失败时抛出错误
-    func uploadTerritory(coordinates: [CLLocationCoordinate2D], area: Double, startTime: Date) async throws {
+    @discardableResult
+    func uploadTerritory(coordinates: [CLLocationCoordinate2D], area: Double, startTime: Date) async throws -> String {
         // 获取当前用户 ID
         guard let userId = AuthManager.shared.currentUser?.id else {
             throw TerritoryError.notAuthenticated
@@ -143,17 +145,73 @@ final class TerritoryManager {
         TerritoryLogger.shared.log("开始上传领地: \(coordinates.count)个点, \(Int(area))m²", type: .info)
 
         do {
-            // 执行上传
-            try await supabase
+            // 执行上传并获取返回的记录（含 ID）
+            let response: [Territory] = try await supabase
                 .from("territories")
                 .insert(territoryData)
+                .select()
                 .execute()
+                .value
 
-            print("✅ 领地上传成功")
-            TerritoryLogger.shared.log("领地上传成功！面积: \(Int(area))m²", type: .success)
+            guard let newTerritory = response.first else {
+                TerritoryLogger.shared.log("领地上传成功，但未能获取领地ID", type: .warning)
+                throw TerritoryError.uploadFailed("未能获取领地ID")
+            }
+
+            print("✅ 领地上传成功，ID: \(newTerritory.id)")
+            TerritoryLogger.shared.log("领地上传成功！面积: \(Int(area))m², ID: \(newTerritory.id)", type: .success)
+            return newTerritory.id
         } catch {
             TerritoryLogger.shared.log("领地上传失败: \(error.localizedDescription)", type: .error)
             throw error
+        }
+    }
+
+    // MARK: - 允许交易开关
+
+    /// 更新领地的允许交易状态
+    /// - Parameters:
+    ///   - id: 领地 ID
+    ///   - allowTrading: 是否允许交易
+    func updateTradingStatus(id: String, allowTrading: Bool) async throws {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            throw TerritoryError.notAuthenticated
+        }
+
+        print("🔄 更新领地交易状态: \(id) -> \(allowTrading)")
+
+        try await supabase
+            .from("territories")
+            .update(["allow_trading": allowTrading])
+            .eq("id", value: id)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+
+        print("✅ 领地交易状态已更新")
+        TerritoryLogger.shared.log("领地交易状态更新: \(allowTrading ? "允许" : "禁止")", type: .info)
+    }
+
+    // MARK: - 领地到期回收
+
+    /// 检查并回收已到期的领地（客户端懒检查，在加载我的领地时调用）
+    func checkAndReclaimExpiredTerritories() async {
+        guard let userId = AuthManager.shared.currentUser?.id else { return }
+
+        // 计算90天前的时间点
+        let ninetyDaysAgo = Date().addingTimeInterval(-90 * 24 * 3600)
+
+        do {
+            try await supabase
+                .from("territories")
+                .update(["is_active": false])
+                .eq("user_id", value: userId.uuidString)
+                .eq("is_active", value: true)
+                .lt("completed_at", value: ninetyDaysAgo.ISO8601Format())
+                .execute()
+
+            TerritoryLogger.shared.log("到期领地回收检查完成", type: .info)
+        } catch {
+            TerritoryLogger.shared.log("到期回收检查失败: \(error.localizedDescription)", type: .error)
         }
     }
 
@@ -246,7 +304,7 @@ final class TerritoryManager {
 
         try await supabase
             .from("territories")
-            .update(["name": name, "updated_at": Date().ISO8601Format()])
+            .update(["name": name])
             .eq("id", value: id)
             .eq("user_id", value: userId.uuidString)  // 确保只能修改自己的
             .execute()

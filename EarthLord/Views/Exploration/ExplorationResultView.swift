@@ -13,8 +13,8 @@ import SwiftUI
 struct ExplorationResultView: View {
     // MARK: - 属性
 
-    /// 探索结果数据（可选，nil 表示失败）
-    let result: ExplorationResult?
+    /// 探索会话结果（使用统一模型）
+    let result: ExplorationSessionResult?
 
     /// 错误信息（可选）
     var errorMessage: String? = nil
@@ -32,23 +32,24 @@ struct ExplorationResultView: View {
     /// 数字动画进度 (0-1)
     @State private var numberAnimationProgress: Double = 0
 
+    /// 累计距离和排名（异步加载）
+    @State private var totalDistance: Double = 0
+    @State private var rank: Int = 0
+
     /// 是否为错误状态
     private var isError: Bool {
         result == nil || errorMessage != nil
     }
 
-    /// 动画显示的统计数值
-    private var animatedDistanceCurrent: Double {
-        (result?.distanceStats.current ?? 0) * numberAnimationProgress
+    /// 动画显示的距离
+    private var animatedCurrentDistance: Double {
+        (result?.distanceWalked ?? 0) * numberAnimationProgress
     }
-    private var animatedDistanceTotal: Double {
-        (result?.distanceStats.total ?? 0) * numberAnimationProgress
+    private var animatedTotalDistance: Double {
+        totalDistance * numberAnimationProgress
     }
     private var animatedDuration: TimeInterval {
-        (result?.duration ?? 0) * numberAnimationProgress
-    }
-    private var animatedExperience: Int {
-        Int(Double(result?.experienceGained ?? 0) * numberAnimationProgress)
+        Double(result?.durationSeconds ?? 0) * numberAnimationProgress
     }
 
     // MARK: - Body
@@ -106,6 +107,23 @@ struct ExplorationResultView: View {
             withAnimation(.easeOut(duration: 0.5).delay(0.6)) {
                 showItems = true
             }
+            // 异步加载累计统计
+            Task {
+                await loadStats()
+            }
+        }
+    }
+
+    /// 加载累计距离和排名
+    private func loadStats() async {
+        do {
+            let stats = try await ExplorationStatsManager.shared.getStats()
+            totalDistance = stats.totalDistance
+            rank = stats.distanceRank
+        } catch {
+            // 加载失败时用本次距离作为fallback
+            totalDistance = result?.distanceWalked ?? 0
+            rank = 0
         }
     }
 
@@ -131,12 +149,12 @@ struct ExplorationResultView: View {
                 }
 
                 // 错误标题
-                Text("探索失败")
+                Text(LocalizedStringKey("探索失败"))
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 // 错误信息
-                Text(errorMessage ?? "探索过程中发生未知错误")
+                Text(errorMessage ?? String(localized: "探索过程中发生未知错误"))
                     .font(.system(size: 15))
                     .foregroundColor(ApocalypseTheme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -152,7 +170,7 @@ struct ExplorationResultView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "arrow.clockwise")
                                     .font(.system(size: 16, weight: .semibold))
-                                Text("重试")
+                                Text(LocalizedStringKey("重试"))
                                     .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -169,7 +187,7 @@ struct ExplorationResultView: View {
                     Button {
                         dismiss()
                     } label: {
-                        Text("关闭")
+                        Text(LocalizedStringKey("关闭"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(ApocalypseTheme.textSecondary)
                             .frame(maxWidth: .infinity)
@@ -201,8 +219,7 @@ struct ExplorationResultView: View {
 
     /// 获取奖励等级
     private var rewardTier: RewardTier {
-        guard let tierString = result?.rewardTier else { return .none }
-        return RewardTier(rawValue: tierString) ?? .none
+        result?.rewardTier ?? .none
     }
 
     /// 奖励等级颜色
@@ -256,7 +273,7 @@ struct ExplorationResultView: View {
             }
 
             // 大标题
-            Text("探索完成！")
+            Text(LocalizedStringKey("探索完成！"))
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(ApocalypseTheme.textPrimary)
                 .scaleEffect(showContent ? 1 : 0.8)
@@ -270,7 +287,7 @@ struct ExplorationResultView: View {
             }
 
             // 副标题
-            Text(rewardTier == .none ? "距离不足，未获得奖励" : "你发现了新的区域和物资")
+            Text(rewardTier == .none ? LocalizedStringKey("距离不足，未获得奖励") : LocalizedStringKey("你发现了新的区域和物资"))
                 .font(.system(size: 15))
                 .foregroundColor(ApocalypseTheme.textSecondary)
                 .opacity(showContent ? 1 : 0)
@@ -287,7 +304,7 @@ struct ExplorationResultView: View {
             Text(rewardTier.displayName)
                 .font(.system(size: 16, weight: .bold))
 
-            Text("奖励")
+            Text(LocalizedStringKey("奖励"))
                 .font(.system(size: 14, weight: .medium))
                 .opacity(0.8)
         }
@@ -315,10 +332,10 @@ struct ExplorationResultView: View {
             StatRowNew(
                 icon: "figure.walk",
                 iconColor: .blue,
-                title: "行走距离",
-                currentValue: formatDistance(animatedDistanceCurrent),
-                totalValue: formatDistance(animatedDistanceTotal),
-                rank: result?.distanceStats.rank ?? 0
+                title: String(localized: "行走距离"),
+                currentValue: formatDistance(animatedCurrentDistance),
+                totalValue: formatDistance(animatedTotalDistance),
+                rank: rank
             )
 
             Divider()
@@ -338,7 +355,7 @@ struct ExplorationResultView: View {
                 }
 
                 // 标题
-                Text("探索时长")
+                Text(LocalizedStringKey("探索时长"))
                     .font(.system(size: 15))
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -372,13 +389,13 @@ struct ExplorationResultView: View {
                     .font(.system(size: 14))
                     .foregroundColor(ApocalypseTheme.primary)
 
-                Text("获得物品")
+                Text(LocalizedStringKey("获得物品"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 Spacer()
 
-                Text("\(obtainedItems.count)件")
+                Text("\(obtainedItems.count)\(String(localized: "件"))")
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textMuted)
             }
@@ -391,7 +408,7 @@ struct ExplorationResultView: View {
                         .font(.system(size: 30))
                         .foregroundColor(ApocalypseTheme.textMuted)
 
-                    Text("本次探索未获得物品")
+                    Text(LocalizedStringKey("本次探索未获得物品"))
                         .font(.system(size: 14))
                         .foregroundColor(ApocalypseTheme.textMuted)
                 }
@@ -426,7 +443,7 @@ struct ExplorationResultView: View {
                         .font(.system(size: 12))
                         .foregroundColor(ApocalypseTheme.success)
 
-                    Text("已添加到背包")
+                    Text(LocalizedStringKey("已添加到背包"))
                         .font(.system(size: 13))
                         .foregroundColor(ApocalypseTheme.textMuted)
                 }
@@ -453,7 +470,7 @@ struct ExplorationResultView: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 16, weight: .bold))
 
-                Text("确认收下")
+                Text(LocalizedStringKey("确认收下"))
                     .font(.system(size: 17, weight: .bold))
             }
             .foregroundColor(.white)
@@ -490,11 +507,11 @@ struct ExplorationResultView: View {
         if minutes >= 60 {
             let hours = minutes / 60
             let mins = minutes % 60
-            return "\(hours)小时\(mins)分钟"
+            return "\(hours)\(String(localized: "小时"))\(mins)\(String(localized: "分钟"))"
         } else if minutes > 0 {
-            return "\(minutes)分\(secs)秒"
+            return "\(minutes)\(String(localized: "分"))\(secs)\(String(localized: "秒"))"
         } else {
-            return "\(secs)秒"
+            return "\(secs)\(String(localized: "秒"))"
         }
     }
 }
@@ -530,7 +547,7 @@ struct StatRowNew: View {
 
                 HStack(spacing: 16) {
                     HStack(spacing: 4) {
-                        Text("本次")
+                        Text(LocalizedStringKey("本次"))
                             .font(.system(size: 12))
                             .foregroundColor(ApocalypseTheme.textMuted)
                         Text(currentValue)
@@ -539,7 +556,7 @@ struct StatRowNew: View {
                     }
 
                     HStack(spacing: 4) {
-                        Text("累计")
+                        Text(LocalizedStringKey("累计"))
                             .font(.system(size: 12))
                             .foregroundColor(ApocalypseTheme.textMuted)
                         Text(totalValue)
@@ -552,14 +569,16 @@ struct StatRowNew: View {
             Spacer()
 
             // 排名
-            VStack(spacing: 2) {
-                Text("排名")
-                    .font(.system(size: 11))
-                    .foregroundColor(ApocalypseTheme.textMuted)
+            if rank > 0 {
+                VStack(spacing: 2) {
+                    Text(LocalizedStringKey("排名"))
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.textMuted)
 
-                Text("#\(rank)")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(ApocalypseTheme.primary)
+                    Text("#\(rank)")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
             }
         }
         .padding(16)
@@ -640,28 +659,23 @@ struct RewardItemRow: View {
 // MARK: - Preview
 
 #Preview {
-    ExplorationResultView(result: MockExplorationData.sampleExplorationResult)
-}
-
-#Preview("空物品") {
-    let emptyResult = ExplorationResult(
-        startTime: Date().addingTimeInterval(-600),
+    let sampleResult = ExplorationSessionResult(
+        id: UUID(),
+        startTime: Date().addingTimeInterval(-1800),
         endTime: Date(),
-        distanceStats: DistanceStats(current: 800, total: 5000, rank: 156),
-        obtainedItems: [],
-        experienceGained: 50
+        distanceWalked: 2500,
+        durationSeconds: 1800,
+        status: "completed",
+        rewardTier: .gold,
+        obtainedItems: [
+            ObtainedItem(itemId: "wood", quantity: 5, quality: nil),
+            ObtainedItem(itemId: "water_bottle", quantity: 3, quality: nil),
+            ObtainedItem(itemId: "canned_food", quantity: 2, quality: .normal)
+        ],
+        path: [],
+        maxSpeed: 5.2
     )
-
-    ExplorationResultView(result: emptyResult)
-}
-
-#Preview("Sheet 展示") {
-    Color.black
-        .ignoresSafeArea()
-        .sheet(isPresented: .constant(true)) {
-            ExplorationResultView(result: MockExplorationData.sampleExplorationResult)
-                .presentationDetents([.large])
-        }
+    ExplorationResultView(result: sampleResult)
 }
 
 #Preview("错误状态") {

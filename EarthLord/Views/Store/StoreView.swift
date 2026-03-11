@@ -13,6 +13,8 @@ import StoreKit
 extension Notification.Name {
     /// 跳转到邮箱的通知
     static let navigateToMailbox = Notification.Name("navigateToMailbox")
+    /// 跳转到地图Tab的通知
+    static let navigateToMapTab = Notification.Name("navigateToMapTab")
 }
 
 struct StoreView: View {

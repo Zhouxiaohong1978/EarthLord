@@ -439,9 +439,14 @@ final class SubscriptionManager: ObservableObject {
         currentTier != .free
     }
 
-    /// POI 搜刮冷却时间（小时）
-    var poiCooldownHours: Int {
-        currentTier.poiCooldownHours
+    /// 每日探索次数限制（nil = 无限）
+    var dailyExplorationLimit: Int? {
+        currentTier.dailyExplorationLimit
+    }
+
+    /// 通讯范围（km）
+    var communicationRadius: Double {
+        currentTier.communicationRadius
     }
 
     /// 步行探索奖励倍率

@@ -120,6 +120,26 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 是否显示搜刮结果弹窗
     @Published var showScavengeResult: Bool = false
 
+    /// 今日已探索次数
+    @Published var todayExplorationCount: Int = 0
+
+    /// 今日探索次数限制（nil = 无限）
+    var dailyExplorationLimit: Int? {
+        SubscriptionManager.shared.dailyExplorationLimit
+    }
+
+    /// 是否还能探索（未达到每日上限）
+    var canStartExploration: Bool {
+        guard let limit = dailyExplorationLimit else { return true }
+        return todayExplorationCount < limit
+    }
+
+    /// 剩余探索次数（nil = 无限）
+    var remainingExplorations: Int? {
+        guard let limit = dailyExplorationLimit else { return nil }
+        return max(0, limit - todayExplorationCount)
+    }
+
     // MARK: - Private Properties
 
     /// 位置管理器
@@ -169,9 +189,8 @@ final class ExplorationManager: NSObject, ObservableObject {
         locationManager?.delegate = self
         locationManager?.desiredAccuracy = kCLLocationAccuracyBest
         locationManager?.distanceFilter = minimumRecordDistance
-        // 启用后台定位（核心玩法，免费用户可用，需 Info.plist 配置 UIBackgroundModes: location）
-        locationManager?.allowsBackgroundLocationUpdates = true
-        locationManager?.pausesLocationUpdatesAutomatically = false
+        // 注意：allowsBackgroundLocationUpdates 延迟到 startExploration() 时才设置，
+        // 避免未启动的 CLLocationManager 干扰领地追踪的 GPS 回调
 
         logger.log("位置管理器初始化完成", type: .info)
     }
@@ -184,6 +203,13 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         guard !isExploring else {
             logger.logError("探索已在进行中，无法重复开始")
+            return
+        }
+
+        // 检查每日探索次数限制
+        refreshTodayExplorationCount()
+        guard canStartExploration else {
+            logger.logError("今日探索次数已达上限(\(todayExplorationCount)/\(dailyExplorationLimit ?? 0))，订阅可解锁无限次数")
             return
         }
 
@@ -208,6 +234,10 @@ final class ExplorationManager: NSObject, ObservableObject {
         isExploring = true
         explorationState = .exploring
         startTime = Date()
+
+        // 启用后台定位（探索时才需要，避免干扰领地追踪）
+        locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.pausesLocationUpdatesAutomatically = false
 
         // 开始位置更新
         locationManager.startUpdatingLocation()
@@ -242,8 +272,9 @@ final class ExplorationManager: NSObject, ObservableObject {
             return nil
         }
 
-        // 停止位置更新
+        // 停止位置更新，并重置后台定位设置
         locationManager?.stopUpdatingLocation()
+        locationManager?.allowsBackgroundLocationUpdates = false
         logger.log("已停止位置更新服务", type: .info)
 
         // 停止计时器
@@ -287,6 +318,11 @@ final class ExplorationManager: NSObject, ObservableObject {
         logger.logExplorationEnd(distance: totalDistance, duration: duration, status: status)
         logger.logStateChange(from: "exploring", to: "completed")
 
+        // 增加今日探索次数
+        if !cancelled {
+            incrementTodayExplorationCount()
+        }
+
         // 异步保存到数据库
         Task {
             await saveExplorationToDatabase(result: result, rewards: rewards)
@@ -321,6 +357,36 @@ final class ExplorationManager: NSObject, ObservableObject {
         stopDurationTimer()
 
         logger.log("探索状态已重置", type: .info)
+    }
+
+    // MARK: - Daily Exploration Count
+
+    /// UserDefaults key for today's exploration count
+    private static let dailyCountKey = "exploration_daily_count"
+    private static let dailyCountDateKey = "exploration_daily_count_date"
+
+    /// 刷新今日探索次数（如果日期变了则重置）
+    func refreshTodayExplorationCount() {
+        let today = Calendar.current.startOfDay(for: Date())
+        let savedDate = UserDefaults.standard.object(forKey: Self.dailyCountDateKey) as? Date ?? .distantPast
+        let savedDay = Calendar.current.startOfDay(for: savedDate)
+
+        if today != savedDay {
+            // 新的一天，重置计数
+            UserDefaults.standard.set(0, forKey: Self.dailyCountKey)
+            UserDefaults.standard.set(today, forKey: Self.dailyCountDateKey)
+            todayExplorationCount = 0
+        } else {
+            todayExplorationCount = UserDefaults.standard.integer(forKey: Self.dailyCountKey)
+        }
+    }
+
+    /// 增加今日探索次数
+    private func incrementTodayExplorationCount() {
+        refreshTodayExplorationCount()
+        todayExplorationCount += 1
+        UserDefaults.standard.set(todayExplorationCount, forKey: Self.dailyCountKey)
+        logger.log("今日探索次数: \(todayExplorationCount)/\(dailyExplorationLimit.map { String($0) } ?? "∞")", type: .info)
     }
 
     // MARK: - Location Handling

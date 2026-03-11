@@ -23,7 +23,7 @@ struct ScavengeResultView: View {
                     .font(.system(size: 48))
                     .foregroundColor(ApocalypseTheme.success)
 
-                Text("搜刮完成!")
+                Text(LocalizedStringKey("搜刮完成!"))
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -46,13 +46,13 @@ struct ScavengeResultView: View {
 
             // 获得物品标题
             HStack {
-                Text("获得物品")
+                Text(LocalizedStringKey("获得物品"))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textSecondary)
 
                 Spacer()
 
-                Text("\(result.items.count) 件")
+                Text("\(result.items.count) \(String(localized: "件"))")
                     .font(.system(size: 14))
                     .foregroundColor(ApocalypseTheme.textMuted)
             }
@@ -82,7 +82,7 @@ struct ScavengeResultView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "shippingbox.fill")
                             .font(.system(size: 16))
-                        Text("收下物品")
+                        Text(LocalizedStringKey("收下物品"))
                             .font(.system(size: 16, weight: .bold))
                     }
                     .foregroundColor(.white)
@@ -95,7 +95,7 @@ struct ScavengeResultView: View {
                 Button {
                     onDiscard()
                 } label: {
-                    Text("放弃物品")
+                    Text(LocalizedStringKey("放弃物品"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textMuted)
                 }
@@ -169,7 +169,7 @@ struct AIItemRow: View {
                                 showFullStory.toggle()
                             }
                         } label: {
-                            Text(showFullStory ? "收起" : "展开")
+                            Text(showFullStory ? LocalizedStringKey("收起") : LocalizedStringKey("展开"))
                                 .font(.system(size: 12))
                                 .foregroundColor(ApocalypseTheme.primary)
                         }
@@ -209,17 +209,17 @@ struct AIItemRow: View {
     private var rarityText: String {
         switch item.rarity {
         case "common":
-            return "普通"
+            return String(localized: "普通")
         case "uncommon":
-            return "优秀"
+            return String(localized: "优秀")
         case "rare":
-            return "稀有"
+            return String(localized: "稀有")
         case "epic":
-            return "史诗"
+            return String(localized: "史诗")
         case "legendary":
-            return "传说"
+            return String(localized: "传说")
         default:
-            return "未知"
+            return String(localized: "未知")
         }
     }
 
@@ -360,6 +360,35 @@ struct ItemRow: View {
             return .green
         case .excellent:
             return .cyan
+        }
+    }
+}
+
+// MARK: - ScavengeResultSheet（用于 POIDetailView 的 sheet 展示）
+
+struct ScavengeResultSheet: View {
+    let result: ScavengeResult
+    @ObservedObject private var explorationManager = ExplorationManager.shared
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            ApocalypseTheme.background
+                .ignoresSafeArea()
+
+            ScavengeResultView(
+                result: result,
+                onConfirm: {
+                    Task {
+                        await explorationManager.confirmScavengeResult()
+                        dismiss()
+                    }
+                },
+                onDiscard: {
+                    explorationManager.discardScavengeResult()
+                    dismiss()
+                }
+            )
         }
     }
 }

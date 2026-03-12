@@ -81,6 +81,7 @@ final class LocationManager: NSObject, ObservableObject {
     /// 上次位置时间戳（用于速度计算）
     private var lastLocationTimestamp: Date?
 
+
     /// 最小记录距离（米）- 移动超过此距离才记录新点
     private let minimumRecordDistance: CLLocationDistance = 10.0
 
@@ -107,15 +108,11 @@ final class LocationManager: NSObject, ObservableObject {
     private let minimumCompactnessRatio: Double = 25.0
 
     /// 速度警告阈值（km/h）- 超过此值提醒放慢
-    private let speedWarningThreshold: Double = 12.0
+    private let speedWarningThreshold: Double = 20.0
 
     /// 速度暂停阈值（km/h）- 超过此值停止追踪（防止开车圈地）
-    private let speedPauseThreshold: Double = 15.0
+    private let speedPauseThreshold: Double = 30.0
 
-    #if DEBUG
-    /// 调试模式：通过环境变量 DEBUG_LAT/DEBUG_LON 覆盖位置，便于测试距离过滤
-    private var isDebugLocationMode = false
-    #endif
 
     // MARK: - Computed Properties
 
@@ -158,17 +155,6 @@ final class LocationManager: NSObject, ObservableObject {
         locationManager.desiredAccuracy = kCLLocationAccuracyBest  // 最高精度
         locationManager.distanceFilter = 5  // 移动5米就更新（追踪时需要更频繁）
 
-        #if DEBUG
-        // 测试用：仅在模拟器中使用虚假坐标，实机使用真实 GPS
-        #if targetEnvironment(simulator)
-        isDebugLocationMode = true
-        userLocation = CLLocationCoordinate2D(latitude: 31.2624, longitude: 121.4737)
-        print("🔧 [LocationManager] DEBUG 模式 (Simulator)：位置覆盖为 (31.2624, 121.4737)")
-        #else
-        isDebugLocationMode = false
-        print("🔧 [LocationManager] DEBUG 模式 (实机)：使用真实 GPS 位置")
-        #endif
-        #endif
     }
 
     // MARK: - Public Methods
@@ -301,44 +287,44 @@ final class LocationManager: NSObject, ObservableObject {
     // MARK: - 路径追踪 Private Methods
 
     /// 定时器回调 - 判断是否记录新点
+    /// ⚠️ 顺序关键：先检查距离 → 再检测速度 → 记录新点
+    /// 若先检速度会把 GPS 漂移积累的距离 ÷ 短时间，导致虚假超速！
     private func recordPathPoint() {
         guard isTracking else { return }
         guard let location = currentLocation else { return }
 
-        // 如果是第一个点，直接记录
+        // 如果是第一个点，直接记录（用 GPS 时间戳，比 Date() 更准确）
         if pathCoordinates.isEmpty {
             pathCoordinates.append(location.coordinate)
             pathUpdateVersion += 1
-            lastLocationTimestamp = Date()
+            lastLocationTimestamp = location.timestamp
             print("📍 记录第一个点: \(location.coordinate.latitude), \(location.coordinate.longitude)")
             return
         }
 
-        // ⭐ 速度检测 - 超速时不记录该点
+        // 步骤1：先检查距离（过滤 GPS 漂移）
+        // 未达到最小距离直接返回，不进行速度检测，避免漂移被误判为超速
+        guard let lastCoordinate = pathCoordinates.last else { return }
+        let lastLocation = CLLocation(latitude: lastCoordinate.latitude, longitude: lastCoordinate.longitude)
+        let distance = location.distance(from: lastLocation)
+        guard distance >= minimumRecordDistance else { return }
+
+        // 步骤2：再检测速度（此时已确认真实移动了 10m，计算才有意义）
         if !validateMovementSpeed(newLocation: location) {
             return
         }
 
-        // 计算与上一个点的距离
-        guard let lastCoordinate = pathCoordinates.last else { return }
+        // 步骤3：记录新点
+        pathCoordinates.append(location.coordinate)
+        pathUpdateVersion += 1
+        trackingDistance += distance
+        print("📍 记录新点 #\(pathCoordinates.count): 距上个点 \(String(format: "%.1f", distance))米")
 
-        let lastLocation = CLLocation(latitude: lastCoordinate.latitude, longitude: lastCoordinate.longitude)
-        let distance = location.distance(from: lastLocation)
+        // 添加日志
+        TerritoryLogger.shared.log("记录第 \(pathCoordinates.count) 个点，距上点 \(String(format: "%.1f", distance))m", type: .info)
 
-        // 只有移动超过最小距离才记录新点
-        if distance >= minimumRecordDistance {
-            pathCoordinates.append(location.coordinate)
-            pathUpdateVersion += 1
-            lastLocationTimestamp = Date()
-            trackingDistance += distance  // 累加实时步行距离
-            print("📍 记录新点 #\(pathCoordinates.count): 距上个点 \(String(format: "%.1f", distance))米")
-
-            // 添加日志
-            TerritoryLogger.shared.log("记录第 \(pathCoordinates.count) 个点，距上点 \(String(format: "%.1f", distance))m", type: .info)
-
-            // ⭐ 闭环检测 - 每次记录新点后检测是否闭环
-            checkPathClosure()
-        }
+        // ⭐ 闭环检测 - 每次记录新点后检测是否闭环
+        checkPathClosure()
     }
 
     // MARK: - 闭环检测
@@ -393,33 +379,39 @@ final class LocationManager: NSObject, ObservableObject {
 
     // MARK: - 速度检测
 
-    /// 验证移动速度是否合理
+    /// 验证移动速度是否合理（仅在距离检查通过后调用）
     /// - Parameter newLocation: 新位置
-    /// - Returns: true 表示速度正常，false 表示超速
+    /// - Returns: true 表示速度正常，false 表示超速（跳过该点，追踪继续）
     private func validateMovementSpeed(newLocation: CLLocation) -> Bool {
-        // 获取上次时间戳
-        guard let lastTimestamp = lastLocationTimestamp else {
-            // 第一次记录，无法计算速度
+        // GPS 精度过低时跳过速度检测
+        guard newLocation.horizontalAccuracy <= 30.0 else {
+            lastLocationTimestamp = newLocation.timestamp
             return true
         }
 
-        // 获取上个点
-        guard let lastCoordinate = pathCoordinates.last else {
-            return true
+        // 优先使用 CoreLocation 内置速度（经 Kalman 滤波，更准确）
+        let speedKmh: Double
+        if newLocation.speed >= 0 {
+            speedKmh = newLocation.speed * 3.6
+        } else {
+            // CoreLocation 速度不可用时，用 GPS 时间戳计算（比 Date() 更准确）
+            guard let lastTimestamp = lastLocationTimestamp,
+                  let lastCoordinate = pathCoordinates.last else {
+                lastLocationTimestamp = newLocation.timestamp
+                return true
+            }
+            let timeInterval = newLocation.timestamp.timeIntervalSince(lastTimestamp)
+            guard timeInterval > 0 else {
+                lastLocationTimestamp = newLocation.timestamp
+                return true
+            }
+            let lastLocation = CLLocation(latitude: lastCoordinate.latitude, longitude: lastCoordinate.longitude)
+            let distance = newLocation.distance(from: lastLocation)
+            speedKmh = (distance / timeInterval) * 3.6
         }
 
-        // 计算时间差（秒）
-        let timeDelta = Date().timeIntervalSince(lastTimestamp)
-        guard timeDelta > 0 else {
-            return true
-        }
-
-        // 计算距离（米）
-        let lastLocation = CLLocation(latitude: lastCoordinate.latitude, longitude: lastCoordinate.longitude)
-        let distance = newLocation.distance(from: lastLocation)
-
-        // 计算速度（km/h）
-        let speedKmh = (distance / timeDelta) * 3.6
+        // 每次调用都更新时间戳，保证下次时间差是两次速度检测之间的间隔
+        lastLocationTimestamp = newLocation.timestamp
 
         // 清除之前的警告
         if speedKmh < speedWarningThreshold {
@@ -427,29 +419,21 @@ final class LocationManager: NSObject, ObservableObject {
             isOverSpeed = false
         }
 
-        // 检查是否超过暂停阈值（30 km/h）
+        // 超速：跳过该点不记录，但追踪继续（不调用 stopPathTracking）
         if speedKmh > speedPauseThreshold {
-            speedWarning = "移动速度过快 (\(String(format: "%.1f", speedKmh)) km/h)，已停止追踪"
+            speedWarning = "移动速度过快 (\(String(format: "%.1f", speedKmh)) km/h)，请放慢速度"
             isOverSpeed = true
-            stopPathTracking()
-            print("⚠️ 速度超限：\(String(format: "%.1f", speedKmh)) km/h > \(speedPauseThreshold) km/h，停止追踪")
-
-            // 添加日志 - 超速停止
-            TerritoryLogger.shared.log("超速 \(String(format: "%.1f", speedKmh)) km/h，已停止追踪", type: .error)
-
+            print("⚠️ 速度超限：\(String(format: "%.1f", speedKmh)) km/h，跳过该点")
+            TerritoryLogger.shared.log("超速 \(String(format: "%.1f", speedKmh)) km/h，跳过该点（追踪继续）", type: .warning)
             return false
         }
 
-        // 检查是否超过警告阈值（15 km/h）
+        // 速度较快：警告但继续记录
         if speedKmh > speedWarningThreshold {
             speedWarning = "移动速度较快 (\(String(format: "%.1f", speedKmh)) km/h)，请放慢速度"
             isOverSpeed = true
-            print("⚠️ 速度警告：\(String(format: "%.1f", speedKmh)) km/h > \(speedWarningThreshold) km/h")
-
-            // 添加日志 - 速度警告
             TerritoryLogger.shared.log("速度较快 \(String(format: "%.1f", speedKmh)) km/h", type: .warning)
-
-            return true  // 警告但继续记录
+            return true
         }
 
         return true
@@ -790,6 +774,7 @@ final class LocationManager: NSObject, ObservableObject {
     }
 }
 
+
 // MARK: - CLLocationManagerDelegate
 
 extension LocationManager: CLLocationManagerDelegate {
@@ -833,13 +818,10 @@ extension LocationManager: CLLocationManagerDelegate {
     /// 位置更新回调
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         Task { @MainActor in
-            #if DEBUG
-            if isDebugLocationMode { return }
-            #endif
 
             guard let location = locations.last else { return }
 
-            // 更新用户位置
+            // 更新用户位置（始终更新，用于显示）
             self.userLocation = location.coordinate
             self.locationError = nil
 

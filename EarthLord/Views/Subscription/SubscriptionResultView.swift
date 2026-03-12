@@ -142,7 +142,6 @@ struct SubscriptionResultView: View {
                     benefitRow(icon: "map.fill", text: "探索范围扩大至 \(String(format: "%.0f", tier.explorationRadius))km")
                     benefitRow(icon: "building.2.fill", text: "建造速度 \(String(format: "%.0f", tier.buildSpeedMultiplier))倍加速")
                     benefitRow(icon: "arrow.triangle.2.circlepath", text: tier.dailyTradeLimit == nil ? "无限次交易" : "每日交易 \(tier.dailyTradeLimit!)次")
-                    benefitRow(icon: "house.fill", text: tier.dailyHarvestLimit == nil ? "无限次庇护所收益" : "每日庇护所收益 \(tier.dailyHarvestLimit!)次")
                     benefitRow(icon: "gift.fill", text: "每日专属礼包")
                     benefitRow(icon: "tag.fill", text: "专属呼号前缀")
 

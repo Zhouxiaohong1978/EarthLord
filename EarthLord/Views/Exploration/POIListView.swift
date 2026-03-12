@@ -23,6 +23,8 @@ extension POIType {
             return Color.yellow
         case .factory:
             return Color.gray
+        case .electronics:
+            return Color.blue
         case .pharmacy:
             return Color.purple
         case .gasStation:
@@ -49,6 +51,8 @@ extension POIType {
             return "fork.knife"
         case .factory:
             return "building.2.fill"
+        case .electronics:
+            return "cpu.fill"
         case .pharmacy:
             return "pills.fill"
         case .gasStation:
@@ -70,11 +74,12 @@ extension POIType {
 /// 筛选选项枚举
 enum POIFilterType: String, CaseIterable, Identifiable {
     case all = "全部"
-    case hospital = "医院"
+    case restaurant = "餐厅"
     case supermarket = "超市"
-    case factory = "工厂"
+    case hospital = "医院"
     case pharmacy = "药店"
     case gasStation = "加油站"
+    case electronics = "电子店"
 
     var id: String { rawValue }
 
@@ -85,11 +90,12 @@ enum POIFilterType: String, CaseIterable, Identifiable {
     var poiType: POIType? {
         switch self {
         case .all: return nil
-        case .hospital: return .hospital
+        case .restaurant: return .restaurant
         case .supermarket: return .supermarket
-        case .factory: return .factory
+        case .hospital: return .hospital
         case .pharmacy: return .pharmacy
         case .gasStation: return .gasStation
+        case .electronics: return .electronics
         }
     }
 }

@@ -55,6 +55,9 @@ struct MapViewRepresentable: UIViewRepresentable {
     /// 附近的POI列表
     var nearbyPOIs: [POI] = []
 
+    /// 已搜刮的POI ID集合（用于地图标记变灰）
+    var scavengedPOIIds: Set<UUID> = []
+
     // MARK: - 建筑显示属性
 
     /// 玩家建筑列表
@@ -464,24 +467,34 @@ struct MapViewRepresentable: UIViewRepresentable {
                 annotationView.annotation = annotation
                 annotationView.canShowCallout = true
 
-                // 应用 POI 类型的颜色
-                annotationView.markerTintColor = poiAnnotation.poi.type.uiColor
+                let isScavenged = parent.scavengedPOIIds.contains(poiAnnotation.poi.id)
 
-                // 设置自定义图标
-                let iconName = poiAnnotation.poi.type.icon
-                let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
-                annotationView.glyphImage = UIImage(systemName: iconName, withConfiguration: config)
-
-                // 根据 POI 状态调整显示优先级
-                switch poiAnnotation.poi.status {
-                case .hasResources:
-                    annotationView.displayPriority = .required
-                case .undiscovered, .discovered:
-                    annotationView.displayPriority = .defaultHigh
-                case .looted:
+                if isScavenged {
+                    // 已搜刮：灰色 + 打勾图标 + 低优先级
+                    annotationView.markerTintColor = .systemGray
+                    let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
+                    annotationView.glyphImage = UIImage(systemName: "checkmark", withConfiguration: config)
                     annotationView.displayPriority = .defaultLow
-                case .dangerous:
-                    annotationView.displayPriority = .required
+                } else {
+                    // 未搜刮：应用 POI 类型的颜色
+                    annotationView.markerTintColor = poiAnnotation.poi.type.uiColor
+
+                    // 设置自定义图标
+                    let iconName = poiAnnotation.poi.type.icon
+                    let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
+                    annotationView.glyphImage = UIImage(systemName: iconName, withConfiguration: config)
+
+                    // 根据 POI 状态调整显示优先级
+                    switch poiAnnotation.poi.status {
+                    case .hasResources:
+                        annotationView.displayPriority = .required
+                    case .undiscovered, .discovered:
+                        annotationView.displayPriority = .defaultHigh
+                    case .looted:
+                        annotationView.displayPriority = .defaultLow
+                    case .dangerous:
+                        annotationView.displayPriority = .required
+                    }
                 }
 
                 return annotationView

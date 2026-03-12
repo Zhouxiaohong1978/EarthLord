@@ -13,7 +13,7 @@ import CoreLocation
 
 /// POI 状态枚举
 /// 用于标记兴趣点的探索状态
-enum POIStatus: String, CaseIterable {
+enum POIStatus: String, CaseIterable, Codable {
     case undiscovered = "未发现"       // 玩家尚未到达该位置
     case discovered = "已发现"         // 玩家已到达但未搜索
     case hasResources = "有物资"       // 已搜索且发现了物资
@@ -23,13 +23,14 @@ enum POIStatus: String, CaseIterable {
 
 /// POI 类型枚举
 /// 定义不同类型的兴趣点
-enum POIType: String, CaseIterable {
+enum POIType: String, CaseIterable, Codable {
     case supermarket = "超市"
     case restaurant = "餐厅"
     case hospital = "医院"
     case gasStation = "加油站"
     case pharmacy = "药店"
     case factory = "工厂"
+    case electronics = "电子店"
     case warehouse = "仓库"
     case residential = "住宅区"
     case police = "警察局"
@@ -38,7 +39,7 @@ enum POIType: String, CaseIterable {
 
 /// POI 兴趣点模型
 /// 代表地图上的一个可探索地点
-struct POI: Identifiable {
+struct POI: Identifiable, Codable {
     let id: UUID
     let name: String                    // 地点名称
     let type: POIType                   // 地点类型
@@ -48,6 +49,11 @@ struct POI: Identifiable {
     let estimatedResources: [String]    // 预计可能存在的资源类型
     let dangerLevel: Int                // 危险等级 1-5
     let lastVisited: Date?              // 最后访问时间
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, type, latitude, longitude, status
+        case description, estimatedResources, dangerLevel, lastVisited
+    }
 
     init(
         id: UUID = UUID(),
@@ -70,6 +76,36 @@ struct POI: Identifiable {
         self.dangerLevel = dangerLevel
         self.lastVisited = lastVisited
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        type = try c.decode(POIType.self, forKey: .type)
+        let lat = try c.decode(Double.self, forKey: .latitude)
+        let lng = try c.decode(Double.self, forKey: .longitude)
+        coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+        status = try c.decode(POIStatus.self, forKey: .status)
+        description = try c.decode(String.self, forKey: .description)
+        estimatedResources = try c.decode([String].self, forKey: .estimatedResources)
+        dangerLevel = try c.decode(Int.self, forKey: .dangerLevel)
+        lastVisited = try c.decodeIfPresent(Date.self, forKey: .lastVisited)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(type, forKey: .type)
+        try c.encode(coordinate.latitude, forKey: .latitude)
+        try c.encode(coordinate.longitude, forKey: .longitude)
+        try c.encode(status, forKey: .status)
+        try c.encode(description, forKey: .description)
+        try c.encode(estimatedResources, forKey: .estimatedResources)
+        try c.encode(dangerLevel, forKey: .dangerLevel)
+        try c.encodeIfPresent(lastVisited, forKey: .lastVisited)
+    }
+
 }
 
 // MARK: - POI Type 扩展
@@ -100,6 +136,8 @@ extension POIType {
             return String(localized: "警察局")
         case .military:
             return String(localized: "军事设施")
+        case .electronics:
+            return String(localized: "电子店")
         }
     }
 
@@ -126,6 +164,8 @@ extension POIType {
             return .systemBlue
         case .military:
             return .systemYellow
+        case .electronics:
+            return .systemBlue
         }
     }
 }

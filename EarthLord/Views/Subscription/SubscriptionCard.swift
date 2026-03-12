@@ -101,16 +101,16 @@ struct SubscriptionCard: View {
                 benefitRow(icon: "map.fill", text: "探索范围 \(String(format: "%.0f", tier.explorationRadius))km")
                 benefitRow(icon: "building.2.fill", text: "建造速度 \(String(format: "%.0f", tier.buildSpeedMultiplier))倍")
 
+                if let explorationLimit = tier.dailyExplorationLimit {
+                    benefitRow(icon: "figure.walk", text: "探索次数 \(explorationLimit)次/天")
+                } else {
+                    benefitRow(icon: "figure.walk", text: "探索次数 无限", highlight: true)
+                }
+
                 if let tradeLimit = tier.dailyTradeLimit {
                     benefitRow(icon: "arrow.triangle.2.circlepath", text: "交易次数 \(tradeLimit)次/天")
                 } else {
                     benefitRow(icon: "arrow.triangle.2.circlepath", text: "交易次数 无限", highlight: true)
-                }
-
-                if let harvestLimit = tier.dailyHarvestLimit {
-                    benefitRow(icon: "house.fill", text: "庇护所收益 \(harvestLimit)次/天")
-                } else {
-                    benefitRow(icon: "house.fill", text: "庇护所收益 无限", highlight: true)
                 }
 
                 // 订阅用户专属权益

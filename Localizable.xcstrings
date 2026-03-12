@@ -2709,7 +2709,11 @@
         }
       }
     },
+    "上次探索" : {
+
+    },
     "上次探索完成" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2936,6 +2940,9 @@
           }
         }
       }
+    },
+    "个废墟" : {
+
     },
     "个性签名" : {
       "extractionState" : "stale",
@@ -3259,6 +3266,7 @@
       }
     },
     "今日剩余 %d/%d 次" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3305,6 +3313,9 @@
           }
         }
       }
+    },
+    "今日探索" : {
+
     },
     "今日礼包待领取" : {
       "localizations" : {
@@ -3935,6 +3946,7 @@
       }
     },
     "再次出发" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4352,7 +4364,11 @@
         }
       }
     },
+    "前往地图开始探索，发现附近可搜刮地点" : {
+
+    },
     "前往地图页开始探索，发现附近可搜刮地点" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5097,6 +5113,7 @@
       }
     },
     "发现 %d 个地点" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5714,6 +5731,7 @@
       }
     },
     "奖励等级" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6247,6 +6265,9 @@
         }
       }
     },
+    "已搜%d" : {
+
+    },
     "已搜刮" : {
       "localizations" : {
         "en" : {
@@ -6264,6 +6285,7 @@
       }
     },
     "已搜刮 %d" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6322,6 +6344,7 @@
       }
     },
     "已空" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6386,6 +6409,7 @@
       }
     },
     "已走 %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7241,6 +7265,7 @@
       }
     },
     "当前未在探索" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8824,6 +8849,9 @@
           }
         }
       }
+    },
+    "暂无废墟数据" : {
+
     },
     "暂无建筑" : {
       "localizations" : {
@@ -10443,6 +10471,9 @@
         }
       }
     },
+    "电子店" : {
+
+    },
     "留言" : {
       "localizations" : {
         "en" : {
@@ -11377,6 +11408,7 @@
       }
     },
     "继续行走，探索更远的区域" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12267,6 +12299,9 @@
           }
         }
       }
+    },
+    "该类型暂无废墟" : {
+
     },
     "该邮箱已注册" : {
       "localizations" : {
@@ -13823,6 +13858,7 @@
       }
     },
     "附近没有发现可搜刮地点" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

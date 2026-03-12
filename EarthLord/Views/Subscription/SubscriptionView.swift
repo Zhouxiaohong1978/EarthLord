@@ -314,8 +314,8 @@ struct SubscriptionView: View {
                 benefitRow(icon: "backpack.fill", text: "背包容量 100")
                 benefitRow(icon: "map.fill", text: "探索范围 1km")
                 benefitRow(icon: "building.2.fill", text: "建造速度 1倍")
+                benefitRow(icon: "figure.walk", text: "探索次数 10次/天")
                 benefitRow(icon: "arrow.triangle.2.circlepath", text: "交易次数 10次/天")
-                benefitRow(icon: "house.fill", text: "庇护所收益 10次/天")
             }
         }
         .padding(16)

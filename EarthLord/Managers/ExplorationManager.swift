@@ -102,8 +102,13 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     // MARK: - POI相关属性
 
-    /// 当前探索会话的POI列表
-    @Published var nearbyPOIs: [POI] = []
+    private static let nearbyPOIsKey = "exploration_nearby_pois"
+    private static let scavengedPOIIdsKey = "exploration_scavenged_ids"
+
+    /// 当前探索会话的POI列表（自动持久化）
+    @Published var nearbyPOIs: [POI] = [] {
+        didSet { savePOIsToDisk() }
+    }
 
     /// 当前接近的POI（触发弹窗）
     @Published var currentProximityPOI: POI?
@@ -111,8 +116,10 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 是否显示接近弹窗
     @Published var showProximityPopup: Bool = false
 
-    /// 已搜刮的POI ID集合（本次探索会话）
-    @Published var scavengedPOIIds: Set<UUID> = []
+    /// 已搜刮的POI ID集合（本次探索会话，自动持久化）
+    @Published var scavengedPOIIds: Set<UUID> = [] {
+        didSet { saveScavengedIdsToDisk() }
+    }
 
     /// 搜刮结果（用于展示给用户确认）
     @Published var scavengeResult: ScavengeResult?
@@ -178,6 +185,8 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     private override init() {
         super.init()
+        loadPOIsFromDisk()
+        loadScavengedIdsFromDisk()
         setupLocationManager()
     }
 
@@ -1004,7 +1013,10 @@ extension ExplorationManager {
             ("gas station", .gasStation),
             ("restaurant", .restaurant),
             ("cafe", .restaurant),
-            ("coffee", .restaurant)
+            ("coffee", .restaurant),
+            ("phone store", .electronics),
+            ("electronics store", .electronics),
+            ("mobile shop", .electronics)
         ] : [
             ("超市", .supermarket),
             ("便利店", .supermarket),
@@ -1015,7 +1027,10 @@ extension ExplorationManager {
             ("加油站", .gasStation),
             ("餐厅", .restaurant),
             ("饭店", .restaurant),
-            ("咖啡厅", .restaurant)
+            ("咖啡厅", .restaurant),
+            ("手机店", .electronics),
+            ("电器店", .electronics),
+            ("数码店", .electronics)
         ]
 
         var allResults: [POI] = []
@@ -1211,14 +1226,36 @@ extension ExplorationManager {
         logger.log("已创建 \(nearbyPOIs.count) 个地理围栏", type: .info)
     }
 
-    /// 清理所有地理围栏
+    // MARK: - 持久化
+
+    private func savePOIsToDisk() {
+        guard let data = try? JSONEncoder().encode(nearbyPOIs) else { return }
+        UserDefaults.standard.set(data, forKey: Self.nearbyPOIsKey)
+    }
+
+    private func loadPOIsFromDisk() {
+        guard let data = UserDefaults.standard.data(forKey: Self.nearbyPOIsKey),
+              let pois = try? JSONDecoder().decode([POI].self, from: data) else { return }
+        nearbyPOIs = pois
+    }
+
+    private func saveScavengedIdsToDisk() {
+        let strings = scavengedPOIIds.map { $0.uuidString }
+        UserDefaults.standard.set(strings, forKey: Self.scavengedPOIIdsKey)
+    }
+
+    private func loadScavengedIdsFromDisk() {
+        guard let strings = UserDefaults.standard.stringArray(forKey: Self.scavengedPOIIdsKey) else { return }
+        scavengedPOIIds = Set(strings.compactMap { UUID(uuidString: $0) })
+    }
+
+    /// 清理所有地理围栏（保留 nearbyPOIs 供列表展示）
     private func cleanupGeofences() {
         guard let locationManager = locationManager else { return }
 
         for region in locationManager.monitoredRegions {
             locationManager.stopMonitoring(for: region)
         }
-        nearbyPOIs.removeAll()
         logger.log("已清理地理围栏", type: .info)
     }
 
@@ -1364,6 +1401,12 @@ extension ExplorationManager {
                     ("汽油桶残液", "油桶底部还剩一点汽油，珍贵的燃料。", "material"),
                     ("便利店零食", "收银台后面藏着的零食，店员的私藏。", "food"),
                     ("打火机", "加油站纪念品打火机，居然还能用。", "tool")
+                ]
+            case .electronics:
+                return [
+                    ("电路板残片", "从废弃手机里拆下的电路板，里面还有可用的元件。", "material"),
+                    ("旧手机", "屏碎了但主板完好，能拆出不少有用的零件。", "material"),
+                    ("充电宝", "电量不足10%，但电芯还能用。", "tool")
                 ]
             case .police, .military:
                 return [

@@ -112,7 +112,8 @@ struct MapTabView: View {
                 explorationPath: explorationManager.explorationPathCoordinates,
                 explorationPathVersion: explorationManager.explorationPathVersion,
                 isExploring: explorationManager.isExploring,
-                nearbyPOIs: explorationManager.nearbyPOIs
+                nearbyPOIs: explorationManager.nearbyPOIs,
+                scavengedPOIIds: explorationManager.scavengedPOIIds
             )
             .ignoresSafeArea()
 
@@ -166,6 +167,7 @@ struct MapTabView: View {
                 // 底部控制栏
                 bottomControlBar
             }
+
 
             // MARK: 权限被拒绝时的提示卡片
             if locationManager.isDenied {

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 // MARK: - 危险等级配置
 
@@ -49,21 +50,25 @@ struct POIDetailView: View {
     /// 探索管理器
     @ObservedObject private var explorationManager = ExplorationManager.shared
 
-    /// 是否正在搜寻
-    @State private var isScavenging = false
-
-    // MARK: - 计算属性
-
-    /// POI 是否可以被搜寻（必须在探索中且未被搜刮过）
-    private var canScavenge: Bool {
-        explorationManager.isExploring && !explorationManager.scavengedPOIIds.contains(poi.id)
-    }
-
-    /// 距离（假数据，后续可从 ExplorationManager 计算）
-    private let distance: Int = 350
+    /// 位置管理器（用于计算真实距离）
+    @ObservedObject private var locationManager = LocationManager.shared
 
     /// 数据来源
     private let dataSource: String = "MapKit"
+
+    /// 实时距离（米）
+    private var realDistance: Int? {
+        guard let userCoord = locationManager.userLocation else { return nil }
+        let userLoc = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
+        let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
+        return Int(userLoc.distance(from: poiLoc))
+    }
+
+    /// 距离显示文字
+    private var distanceText: String {
+        guard let d = realDistance else { return "--" }
+        return d < 1000 ? "\(d) 米" : String(format: "%.1f 千米", Double(d) / 1000)
+    }
 
     // MARK: - Body
 
@@ -98,12 +103,6 @@ struct POIDetailView: View {
             .ignoresSafeArea(edges: .top)
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $explorationManager.showScavengeResult) {
-            if let scavengeResult = explorationManager.scavengeResult {
-                ScavengeResultSheet(result: scavengeResult)
-                    .presentationDetents([.large])
-            }
-        }
         .overlay(alignment: .topLeading) {
             // 返回按钮
             backButton
@@ -196,7 +195,7 @@ struct POIDetailView: View {
                 icon: "location.fill",
                 iconColor: ApocalypseTheme.primary,
                 title: LocalizedStringKey("距离"),
-                value: "\(distance) 米",
+                value: distanceText,
                 valueColor: ApocalypseTheme.textPrimary
             )
 
@@ -321,64 +320,40 @@ struct POIDetailView: View {
     // MARK: - 操作按钮区域
 
     private var actionSection: some View {
-        VStack(spacing: 14) {
-            // 主按钮：搜寻此POI
+        VStack(spacing: 12) {
+            // 主按钮：前往地图
             Button {
-                performScavenge()
+                NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
             } label: {
                 HStack(spacing: 10) {
-                    if isScavenging {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.9)
-                    } else {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-
-                    Text(isScavenging ? LocalizedStringKey("搜寻中...") : LocalizedStringKey("搜寻此地点"))
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                    Text(LocalizedStringKey("在地图中查看"))
                         .font(.system(size: 17, weight: .bold))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
                 .background(
-                    Group {
-                        if canScavenge {
-                            LinearGradient(
-                                colors: [ApocalypseTheme.primary, ApocalypseTheme.primaryDark],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        } else {
-                            Color.gray.opacity(0.5)
-                        }
-                    }
+                    LinearGradient(
+                        colors: [ApocalypseTheme.primary, ApocalypseTheme.primaryDark],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
                 )
                 .cornerRadius(14)
             }
-            .disabled(!canScavenge || isScavenging)
 
-            // 已搜刮提示
+            // 提示文字
             if explorationManager.scavengedPOIIds.contains(poi.id) {
                 Text(LocalizedStringKey("此地点已搜刮过"))
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textMuted)
-            } else if !explorationManager.isExploring {
-                Text(LocalizedStringKey("需要先开始探索才能搜刮"))
+            } else {
+                Text(LocalizedStringKey("走到50米范围内自动触发搜刮"))
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textMuted)
             }
-        }
-    }
-
-    /// 执行搜寻（调用真实的 AI 搜刮逻辑）
-    private func performScavenge() {
-        isScavenging = true
-
-        Task {
-            await explorationManager.scavengePOI(poi)
-            isScavenging = false
         }
     }
 }

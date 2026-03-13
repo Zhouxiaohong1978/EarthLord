@@ -265,9 +265,9 @@ struct MapTabView: View {
         .onReceive(explorationManager.$explorationState) { state in
             handleExplorationStateChange(state)
         }
-        // 日志查看器
+        // 日志查看器（显示圈地日志，崩溃后重启仍可查看）
         .sheet(isPresented: $showLogViewer) {
-            ExplorationLogView()
+            TerritoryLogView()
         }
         // 圈地规则说明 Sheet
         .sheet(isPresented: $showClaimingRules) {

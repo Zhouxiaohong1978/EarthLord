@@ -88,10 +88,16 @@ final class TerritoryLogger: ObservableObject {
         return formatter
     }()
 
+    /// 日志文件路径（持久化磁盘，崩溃后日志仍保留）
+    private let logFileURL: URL = {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return docs.appendingPathComponent("territory_crash_log.txt")
+    }()
+
     // MARK: - Initialization
 
     private init() {
-        // 私有初始化，确保单例
+        loadFromDisk()
     }
 
     // MARK: - Public Methods
@@ -113,12 +119,16 @@ final class TerritoryLogger: ObservableObject {
 
         // 更新格式化文本
         updateLogText()
+
+        // 追加写入磁盘（崩溃后仍可读）
+        appendToDisk(entry: entry)
     }
 
     /// 清空所有日志
     func clear() {
         logs.removeAll()
         logText = ""
+        try? FileManager.default.removeItem(at: logFileURL)
     }
 
     /// 导出日志为文本
@@ -153,5 +163,29 @@ final class TerritoryLogger: ObservableObject {
         }
 
         logText = text
+    }
+
+    /// 追加一条日志到磁盘文件
+    private func appendToDisk(entry: LogEntry) {
+        let timestamp = exportDateFormatter.string(from: entry.timestamp)
+        let line = "[\(timestamp)] [\(entry.type.rawValue)] \(entry.message)\n"
+        guard let data = line.data(using: .utf8) else { return }
+
+        if FileManager.default.fileExists(atPath: logFileURL.path) {
+            guard let fileHandle = try? FileHandle(forWritingTo: logFileURL) else { return }
+            fileHandle.seekToEndOfFile()
+            fileHandle.write(data)
+            try? fileHandle.close()
+        } else {
+            try? data.write(to: logFileURL, options: .atomic)
+        }
+    }
+
+    /// 启动时从磁盘加载上次的日志
+    private func loadFromDisk() {
+        guard let content = try? String(contentsOf: logFileURL, encoding: .utf8),
+              !content.isEmpty else { return }
+        // 直接恢复 logText，让用户打开日志页面时能看到崩溃前的记录
+        logText = "=== 上次运行日志（崩溃后恢复）===\n" + content + "\n=== 本次运行 ===\n"
     }
 }

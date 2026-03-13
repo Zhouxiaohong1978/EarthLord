@@ -123,7 +123,7 @@ struct MapViewRepresentable: UIViewRepresentable {
         drawTerritories(on: uiView, context: context)
 
         // 更新POI标记
-        updatePOIAnnotations(on: uiView)
+        updatePOIAnnotations(on: uiView, context: context)
 
         // 更新建筑标记
         updateBuildingAnnotations(on: uiView, context: context)
@@ -142,14 +142,17 @@ struct MapViewRepresentable: UIViewRepresentable {
         guard context.coordinator.lastPathVersion != pathUpdateVersion else { return }
         context.coordinator.lastPathVersion = pathUpdateVersion
 
-        // 移除旧的追踪覆盖层（保留领地多边形）
+        // 移除旧的追踪覆盖层（保留领地多边形和探索轨迹）
         let trackingOverlays = mapView.overlays.filter { overlay in
             // 保留领地多边形（有 title 为 "mine" 或 "others"）
             if let polygon = overlay as? MKPolygon {
                 return polygon.title != "mine" && polygon.title != "others"
             }
-            // 移除所有轨迹线
-            return overlay is MKPolyline
+            // 只移除圈地轨迹线，保留探索轨迹线（title == "exploration"）
+            if let polyline = overlay as? MKPolyline {
+                return polyline.title != "exploration"
+            }
+            return false
         }
         mapView.removeOverlays(trackingOverlays)
 
@@ -305,6 +308,12 @@ struct MapViewRepresentable: UIViewRepresentable {
 
         /// 上次建筑数量 - 避免重复绘制
         var lastBuildingsCount: Int = -1
+
+        /// 上次POI数量 - 避免重复更新
+        var lastPOICount: Int = -1
+
+        /// 上次已搜刮POI数量 - 避免重复更新
+        var lastScavengedCount: Int = -1
 
         init(_ parent: MapViewRepresentable) {
             self.parent = parent
@@ -523,7 +532,15 @@ struct MapViewRepresentable: UIViewRepresentable {
     // MARK: - POI标记管理
 
     /// 更新POI标记
-    private func updatePOIAnnotations(on mapView: MKMapView) {
+    private func updatePOIAnnotations(on mapView: MKMapView, context: Context) {
+        // 检查POI数量或搜刮数量是否变化，避免每次updateUIView都刷新标记
+        let currentPOICount = nearbyPOIs.count
+        let currentScavengedCount = scavengedPOIIds.count
+        guard context.coordinator.lastPOICount != currentPOICount ||
+              context.coordinator.lastScavengedCount != currentScavengedCount else { return }
+        context.coordinator.lastPOICount = currentPOICount
+        context.coordinator.lastScavengedCount = currentScavengedCount
+
         // 移除旧的POI标记
         let oldPOIAnnotations = mapView.annotations.filter { $0 is POIAnnotation }
         mapView.removeAnnotations(oldPOIAnnotations)

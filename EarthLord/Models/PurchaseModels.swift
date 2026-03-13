@@ -465,6 +465,15 @@ enum SubscriptionTier: String, Codable {
         case .lord:     return 7
         }
     }
+
+    // MARK: POI搜刮冷却时间（小时）— 免费24h，探索者12h，领主6h
+    var poiCooldownHours: Double {
+        switch self {
+        case .free:     return 24.0
+        case .explorer: return 12.0
+        case .lord:     return 6.0
+        }
+    }
 }
 
 // MARK: - 用户订阅状态

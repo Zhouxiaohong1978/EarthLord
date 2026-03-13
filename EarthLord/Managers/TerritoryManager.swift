@@ -634,7 +634,7 @@ final class TerritoryManager {
         // 3. 根据距离确定预警级别和消息
         let warningLevel: WarningLevel
         let message: String?
-        let distance = Int(minDistance)
+        let distance = minDistance.isFinite ? Int(minDistance) : 0
 
         if minDistance > 100 {
             warningLevel = .safe

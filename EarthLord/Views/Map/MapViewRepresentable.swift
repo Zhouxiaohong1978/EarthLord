@@ -55,8 +55,8 @@ struct MapViewRepresentable: UIViewRepresentable {
     /// 附近的POI列表
     var nearbyPOIs: [POI] = []
 
-    /// 已搜刮的POI ID集合（用于地图标记变灰）
-    var scavengedPOIIds: Set<UUID> = []
+    /// 冷却中的POI坐标Key集合（用于地图标记变灰）
+    var coolingDownPOIKeys: Set<String> = []
 
     // MARK: - 建筑显示属性
 
@@ -476,7 +476,8 @@ struct MapViewRepresentable: UIViewRepresentable {
                 annotationView.annotation = annotation
                 annotationView.canShowCallout = true
 
-                let isScavenged = parent.scavengedPOIIds.contains(poiAnnotation.poi.id)
+                let poiKey = ExplorationManager.shared.coordKey(for: poiAnnotation.poi.coordinate)
+                let isScavenged = parent.coolingDownPOIKeys.contains(poiKey)
 
                 if isScavenged {
                     // 已搜刮：灰色 + 打勾图标 + 低优先级
@@ -535,7 +536,7 @@ struct MapViewRepresentable: UIViewRepresentable {
     private func updatePOIAnnotations(on mapView: MKMapView, context: Context) {
         // 检查POI数量或搜刮数量是否变化，避免每次updateUIView都刷新标记
         let currentPOICount = nearbyPOIs.count
-        let currentScavengedCount = scavengedPOIIds.count
+        let currentScavengedCount = coolingDownPOIKeys.count
         guard context.coordinator.lastPOICount != currentPOICount ||
               context.coordinator.lastScavengedCount != currentScavengedCount else { return }
         context.coordinator.lastPOICount = currentPOICount

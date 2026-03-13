@@ -247,7 +247,7 @@ struct POIContentView: View {
         return pois
     }
 
-    private var scavengedCount: Int { explorationManager.scavengedPOIIds.count }
+    private var scavengedCount: Int { explorationManager.nearbyPOIs.filter { explorationManager.isCoolingDown($0) }.count }
 
     private func distanceString(for poi: POI) -> String? {
         guard let userCoord = locationManager.userLocation else { return nil }
@@ -498,7 +498,7 @@ struct POIContentView: View {
         ScrollView {
             LazyVStack(spacing: 10) {
                 ForEach(Array(sortedAndFilteredPOIs.enumerated()), id: \.element.id) { index, poi in
-                    let isScavenged = explorationManager.scavengedPOIIds.contains(poi.id)
+                    let isScavenged = explorationManager.isCoolingDown(poi)
                     NavigationLink(destination: POIDetailView(poi: poi)) {
                         POICardNew(poi: poi, isScavenged: isScavenged, distance: distanceString(for: poi))
                     }

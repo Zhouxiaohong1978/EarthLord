@@ -103,7 +103,7 @@ final class ExplorationManager: NSObject, ObservableObject {
     // MARK: - POI相关属性
 
     private static let nearbyPOIsKey = "exploration_nearby_pois"
-    private static let scavengedPOIIdsKey = "exploration_scavenged_ids"
+    private static let scavengedPOITimesKey = "exploration_scavenged_times"
 
     /// 当前探索会话的POI列表（自动持久化）
     @Published var nearbyPOIs: [POI] = [] {
@@ -116,9 +116,10 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 是否显示接近弹窗
     @Published var showProximityPopup: Bool = false
 
-    /// 已搜刮的POI ID集合（本次探索会话，自动持久化）
-    @Published var scavengedPOIIds: Set<UUID> = [] {
-        didSet { saveScavengedIdsToDisk() }
+    /// POI搜刮时间记录（坐标Key → 最后搜刮时间，跨会话持久化）
+    /// Key格式："lat,lon"（小数点后4位，约11米精度）
+    @Published var scavengedPOITimes: [String: Date] = [:] {
+        didSet { saveScavengedTimesToDisk() }
     }
 
     /// 搜刮结果（用于展示给用户确认）
@@ -186,7 +187,7 @@ final class ExplorationManager: NSObject, ObservableObject {
     private override init() {
         super.init()
         loadPOIsFromDisk()
-        loadScavengedIdsFromDisk()
+        loadScavengedTimesFromDisk()
         setupLocationManager()
     }
 
@@ -290,9 +291,8 @@ final class ExplorationManager: NSObject, ObservableObject {
         stopDurationTimer()
         cancelOverSpeedCountdown()
 
-        // 清理POI和地理围栏
+        // 清理POI和地理围栏（保留冷却记录，跨会话持久化）
         cleanupGeofences()
-        scavengedPOIIds.removeAll()
         currentProximityPOI = nil
         showProximityPopup = false
 
@@ -1092,8 +1092,8 @@ extension ExplorationManager {
             let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
             let distance = userLocation.distance(from: poiLocation)
 
-            // 只保留探索范围内的POI
-            guard distance <= explorationRadius else { continue }
+            // 只保留 500m ~ explorationRadius 范围内、且未在冷却中的POI
+            guard distance >= 500 && distance <= explorationRadius && !isCoolingDown(poi) else { continue }
 
             // 计算方位角（0°=正北，顺时针）
             let dx = poi.coordinate.longitude - center.longitude
@@ -1239,14 +1239,35 @@ extension ExplorationManager {
         nearbyPOIs = pois
     }
 
-    private func saveScavengedIdsToDisk() {
-        let strings = scavengedPOIIds.map { $0.uuidString }
-        UserDefaults.standard.set(strings, forKey: Self.scavengedPOIIdsKey)
+    private func saveScavengedTimesToDisk() {
+        let dict = scavengedPOITimes.mapValues { $0.timeIntervalSince1970 }
+        UserDefaults.standard.set(dict, forKey: Self.scavengedPOITimesKey)
     }
 
-    private func loadScavengedIdsFromDisk() {
-        guard let strings = UserDefaults.standard.stringArray(forKey: Self.scavengedPOIIdsKey) else { return }
-        scavengedPOIIds = Set(strings.compactMap { UUID(uuidString: $0) })
+    private func loadScavengedTimesFromDisk() {
+        guard let dict = UserDefaults.standard.dictionary(forKey: Self.scavengedPOITimesKey) as? [String: Double] else { return }
+        scavengedPOITimes = dict.mapValues { Date(timeIntervalSince1970: $0) }
+    }
+
+    /// POI坐标Key（用于跨会话稳定识别同一物理地点）
+    func coordKey(for coordinate: CLLocationCoordinate2D) -> String {
+        String(format: "%.4f,%.4f", coordinate.latitude, coordinate.longitude)
+    }
+
+    /// 判断某POI是否处于冷却中
+    func isCoolingDown(_ poi: POI) -> Bool {
+        let key = coordKey(for: poi.coordinate)
+        guard let lastTime = scavengedPOITimes[key] else { return false }
+        let cooldownSeconds = SubscriptionManager.shared.currentTier.poiCooldownHours * 3600
+        return Date().timeIntervalSince(lastTime) < cooldownSeconds
+    }
+
+    /// 返回某POI的冷却剩余秒数（0表示已就绪）
+    func cooldownRemaining(_ poi: POI) -> TimeInterval {
+        let key = coordKey(for: poi.coordinate)
+        guard let lastTime = scavengedPOITimes[key] else { return 0 }
+        let cooldownSeconds = SubscriptionManager.shared.currentTier.poiCooldownHours * 3600
+        return max(0, cooldownSeconds - Date().timeIntervalSince(lastTime))
     }
 
     /// 清理所有地理围栏（保留 nearbyPOIs 供列表展示）
@@ -1264,7 +1285,7 @@ extension ExplorationManager {
     private func handlePOIProximity(regionId: String) {
         guard let poiId = UUID(uuidString: regionId),
               let poi = nearbyPOIs.first(where: { $0.id == poiId }),
-              !scavengedPOIIds.contains(poiId) else {
+              !isCoolingDown(poi) else {
             return
         }
 
@@ -1284,8 +1305,8 @@ extension ExplorationManager {
         let userLocationGCJ02 = CLLocation(latitude: gcj02Coord.latitude, longitude: gcj02Coord.longitude)
 
         for poi in nearbyPOIs {
-            // 跳过已搜刮的POI
-            guard !scavengedPOIIds.contains(poi.id) else { continue }
+            // 跳过冷却中的POI
+            guard !isCoolingDown(poi) else { continue }
 
             let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
             let distance = userLocationGCJ02.distance(from: poiLocation)
@@ -1302,7 +1323,8 @@ extension ExplorationManager {
     func scavengePOI(_ poi: POI) async {
         logger.log("开始搜刮: \(poi.name), 危险等级: \(poi.dangerLevel)", type: .info)
 
-        scavengedPOIIds.insert(poi.id)
+        // 以坐标为Key记录搜刮时间，跨会话持久化
+        scavengedPOITimes[coordKey(for: poi.coordinate)] = Date()
 
         let itemCount = Int.random(in: 1...3)
         var aiItems: [AIGeneratedItem] = []

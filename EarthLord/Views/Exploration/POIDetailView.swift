@@ -345,10 +345,13 @@ struct POIDetailView: View {
             }
 
             // 提示文字
-            if explorationManager.scavengedPOIIds.contains(poi.id) {
-                Text(LocalizedStringKey("此地点已搜刮过"))
+            if explorationManager.isCoolingDown(poi) {
+                let remaining = explorationManager.cooldownRemaining(poi)
+                let hours = Int(remaining) / 3600
+                let minutes = (Int(remaining) % 3600) / 60
+                Text("冷却中 · 剩余 \(hours)h \(minutes)m")
                     .font(.system(size: 13))
-                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .foregroundColor(ApocalypseTheme.warning)
             } else {
                 Text(LocalizedStringKey("走到50米范围内自动触发搜刮"))
                     .font(.system(size: 13))

@@ -441,6 +441,9 @@
         }
       }
     },
+    "%lld 条" : {
+
+    },
     "%lld 条日志" : {
       "localizations" : {
         "en" : {
@@ -3994,6 +3997,16 @@
         }
       }
     },
+    "冷却中 · 剩余 %lldh %lldm" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "冷却中 · 剩余 %1$lldh %2$lldm"
+          }
+        }
+      }
+    },
     "出售" : {
       "localizations" : {
         "en" : {
@@ -4074,6 +4087,9 @@
           }
         }
       }
+    },
+    "分享日志文件" : {
+
     },
     "分钟" : {
       "localizations" : {
@@ -5527,6 +5543,9 @@
         }
       }
     },
+    "圈地日志" : {
+
+    },
     "圈地测试" : {
       "localizations" : {
         "en" : {
@@ -5568,6 +5587,9 @@
           }
         }
       }
+    },
+    "在地图中查看" : {
+
     },
     "地区" : {
       "localizations" : {
@@ -8332,6 +8354,7 @@
       }
     },
     "搜寻中..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8365,6 +8388,7 @@
       }
     },
     "搜寻此地点" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9506,6 +9530,7 @@
       }
     },
     "此地点已搜刮过" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12859,6 +12884,9 @@
         }
       }
     },
+    "走到50米范围内自动触发搜刮" : {
+
+    },
     "起始点" : {
       "localizations" : {
         "en" : {
@@ -13925,6 +13953,7 @@
       }
     },
     "需要先开始探索才能搜刮" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

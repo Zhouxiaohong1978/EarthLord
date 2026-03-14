@@ -435,8 +435,9 @@ struct MapTabView: View {
         .padding(.top, 8)
         .transition(.move(edge: .top).combined(with: .opacity))
         .onAppear {
-            // 3 秒后自动消失
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            // 自动停止提示显示 6 秒，普通警告显示 3 秒
+            let delay: TimeInterval = (locationManager.speedWarning == "速度过快，圈地已自动停止") ? 6 : 3
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 withAnimation {
                     locationManager.speedWarning = nil
                 }

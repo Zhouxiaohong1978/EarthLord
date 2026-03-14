@@ -107,11 +107,17 @@ final class LocationManager: NSObject, ObservableObject {
     /// 正常多边形应 > 25%，圆形约 78.5%，正方形 100%
     private let minimumCompactnessRatio: Double = 25.0
 
-    /// 速度警告阈值（km/h）- 超过此值提醒放慢
-    private let speedWarningThreshold: Double = 20.0
+    /// 速度警告阈值（km/h）- 超过此值提醒放慢，但继续记录
+    private let speedWarningThreshold: Double = 15.0
 
-    /// 速度暂停阈值（km/h）- 超过此值停止追踪（防止开车圈地）
-    private let speedPauseThreshold: Double = 30.0
+    /// 速度暂停阈值（km/h）- 超过此值跳过采点并计入超速次数
+    private let speedPauseThreshold: Double = 20.0
+
+    /// 连续超速次数达到此值时自动停止圈地
+    private let consecutiveOverspeedLimit: Int = 3
+
+    /// 当前连续超速计数
+    private var consecutiveOverspeedCount: Int = 0
 
 
     // MARK: - Computed Properties
@@ -208,6 +214,9 @@ final class LocationManager: NSObject, ObservableObject {
 
         // 清除之前的路径
         clearPath()
+
+        // 重置超速计数
+        consecutiveOverspeedCount = 0
 
         // 标记开始追踪
         isTracking = true
@@ -413,25 +422,36 @@ final class LocationManager: NSObject, ObservableObject {
         // 每次调用都更新时间戳，保证下次时间差是两次速度检测之间的间隔
         lastLocationTimestamp = newLocation.timestamp
 
-        // 清除之前的警告
+        // 速度正常：清除警告，重置超速计数
         if speedKmh < speedWarningThreshold {
             speedWarning = nil
             isOverSpeed = false
+            consecutiveOverspeedCount = 0
         }
 
-        // 超速：跳过该点不记录，但追踪继续（不调用 stopPathTracking）
+        // 超速：跳过该点，连续超速达到阈值则自动停止圈地
         if speedKmh > speedPauseThreshold {
-            speedWarning = "移动速度过快 (\(String(format: "%.1f", speedKmh)) km/h)，请放慢速度"
+            consecutiveOverspeedCount += 1
             isOverSpeed = true
-            print("⚠️ 速度超限：\(String(format: "%.1f", speedKmh)) km/h，跳过该点")
-            TerritoryLogger.shared.log("超速 \(String(format: "%.1f", speedKmh)) km/h，跳过该点（追踪继续）", type: .warning)
+            print("⚠️ 速度超限：\(String(format: "%.1f", speedKmh)) km/h，连续第 \(consecutiveOverspeedCount) 次")
+            TerritoryLogger.shared.log("超速 \(String(format: "%.1f", speedKmh)) km/h，连续第 \(consecutiveOverspeedCount) 次", type: .warning)
+
+            if consecutiveOverspeedCount >= consecutiveOverspeedLimit {
+                // 连续超速判定为骑行，自动停止并清除路径
+                speedWarning = "速度过快，圈地已自动停止"
+                stopPathTracking(clearAllState: true)
+                TerritoryLogger.shared.log("连续超速 \(consecutiveOverspeedCount) 次，自动停止圈地", type: .error)
+            } else {
+                speedWarning = "移动速度过快 (\(String(format: "%.1f", speedKmh)) km/h)，请放慢速度"
+            }
             return false
         }
 
-        // 速度较快：警告但继续记录
+        // 速度较快：警告但继续记录，重置超速计数（未达暂停阈值）
         if speedKmh > speedWarningThreshold {
             speedWarning = "移动速度较快 (\(String(format: "%.1f", speedKmh)) km/h)，请放慢速度"
             isOverSpeed = true
+            consecutiveOverspeedCount = 0
             TerritoryLogger.shared.log("速度较快 \(String(format: "%.1f", speedKmh)) km/h", type: .warning)
             return true
         }

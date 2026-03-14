@@ -403,8 +403,56 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
     }
 
     /// 转换为 ObtainedItem（用于保存到背包）
+    /// 注意：itemId 必须映射到数据库合法值，不能直接用 AI 生成的 name
     func toObtainedItem() -> ObtainedItem {
-        return ObtainedItem(itemId: name, quantity: quantity, quality: quality)
+        return ObtainedItem(itemId: mappedItemId, quantity: quantity, quality: quality)
+    }
+
+    /// 根据 category + rarity 映射到数据库合法的 item_id
+    private var mappedItemId: String {
+        switch category {
+        case "water":
+            return "water_bottle"
+        case "food":
+            switch rarity {
+            case "common": return "canned_food"
+            default: return "bread"
+            }
+        case "medical":
+            switch rarity {
+            case "common": return "bandage"
+            case "uncommon": return "medicine"
+            case "rare": return "first_aid_kit"
+            default: return "antibiotics"
+            }
+        case "material":
+            switch rarity {
+            case "common": return "stone"
+            case "uncommon": return "scrap_metal"
+            case "rare": return "fuel"
+            case "epic": return "electronic_component"
+            default: return "satellite_module"
+            }
+        case "tool":
+            switch rarity {
+            case "rare": return "toolbox"
+            case "epic", "legendary": return "equipment_rare"
+            default: return "tool"
+            }
+        case "weapon", "clothing":
+            switch rarity {
+            case "rare", "epic", "legendary": return "equipment_rare"
+            default: return "cloth"
+            }
+        default:
+            switch rarity {
+            case "common": return "wood"
+            case "uncommon": return "rope"
+            case "rare": return "blueprint_basic"
+            case "epic": return "scavenge_pass"
+            default: return "blueprint_epic"
+            }
+        }
     }
 }
 

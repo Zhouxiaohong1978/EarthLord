@@ -365,6 +365,12 @@ final class ExplorationManager: NSObject, ObservableObject {
         cancelOverSpeedCountdown()
         stopDurationTimer()
 
+        // 清除旧POI列表和地理围栏，新探索从当前位置重新加载
+        nearbyPOIs.removeAll()
+        cleanupGeofences()
+        currentProximityPOI = nil
+        showProximityPopup = false
+
         logger.log("探索状态已重置", type: .info)
     }
 
@@ -1283,6 +1289,10 @@ extension ExplorationManager {
     /// 处理进入POI范围
     @MainActor
     private func handlePOIProximity(regionId: String) {
+        guard totalDistance >= 500 else {
+            logger.log("本次探索距离不足500m（\(String(format: "%.0f", totalDistance))m），暂不触发POI搜刮", type: .info)
+            return
+        }
         guard let poiId = UUID(uuidString: regionId),
               let poi = nearbyPOIs.first(where: { $0.id == poiId }),
               !isCoolingDown(poi) else {
@@ -1469,6 +1479,11 @@ extension ExplorationManager {
         // 将 AIGeneratedItem 转换为 ObtainedItem
         let obtainedItems = result.items.map { $0.toObtainedItem() }
         await saveRewardsToInventory(items: obtainedItems, sessionId: result.sessionId)
+
+        // 立即将该POI状态更新为已搜空（地图上马上变灰，无需等待重新加载）
+        if let index = nearbyPOIs.firstIndex(where: { $0.id == result.poi.id }) {
+            nearbyPOIs[index].status = .looted
+        }
 
         // 清除搜刮结果
         scavengeResult = nil

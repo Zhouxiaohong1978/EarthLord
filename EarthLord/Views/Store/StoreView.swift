@@ -91,6 +91,9 @@ struct StoreView: View {
                 // 顶部提示
                 infoCard
 
+                // Slogan
+                sloganBanner
+
                 // 物资包列表
                 ForEach(purchaseManager.availableProducts, id: \.id) { product in
                     SupplyPackCard(product: product) {
@@ -101,6 +104,22 @@ struct StoreView: View {
             }
             .padding(16)
         }
+    }
+
+    // MARK: - Slogan 横幅
+    private var sloganBanner: some View {
+        Text("store.slogan")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(ApocalypseTheme.textPrimary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(ApocalypseTheme.primary.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(ApocalypseTheme.primary.opacity(0.25), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - 提示卡片

@@ -182,7 +182,7 @@ struct SupplyPackCard: View {
 
                 // 特色说明（随系统语言）
                 if !t.taglineKey.isEmpty {
-                    Text(String(localized: String.LocalizationValue(t.taglineKey)))
+                    Text(LocalizedStringKey(t.taglineKey))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.70))
                         .lineLimit(2)
@@ -288,7 +288,7 @@ struct ThemedItemRow: View {
                 .foregroundColor(accentColor)
                 .frame(width: 18)
 
-            Text(itemId.localizedItemName)
+            Text(LocalizedStringKey("item.\(itemId)"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 

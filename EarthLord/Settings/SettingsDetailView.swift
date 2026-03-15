@@ -130,7 +130,7 @@ struct SettingsDetailView: View {
             }
             .scrollContentBackground(.hidden)
         }
-        .navigationTitle(String(localized: "settings.title"))
+        .navigationTitle(Text("settings.title"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .sheet(isPresented: $showOnboarding) {
@@ -138,9 +138,9 @@ struct SettingsDetailView: View {
                 showOnboarding = false
             }
         }
-        .alert(String(localized: "settings.logout.confirm.title"), isPresented: $showLogoutAlert) {
+        .alert(Text("settings.logout.confirm.title"), isPresented: $showLogoutAlert) {
             Button("取消", role: .cancel) { }
-            Button(String(localized: "settings.logout.confirm.button"), role: .destructive) {
+            Button("settings.logout.confirm.button", role: .destructive) {
                 Task { await authManager.signOut() }
             }
         } message: {
@@ -149,7 +149,7 @@ struct SettingsDetailView: View {
         .sheet(isPresented: $showDeleteAccountSheet) {
             deleteAccountConfirmationView
         }
-        .alert(String(localized: "settings.delete.fail.title"), isPresented: $showDeleteError) {
+        .alert(Text("settings.delete.fail.title"), isPresented: $showDeleteError) {
             Button("确定", role: .cancel) { }
         } message: {
             Text(deleteErrorMessage ?? String(localized: "error.unknown"))
@@ -195,11 +195,12 @@ struct SettingsDetailView: View {
                             Spacer()
                             if !deleteConfirmationText.isEmpty {
                                 let trimmed = deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines)
-                                Image(systemName: trimmed == String(localized: "settings.delete.confirm.word") ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundColor(trimmed == String(localized: "settings.delete.confirm.word") ? ApocalypseTheme.success : ApocalypseTheme.danger)
+                                let confirmWord = deleteConfirmWord
+                                Image(systemName: trimmed == confirmWord ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(trimmed == confirmWord ? ApocalypseTheme.success : ApocalypseTheme.danger)
                             }
                         }
-                        TextField(String(localized: "settings.delete.confirm.word"), text: $deleteConfirmationText)
+                        TextField(deleteConfirmWord, text: $deleteConfirmationText)
                             .font(.body)
                             .foregroundColor(ApocalypseTheme.textPrimary)
                             .padding()
@@ -249,7 +250,7 @@ struct SettingsDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 30)
             }
-            .navigationTitle(String(localized: "settings.delete.nav.title"))
+            .navigationTitle(Text("settings.delete.nav.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -276,12 +277,17 @@ struct SettingsDetailView: View {
         }
     }
 
-    private var isDeleteButtonEnabled: Bool {
-        deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines) == String(localized: "settings.delete.confirm.word")
+    private var isDeleteConfirmWordMatched: Bool {
+        let trimmed = deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed == "删除" || trimmed.lowercased() == "delete"
     }
 
+    private var deleteConfirmWord: String { "Delete / 删除" }
+
+    private var isDeleteButtonEnabled: Bool { isDeleteConfirmWordMatched }
+
     private func performDeleteAccount() async {
-        guard deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines) == String(localized: "settings.delete.confirm.word") else { return }
+        guard isDeleteConfirmWordMatched else { return }
         isDeletingAccount = true
         do {
             try await authManager.deleteAccount()

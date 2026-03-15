@@ -39,13 +39,15 @@ struct StoreView: View {
                 productsView
             }
         }
-        .navigationTitle(String(localized: "store.title"))
+        .navigationTitle(Text("store.title"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(String(localized: "store.close")) { dismiss() }
-                    .foregroundColor(ApocalypseTheme.primary)
+                Button { dismiss() } label: {
+                    Text("store.close")
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
             }
         }
         .sheet(isPresented: $showingPurchaseConfirm) {

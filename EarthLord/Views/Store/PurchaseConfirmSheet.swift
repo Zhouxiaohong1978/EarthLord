@@ -65,16 +65,28 @@ struct PurchaseConfirmSheet: View {
 
                     // 产品信息
                     VStack(spacing: 8) {
-                        Text(packNameKey.isEmpty ? product.displayName : LocalizedStringKey(packNameKey))
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(ApocalypseTheme.textPrimary)
+                        Group {
+                            if packNameKey.isEmpty {
+                                Text(product.displayName)
+                            } else {
+                                Text(LocalizedStringKey(packNameKey))
+                            }
+                        }
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
 
-                        Text(packDescKey.isEmpty ? product.description : LocalizedStringKey(packDescKey))
-                            .font(.subheadline)
-                            .foregroundColor(ApocalypseTheme.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
+                        Group {
+                            if packDescKey.isEmpty {
+                                Text(product.description)
+                            } else {
+                                Text(LocalizedStringKey(packDescKey))
+                            }
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
                     }
 
                     // 价格

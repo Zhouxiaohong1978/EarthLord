@@ -176,9 +176,15 @@ struct SupplyPackCard: View {
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(t.accentColor)
 
-                    Text(t.nameKey.isEmpty ? product.displayName : LocalizedStringKey(t.nameKey))
-                        .font(.system(size: 22, weight: .black))
-                        .foregroundColor(.white)
+                    Group {
+                        if t.nameKey.isEmpty {
+                            Text(product.displayName)
+                        } else {
+                            Text(LocalizedStringKey(t.nameKey))
+                        }
+                    }
+                    .font(.system(size: 22, weight: .black))
+                    .foregroundColor(.white)
                 }
 
                 // 价格

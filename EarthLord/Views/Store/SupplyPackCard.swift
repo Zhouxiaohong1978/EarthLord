@@ -18,7 +18,8 @@ private struct PackTheme {
     let badgeIcon: String
     let tierLabel: String
     let tierLabelColor: Color
-    let taglineKey: String    // 本地化 key，随系统语言切换
+    let nameKey: String       // 礼包名本地化 key
+    let taglineKey: String    // 特色说明本地化 key
 }
 
 private func theme(for productId: String) -> PackTheme {
@@ -35,6 +36,7 @@ private func theme(for productId: String) -> PackTheme {
             badgeIcon: "🌿",
             tierLabel: "TIER 1",
             tierLabelColor: Color(red: 0.29, green: 0.69, blue: 0.31),
+            nameKey: "pack.survivor.name",
             taglineKey: "pack.survivor.tagline"
         )
     case "com.earthlord.constructor_pack":
@@ -49,6 +51,7 @@ private func theme(for productId: String) -> PackTheme {
             badgeIcon: "🔨",
             tierLabel: "TIER 2",
             tierLabelColor: Color(red: 0.95, green: 0.62, blue: 0.12),
+            nameKey: "pack.constructor.name",
             taglineKey: "pack.constructor.tagline"
         )
     case "com.earthlord.engineer_pack":
@@ -63,6 +66,7 @@ private func theme(for productId: String) -> PackTheme {
             badgeIcon: "⚡️",
             tierLabel: "TIER 3",
             tierLabelColor: Color(red: 0.05, green: 0.74, blue: 0.95),
+            nameKey: "pack.engineer.name",
             taglineKey: "pack.engineer.tagline"
         )
     case "com.earthlord.rare_pack":
@@ -77,6 +81,7 @@ private func theme(for productId: String) -> PackTheme {
             badgeIcon: "👑",
             tierLabel: "LEGENDARY",
             tierLabelColor: Color(red: 1.00, green: 0.84, blue: 0.20),
+            nameKey: "pack.rare.name",
             taglineKey: "pack.rare.tagline"
         )
     default:
@@ -88,6 +93,7 @@ private func theme(for productId: String) -> PackTheme {
             badgeIcon: "📦",
             tierLabel: "PACK",
             tierLabelColor: ApocalypseTheme.primary,
+            nameKey: "",
             taglineKey: ""
         )
     }
@@ -170,7 +176,7 @@ struct SupplyPackCard: View {
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(t.accentColor)
 
-                    Text(product.displayName)
+                    Text(t.nameKey.isEmpty ? product.displayName : LocalizedStringKey(t.nameKey))
                         .font(.system(size: 22, weight: .black))
                         .foregroundColor(.white)
                 }

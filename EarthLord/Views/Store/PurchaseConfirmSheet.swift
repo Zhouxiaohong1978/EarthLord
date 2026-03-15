@@ -23,6 +23,28 @@ struct PurchaseConfirmSheet: View {
         return SupplyPackConfig.all[packProduct]
     }
 
+    // 礼包名本地化 key
+    private var packNameKey: String {
+        switch product.id {
+        case "com.earthlord.survivor_pack":    return "pack.survivor.name"
+        case "com.earthlord.constructor_pack": return "pack.constructor.name"
+        case "com.earthlord.engineer_pack":    return "pack.engineer.name"
+        case "com.earthlord.rare_pack":        return "pack.rare.name"
+        default: return ""
+        }
+    }
+
+    // 礼包描述本地化 key
+    private var packDescKey: String {
+        switch product.id {
+        case "com.earthlord.survivor_pack":    return "pack.survivor.desc"
+        case "com.earthlord.constructor_pack": return "pack.constructor.desc"
+        case "com.earthlord.engineer_pack":    return "pack.engineer.desc"
+        case "com.earthlord.rare_pack":        return "pack.rare.desc"
+        default: return ""
+        }
+    }
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -43,12 +65,12 @@ struct PurchaseConfirmSheet: View {
 
                     // 产品信息
                     VStack(spacing: 8) {
-                        Text(product.displayName)
+                        Text(packNameKey.isEmpty ? product.displayName : LocalizedStringKey(packNameKey))
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(ApocalypseTheme.textPrimary)
 
-                        Text(product.description)
+                        Text(packDescKey.isEmpty ? product.description : LocalizedStringKey(packDescKey))
                             .font(.subheadline)
                             .foregroundColor(ApocalypseTheme.textSecondary)
                             .multilineTextAlignment(.center)

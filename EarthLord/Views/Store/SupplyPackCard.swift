@@ -288,7 +288,7 @@ struct ThemedItemRow: View {
                 .foregroundColor(accentColor)
                 .frame(width: 18)
 
-            Text(LocalizedStringKey("item.\(itemId)"))
+            Text(LocalizedStringKey("item." + itemId))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 

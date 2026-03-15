@@ -84,7 +84,7 @@ struct PurchaseConfirmSheet: View {
                                         HStack(spacing: 8) {
                                             Image(systemName: "checkmark.circle.fill")
                                                 .foregroundColor(.green)
-                                            Text(LocalizedStringKey("item.\(item.itemId)"))
+                                            Text(LocalizedStringKey("item." + item.itemId))
                                                 .font(.subheadline)
                                                 .foregroundColor(ApocalypseTheme.textPrimary)
                                             + Text(" ×\(item.quantity)")
@@ -101,7 +101,7 @@ struct PurchaseConfirmSheet: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "star.circle.fill")
                                                     .foregroundColor(.orange)
-                                                Text(LocalizedStringKey("item.\(bonus.item.itemId)"))
+                                                Text(LocalizedStringKey("item." + bonus.item.itemId))
                                                     .font(.subheadline)
                                                     .foregroundColor(ApocalypseTheme.textPrimary)
                                                 + Text(" ×\(bonus.item.quantity)")

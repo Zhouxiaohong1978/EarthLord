@@ -103,7 +103,7 @@
     "_failTransactionsEnabled" : false,
     "_locale" : "en_US",
     "_renewalBillingIssuesEnabled" : false,
-    "_storefront" : "USA",
+    "_storefront" : "CHN",
     "_storeKitError" : 0,
     "_storeKitErrors" : [
       {

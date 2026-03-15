@@ -67,7 +67,7 @@ struct POIDetailView: View {
     /// 距离显示文字
     private var distanceText: String {
         guard let d = realDistance else { return "--" }
-        return d < 1000 ? "\(d) 米" : String(format: "%.1f 千米", Double(d) / 1000)
+        return d < 1000 ? "\(d) \(String(localized: "unit.meters"))" : String(format: "%.1f \(String(localized: "unit.km"))", Double(d) / 1000)
     }
 
     // MARK: - Body

@@ -94,13 +94,13 @@ struct TerritoryTabView: View {
                 }
             } message: {
                 if let territory = territoryToDelete {
-                    Text("确定要删除这块 \(String(format: "%.0f", territory.area)) m² 的领地吗？此操作无法撤销。")
+                    Text(String(format: String(localized: "territory.delete.confirm"), territory.area))
                 }
             }
             .alert("错误", isPresented: $showError) {
                 Button("确定", role: .cancel) {}
             } message: {
-                Text(errorMessage ?? "未知错误")
+                Text(errorMessage ?? String(localized: "error.unknown"))
             }
         }
     }

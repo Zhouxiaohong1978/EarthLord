@@ -43,7 +43,7 @@ struct SettingsDetailView: View {
                             Image(systemName: "globe")
                                 .foregroundColor(ApocalypseTheme.info)
                                 .frame(width: 30)
-                            Text("语言")
+                            Text("settings.language")
                                 .foregroundColor(ApocalypseTheme.textPrimary)
 
                             Spacer()
@@ -65,7 +65,7 @@ struct SettingsDetailView: View {
                             Image(systemName: "book.fill")
                                 .foregroundColor(ApocalypseTheme.info)
                                 .frame(width: 30)
-                            Text("新手教程")
+                            Text("settings.tutorial")
                                 .foregroundColor(ApocalypseTheme.textPrimary)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -86,7 +86,7 @@ struct SettingsDetailView: View {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
                                 .foregroundColor(ApocalypseTheme.warning)
                                 .frame(width: 30)
-                            Text("退出登录")
+                            Text("settings.logout")
                                 .foregroundColor(ApocalypseTheme.textPrimary)
                         }
                     }
@@ -100,37 +100,37 @@ struct SettingsDetailView: View {
                             Image(systemName: "trash.fill")
                                 .foregroundColor(ApocalypseTheme.danger)
                                 .frame(width: 30)
-                            Text("删除账户")
+                            Text("settings.delete.account")
                                 .foregroundColor(ApocalypseTheme.danger)
                         }
                     }
                     .listRowBackground(ApocalypseTheme.cardBackground)
                 } header: {
-                    Text("账号")
+                    Text("settings.section.account")
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
 
                 // 支持与隐私
                 Section {
                     Link(destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/support.html")!) {
-                        Text("技术支持")
+                        Text("settings.support")
                             .foregroundColor(ApocalypseTheme.textPrimary)
                     }
                     .listRowBackground(ApocalypseTheme.cardBackground)
 
                     Link(destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/privacy.html")!) {
-                        Text("隐私政策")
+                        Text("settings.privacy")
                             .foregroundColor(ApocalypseTheme.textPrimary)
                     }
                     .listRowBackground(ApocalypseTheme.cardBackground)
                 } header: {
-                    Text("支持与隐私")
+                    Text("settings.section.support")
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
             }
             .scrollContentBackground(.hidden)
         }
-        .navigationTitle("设置")
+        .navigationTitle(String(localized: "settings.title"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .sheet(isPresented: $showOnboarding) {
@@ -138,21 +138,21 @@ struct SettingsDetailView: View {
                 showOnboarding = false
             }
         }
-        .alert("确认退出", isPresented: $showLogoutAlert) {
+        .alert(String(localized: "settings.logout.confirm.title"), isPresented: $showLogoutAlert) {
             Button("取消", role: .cancel) { }
-            Button("退出", role: .destructive) {
+            Button(String(localized: "settings.logout.confirm.button"), role: .destructive) {
                 Task { await authManager.signOut() }
             }
         } message: {
-            Text("确定要退出登录吗？")
+            Text("settings.logout.confirm.message")
         }
         .sheet(isPresented: $showDeleteAccountSheet) {
             deleteAccountConfirmationView
         }
-        .alert("删除失败", isPresented: $showDeleteError) {
+        .alert(String(localized: "settings.delete.fail.title"), isPresented: $showDeleteError) {
             Button("确定", role: .cancel) { }
         } message: {
-            Text(deleteErrorMessage ?? "未知错误")
+            Text(deleteErrorMessage ?? String(localized: "error.unknown"))
         }
     }
 
@@ -169,18 +169,18 @@ struct SettingsDetailView: View {
                         .foregroundColor(ApocalypseTheme.danger)
                         .padding(.top, 40)
 
-                    Text("永久删除账户")
+                    Text("settings.delete.permanent.title")
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("此操作将：")
+                        Text("settings.delete.warning.header")
                             .font(.headline)
                             .foregroundColor(ApocalypseTheme.textPrimary)
-                        warningItem(text: "永久删除您的账户和所有数据")
-                        warningItem(text: "删除您的个人信息和设置")
-                        warningItem(text: "此操作不可撤销")
+                        warningItem(text: String(localized: "settings.delete.warning.1"))
+                        warningItem(text: String(localized: "settings.delete.warning.2"))
+                        warningItem(text: String(localized: "settings.delete.warning.3"))
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -189,17 +189,17 @@ struct SettingsDetailView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("请输入「删除」以确认")
+                            Text("settings.delete.confirm.hint")
                                 .font(.subheadline)
                                 .foregroundColor(ApocalypseTheme.textSecondary)
                             Spacer()
                             if !deleteConfirmationText.isEmpty {
                                 let trimmed = deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines)
-                                Image(systemName: trimmed == "删除" ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundColor(trimmed == "删除" ? ApocalypseTheme.success : ApocalypseTheme.danger)
+                                Image(systemName: trimmed == String(localized: "settings.delete.confirm.word") ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(trimmed == String(localized: "settings.delete.confirm.word") ? ApocalypseTheme.success : ApocalypseTheme.danger)
                             }
                         }
-                        TextField("删除", text: $deleteConfirmationText)
+                        TextField(String(localized: "settings.delete.confirm.word"), text: $deleteConfirmationText)
                             .font(.body)
                             .foregroundColor(ApocalypseTheme.textPrimary)
                             .padding()
@@ -221,7 +221,7 @@ struct SettingsDetailView: View {
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 16)
                             } else {
-                                Text("确认删除账户")
+                                Text("settings.delete.confirm.button")
                                     .font(.body).fontWeight(.semibold)
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
@@ -235,7 +235,7 @@ struct SettingsDetailView: View {
                         Button {
                             dismissDeleteSheet()
                         } label: {
-                            Text("取消")
+                            Text("取消")  // LocalizedStringKey → "Cancel"
                                 .font(.body).fontWeight(.medium)
                                 .foregroundColor(ApocalypseTheme.textPrimary)
                                 .frame(maxWidth: .infinity)
@@ -249,7 +249,7 @@ struct SettingsDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 30)
             }
-            .navigationTitle("删除账户")
+            .navigationTitle(String(localized: "settings.delete.nav.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -277,11 +277,11 @@ struct SettingsDetailView: View {
     }
 
     private var isDeleteButtonEnabled: Bool {
-        deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines) == "删除"
+        deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines) == String(localized: "settings.delete.confirm.word")
     }
 
     private func performDeleteAccount() async {
-        guard deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines) == "删除" else { return }
+        guard deleteConfirmationText.trimmingCharacters(in: .whitespacesAndNewlines) == String(localized: "settings.delete.confirm.word") else { return }
         isDeletingAccount = true
         do {
             try await authManager.deleteAccount()

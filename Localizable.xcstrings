@@ -441,7 +441,16 @@
         }
       }
     },
-    "%lld 条": {},
+    "%lld 条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld entries"
+          }
+        }
+      }
+    },
     "%lld 条日志": {
       "localizations": {
         "en": {
@@ -1787,6 +1796,23 @@
         }
       }
     },
+    "pack.constructor.tagline": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrap Metal ×100 + quality tools — break through Tier 2"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "废金属×100 + 精良工具，突破 Tier2 建造瓶颈"
+          }
+        }
+      }
+    },
     "pack.engineer.desc": {
       "extractionState": "stale",
       "localizations": {
@@ -1816,6 +1842,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "工程师礼包"
+          }
+        }
+      }
+    },
+    "pack.engineer.tagline": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Electronics ×20 — unlock advanced tech buildings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电子元件×20 领衔，解锁高阶科技建筑的核心物资"
           }
         }
       }
@@ -1853,6 +1896,23 @@
         }
       }
     },
+    "pack.rare.tagline": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satellite Module + epic blueprint — the endgame lord's pack"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卫星模块 + 概率史诗蓝图，通往顶级领主的终局礼包"
+          }
+        }
+      }
+    },
     "pack.survivor.desc": {
       "extractionState": "stale",
       "localizations": {
@@ -1882,6 +1942,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "幸存者礼包"
+          }
+        }
+      }
+    },
+    "pack.survivor.tagline": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First step to survival — wood & food for your base camp"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "末日第一步，木材与粮食助你快速建好基础营地"
           }
         }
       }
@@ -2373,6 +2450,22 @@
         }
       }
     },
+    "store.slogan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get Resources Fast · Speed Up Construction"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速获取资源，加速建造进程"
+          }
+        }
+      }
+    },
     "store.title": {
       "localizations": {
         "en": {
@@ -2710,7 +2803,16 @@
         }
       }
     },
-    "上次探索": {},
+    "上次探索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Exploration"
+          }
+        }
+      }
+    },
     "上次探索完成": {
       "extractionState": "stale",
       "localizations": {
@@ -2940,7 +3042,16 @@
         }
       }
     },
-    "个废墟": {},
+    "个废墟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " ruins"
+          }
+        }
+      }
+    },
     "个性签名": {
       "extractionState": "stale",
       "localizations": {
@@ -3311,7 +3422,16 @@
         }
       }
     },
-    "今日探索": {},
+    "今日探索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Exploration"
+          }
+        }
+      }
+    },
     "今日礼包待领取": {
       "localizations": {
         "en": {
@@ -3996,6 +4116,12 @@
             "state": "new",
             "value": "冷却中 · 剩余 %1$lldh %2$lldm"
           }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cooling · %lldh %lldm left"
+          }
         }
       }
     },
@@ -4080,7 +4206,16 @@
         }
       }
     },
-    "分享日志文件": {},
+    "分享日志文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Log File"
+          }
+        }
+      }
+    },
     "分钟": {
       "localizations": {
         "en": {
@@ -4370,7 +4505,16 @@
         }
       }
     },
-    "前往地图开始探索，发现附近可搜刮地点": {},
+    "前往地图开始探索，发现附近可搜刮地点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to Map to explore and discover nearby scavengeable locations"
+          }
+        }
+      }
+    },
     "前往地图页开始探索，发现附近可搜刮地点": {
       "extractionState": "stale",
       "localizations": {
@@ -4393,7 +4537,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Go to the map page and start claiming your first territory!"
+            "value": "Go to the map and claim your first territory!"
           }
         },
         "zh-Hans": {
@@ -5531,7 +5675,16 @@
         }
       }
     },
-    "圈地日志": {},
+    "圈地日志": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Territory Log"
+          }
+        }
+      }
+    },
     "圈地测试": {
       "localizations": {
         "en": {
@@ -5574,7 +5727,16 @@
         }
       }
     },
-    "在地图中查看": {},
+    "在地图中查看": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View on Map"
+          }
+        }
+      }
+    },
     "地区": {
       "localizations": {
         "en": {
@@ -6271,7 +6433,16 @@
         }
       }
     },
-    "已搜%d": {},
+    "已搜%d": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searched %d"
+          }
+        }
+      }
+    },
     "已搜刮": {
       "localizations": {
         "en": {
@@ -8856,7 +9027,16 @@
         }
       }
     },
-    "暂无废墟数据": {},
+    "暂无废墟数据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No ruins data"
+          }
+        }
+      }
+    },
     "暂无建筑": {
       "localizations": {
         "en": {
@@ -10476,7 +10656,16 @@
         }
       }
     },
-    "电子店": {},
+    "电子店": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Electronics Store"
+          }
+        }
+      }
+    },
     "留言": {
       "localizations": {
         "en": {
@@ -12303,7 +12492,16 @@
         }
       }
     },
-    "该类型暂无废墟": {},
+    "该类型暂无废墟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No ruins of this type"
+          }
+        }
+      }
+    },
     "该邮箱已注册": {
       "localizations": {
         "en": {
@@ -12860,7 +13058,16 @@
         }
       }
     },
-    "走到50米范围内自动触发搜刮": {},
+    "走到50米范围内自动触发搜刮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walk within 50m to auto-trigger scavenging"
+          }
+        }
+      }
+    },
     "起始点": {
       "localizations": {
         "en": {
@@ -14559,82 +14766,418 @@
         }
       }
     },
-    "store.slogan": {
+    "settings.title": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Get Resources Fast · Speed Up Construction"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "快速获取资源，加速建造进程"
+            "value": "设置"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
           }
         }
       }
     },
-    "pack.survivor.tagline": {
+    "settings.language": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "First step to survival — wood & food for your base camp"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "末日第一步，木材与粮食助你快速建好基础营地"
+            "value": "语言"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
           }
         }
       }
     },
-    "pack.constructor.tagline": {
+    "settings.tutorial": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Scrap Metal ×100 + quality tools — break through Tier 2"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "废金属×100 + 精良工具，突破 Tier2 建造瓶颈"
+            "value": "新手教程"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutorial"
           }
         }
       }
     },
-    "pack.engineer.tagline": {
+    "settings.logout": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Electronics ×20 — unlock advanced tech buildings"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "电子元件×20 领衔，解锁高阶科技建筑的核心物资"
+            "value": "退出登录"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign Out"
           }
         }
       }
     },
-    "pack.rare.tagline": {
+    "settings.delete.account": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Satellite Module + epic blueprint — the endgame lord's pack"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "卫星模块 + 概率史诗蓝图，通往顶级领主的终局礼包"
+            "value": "删除账户"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Account"
+          }
+        }
+      }
+    },
+    "settings.section.account": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        }
+      }
+    },
+    "settings.support": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "技术支持"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        }
+      }
+    },
+    "settings.privacy": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私政策"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        }
+      }
+    },
+    "settings.section.support": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持与隐私"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support & Privacy"
+          }
+        }
+      }
+    },
+    "settings.logout.confirm.title": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认退出"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm Sign Out"
+          }
+        }
+      }
+    },
+    "settings.logout.confirm.message": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确定要退出登录吗？"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to sign out?"
+          }
+        }
+      }
+    },
+    "settings.logout.confirm.button": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign Out"
+          }
+        }
+      }
+    },
+    "settings.delete.fail.title": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除失败"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion Failed"
+          }
+        }
+      }
+    },
+    "settings.delete.permanent.title": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久删除账户"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently Delete Account"
+          }
+        }
+      }
+    },
+    "settings.delete.warning.header": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此操作将："
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action will:"
+          }
+        }
+      }
+    },
+    "settings.delete.warning.1": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久删除您的账户和所有数据"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete your account and all data"
+          }
+        }
+      }
+    },
+    "settings.delete.warning.2": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除您的个人信息和设置"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete your personal information and settings"
+          }
+        }
+      }
+    },
+    "settings.delete.warning.3": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此操作不可撤销"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action cannot be undone"
+          }
+        }
+      }
+    },
+    "settings.delete.confirm.hint": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入「删除」以确认"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type 'Delete' to confirm"
+          }
+        }
+      }
+    },
+    "settings.delete.confirm.word": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "settings.delete.confirm.button": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认删除账户"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm Delete Account"
+          }
+        }
+      }
+    },
+    "settings.delete.nav.title": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除账户"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Account"
+          }
+        }
+      }
+    },
+    "error.unknown": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知错误"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown error"
+          }
+        }
+      }
+    },
+    "unit.meters": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "米"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "m"
+          }
+        }
+      }
+    },
+    "unit.km": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "千米"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "km"
+          }
+        }
+      }
+    },
+    "territory.delete.confirm": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确定要删除这块 %.0f m² 的领地吗？此操作无法撤销。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this %.0f m² territory? This action cannot be undone."
           }
         }
       }

@@ -50,11 +50,14 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     // MARK: - Constants
 
-    /// 速度限制 (km/h)
-    private let speedLimit: Double = 30.0
+    /// 速度警告阈值 (km/h) - 与圈地系统一致
+    private let explorationSpeedWarningThreshold: Double = 15.0
 
-    /// 超速警告倒计时 (秒)
-    private let warningDuration: Int = 15
+    /// 速度暂停阈值 (km/h) - 超过此值跳过采点并计入超速次数
+    private let explorationSpeedPauseThreshold: Double = 20.0
+
+    /// 连续超速次数达到此值时自动停止探索
+    private let explorationConsecutiveOverspeedLimit: Int = 3
 
     /// 最小记录距离 (米) - GPS 点之间的最小距离
     private let minimumRecordDistance: CLLocationDistance = 5.0
@@ -165,7 +168,13 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 探索路径点
     private var pathPoints: [(coordinate: CLLocationCoordinate2D, timestamp: Date)] = []
 
-    /// 超速计时器
+    /// 探索起点位置（用于 POI 距离过滤）
+    private var explorationStartLocation: CLLocation?
+
+    /// 当前连续超速计数（与圈地系统一致）
+    private var explorationConsecutiveOverspeedCount: Int = 0
+
+    /// 超速计时器（保留兼容，新逻辑不再使用）
     private var overSpeedTimer: Timer?
 
     /// 当前倒计时值
@@ -240,6 +249,10 @@ final class ExplorationManager: NSObject, ObservableObject {
         // 重置状态
         resetExplorationState()
 
+        // 保存探索起点（用于 POI 距离过滤，避免 GPS 漂移影响）
+        explorationStartLocation = locationManager.location
+        explorationConsecutiveOverspeedCount = 0
+
         // 开始探索
         isExploring = true
         explorationState = .exploring
@@ -261,10 +274,11 @@ final class ExplorationManager: NSObject, ObservableObject {
         logger.logStateChange(from: "idle", to: "exploring")
         logger.log("速度限制: \(speedLimit) km/h, 超速警告时间: \(warningDuration) 秒", type: .info)
 
-        // 搜索附近POI
+        // 搜索附近POI（使用已保存的起点，确保距离过滤一致）
         Task {
-            guard let location = locationManager.location else { return }
-            await searchNearbyPOIs(center: location.coordinate)
+            let startCoord = explorationStartLocation?.coordinate ?? locationManager.location?.coordinate
+            guard let coord = startCoord else { return }
+            await searchNearbyPOIs(center: coord)
             setupGeofences()
         }
     }
@@ -365,6 +379,12 @@ final class ExplorationManager: NSObject, ObservableObject {
         cancelOverSpeedCountdown()
         stopDurationTimer()
 
+        // 重置起点和超速计数
+        explorationStartLocation = nil
+        explorationConsecutiveOverspeedCount = 0
+        LocationManager.shared.speedWarning = nil
+        LocationManager.shared.isOverSpeed = false
+
         // 清除旧POI列表和地理围栏，新探索从当前位置重新加载
         nearbyPOIs.removeAll()
         cleanupGeofences()
@@ -440,14 +460,38 @@ final class ExplorationManager: NSObject, ObservableObject {
             logger.log(String(format: "新最高速度记录: %.1f km/h", speedKmh), type: .info)
         }
 
-        // 速度检测
-        let isOverSpeed = speedKmh > speedLimit
-        logger.logSpeed(speedKmh, isOverSpeed: isOverSpeed, countdown: overSpeedCountdown)
+        // 速度检测（与圈地系统一致：15 km/h 警告，20 km/h 连续3次自动停止）
+        logger.logSpeed(speedKmh, isOverSpeed: speedKmh > explorationSpeedWarningThreshold, countdown: overSpeedCountdown)
 
-        if isOverSpeed {
-            logger.log(String(format: "⚠️ 检测到超速: %.1f km/h > %.1f km/h", speedKmh, speedLimit), type: .warning)
-            handleOverSpeed()
+        if speedKmh < explorationSpeedWarningThreshold {
+            // 速度正常：重置计数，继续记录
+            explorationConsecutiveOverspeedCount = 0
+            LocationManager.shared.speedWarning = nil
+            LocationManager.shared.isOverSpeed = false
+            handleNormalSpeed(location: location)
+
+        } else if speedKmh > explorationSpeedPauseThreshold {
+            // 超过暂停阈值：跳过采点，计入连续超速
+            explorationConsecutiveOverspeedCount += 1
+            LocationManager.shared.isOverSpeed = true
+            logger.log(String(format: "⚠️ 探索超速: %.1f km/h，连续第 %d 次", speedKmh, explorationConsecutiveOverspeedCount), type: .warning)
+
+            if explorationConsecutiveOverspeedCount >= explorationConsecutiveOverspeedLimit {
+                // 连续超速 3 次，自动停止探索
+                LocationManager.shared.speedWarning = String(localized: "exploration.speed.auto_stopped")
+                logger.log("连续超速 \(explorationConsecutiveOverspeedCount) 次，自动停止探索", type: .error)
+                stopExploration(cancelled: true)
+            } else {
+                LocationManager.shared.speedWarning = String(format: String(localized: "speed.warning.fast"), speedKmh)
+            }
+            // 不记录该点
+
         } else {
+            // 15~20 km/h：警告但继续记录，重置连续超速计数
+            explorationConsecutiveOverspeedCount = 0
+            LocationManager.shared.isOverSpeed = true
+            LocationManager.shared.speedWarning = String(format: String(localized: "speed.warning.medium"), speedKmh)
+            logger.log(String(format: "速度较快 %.1f km/h，警告继续记录", speedKmh), type: .warning)
             handleNormalSpeed(location: location)
         }
 
@@ -1094,11 +1138,14 @@ extension ExplorationManager {
         // 获取探索范围（基于订阅档位：1.0/2.0/3.0 km）
         let explorationRadius = SubscriptionManager.shared.explorationRadius * 1000 // 转换为米
 
+        // 用探索起点计算距离（explorationStartLocation 已在 startExploration 中保存）
+        let distanceOrigin = explorationStartLocation ?? userLocation
+
         for poi in allResults {
             let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
-            let distance = userLocation.distance(from: poiLocation)
+            let distance = distanceOrigin.distance(from: poiLocation)
 
-            // 只保留 500m ~ explorationRadius 范围内、且未在冷却中的POI
+            // 只保留距探索起点 500m ~ explorationRadius 范围内、且未在冷却中的POI
             guard distance >= 500 && distance <= explorationRadius && !isCoolingDown(poi) else { continue }
 
             // 计算方位角（0°=正北，顺时针）

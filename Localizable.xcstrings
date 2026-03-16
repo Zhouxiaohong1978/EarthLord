@@ -11,6 +11,7 @@
         }
       }
     },
+    " ×%lld": {},
     "·": {
       "localizations": {
         "en": {
@@ -256,6 +257,7 @@
       }
     },
     "%@ ×%lld": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2225,6 +2227,7 @@
       }
     },
     "settings.delete.confirm.word": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -15196,6 +15199,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "高密度"
+          }
+        }
+      }
+    },
+    "exploration.speed.auto_stopped": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "速度过快，探索已自动停止"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speed too high, exploration auto-stopped"
+          }
+        }
+      }
+    },
+    "speed.warning.fast": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动速度过快 (%.1f km/h)，请放慢速度"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moving too fast (%.1f km/h), please slow down"
+          }
+        }
+      }
+    },
+    "speed.warning.medium": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动速度较快 (%.1f km/h)，请放慢速度"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moving fast (%.1f km/h), please slow down"
           }
         }
       }

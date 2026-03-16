@@ -1089,8 +1089,9 @@ extension ExplorationManager {
             let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
             let distance = distanceOrigin.distance(from: poiLocation)
 
-            // 只保留距探索起点 500m ~ explorationRadius 范围内、且未在冷却中的POI
-            guard distance >= 500 && distance <= explorationRadius && !isCoolingDown(poi) else { continue }
+            // 只保留距探索起点 800m ~ explorationRadius 范围内、且未在冷却中的POI
+            // 最小距离设为 800m（补偿中国地图 WGS84/GCJ02 坐标偏移约 200-500m）
+            guard distance >= 800 && distance <= explorationRadius && !isCoolingDown(poi) else { continue }
 
             // 计算方位角（0°=正北，顺时针）
             let dx = poi.coordinate.longitude - center.longitude

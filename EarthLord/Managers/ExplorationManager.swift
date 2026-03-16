@@ -487,12 +487,19 @@ final class ExplorationManager: NSObject, ObservableObject {
             // 不记录该点
 
         } else {
-            // 15~20 km/h：警告但继续记录，重置连续超速计数
-            explorationConsecutiveOverspeedCount = 0
+            // 15~20 km/h：计入连续超速，警告；连续 3 次自动停止
+            explorationConsecutiveOverspeedCount += 1
             LocationManager.shared.isOverSpeed = true
-            LocationManager.shared.speedWarning = String(format: String(localized: "speed.warning.medium"), speedKmh)
-            logger.log(String(format: "速度较快 %.1f km/h，警告继续记录", speedKmh), type: .warning)
-            handleNormalSpeed(location: location)
+            logger.log(String(format: "⚠️ 速度较快: %.1f km/h，连续第 %d 次", speedKmh, explorationConsecutiveOverspeedCount), type: .warning)
+
+            if explorationConsecutiveOverspeedCount >= explorationConsecutiveOverspeedLimit {
+                LocationManager.shared.speedWarning = String(localized: "exploration.speed.auto_stopped")
+                logger.log("连续超速 \(explorationConsecutiveOverspeedCount) 次，自动停止探索", type: .error)
+                stopExploration(cancelled: true)
+            } else {
+                LocationManager.shared.speedWarning = String(format: String(localized: "speed.warning.medium"), speedKmh)
+                handleNormalSpeed(location: location)
+            }
         }
 
         // 主动检测接近的POI（解决已在范围内不触发的问题）
@@ -1332,7 +1339,7 @@ extension ExplorationManager {
             generatedByAI = false
         }
 
-        let sessionId = "scavenge_\(poi.id.uuidString)"
+        let sessionId = poi.id.uuidString
 
         // 创建搜刮结果，等待用户确认
         scavengeResult = ScavengeResult(

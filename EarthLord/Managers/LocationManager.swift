@@ -447,13 +447,21 @@ final class LocationManager: NSObject, ObservableObject {
             return false
         }
 
-        // 速度较快：警告但继续记录，重置超速计数（未达暂停阈值）
+        // 15~20 km/h：计入连续超速，警告；连续 3 次自动停止圈地
         if speedKmh > speedWarningThreshold {
-            speedWarning = "移动速度较快 (\(String(format: "%.1f", speedKmh)) km/h)，请放慢速度"
+            consecutiveOverspeedCount += 1
             isOverSpeed = true
-            consecutiveOverspeedCount = 0
-            TerritoryLogger.shared.log("速度较快 \(String(format: "%.1f", speedKmh)) km/h", type: .warning)
-            return true
+            TerritoryLogger.shared.log("速度较快 \(String(format: "%.1f", speedKmh)) km/h，连续第 \(consecutiveOverspeedCount) 次", type: .warning)
+
+            if consecutiveOverspeedCount >= consecutiveOverspeedLimit {
+                speedWarning = "速度过快，圈地已自动停止"
+                stopPathTracking(clearAllState: true)
+                TerritoryLogger.shared.log("连续超速 \(consecutiveOverspeedCount) 次，自动停止圈地", type: .error)
+                return false
+            } else {
+                speedWarning = "移动速度较快 (\(String(format: "%.1f", speedKmh)) km/h)，请放慢速度"
+                return true
+            }
         }
 
         return true

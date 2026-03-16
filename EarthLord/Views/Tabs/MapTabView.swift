@@ -112,8 +112,8 @@ struct MapTabView: View {
                 explorationPath: explorationManager.explorationPathCoordinates,
                 explorationPathVersion: explorationManager.explorationPathVersion,
                 isExploring: explorationManager.isExploring,
-                nearbyPOIs: explorationManager.nearbyPOIs,
-                coolingDownPOIKeys: Set(explorationManager.nearbyPOIs.filter { explorationManager.isCoolingDown($0) }.map { explorationManager.coordKey(for: $0.coordinate) })
+                nearbyPOIs: [],
+                coolingDownPOIKeys: []
             )
             .ignoresSafeArea()
 

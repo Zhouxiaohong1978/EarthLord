@@ -1025,6 +1025,11 @@ extension ExplorationManager {
             ("数码店", .electronics)
         ]
 
+        // 获取探索范围（基于订阅档位：1.0/2.0/3.0 km）
+        let explorationRadius = SubscriptionManager.shared.explorationRadius * 1000 // 转换为米
+        // 搜索直径 = 探索半径 × 2 + 500m 缓冲，确保能覆盖距起点 500m~explorationRadius 的 POI
+        let searchDiameter = explorationRadius * 2 + 500
+
         var allResults: [POI] = []
         let maxPerQuery = 3  // 每个关键词最多取3个，确保多样性
         var seenCoordinates: Set<String> = []  // 用于去重
@@ -1034,8 +1039,8 @@ extension ExplorationManager {
             request.naturalLanguageQuery = query
             request.region = MKCoordinateRegion(
                 center: center,
-                latitudinalMeters: 1000,
-                longitudinalMeters: 1000
+                latitudinalMeters: searchDiameter,
+                longitudinalMeters: searchDiameter
             )
 
             let search = MKLocalSearch(request: request)
@@ -1076,9 +1081,6 @@ extension ExplorationManager {
             "西南": [], // 180°-270°
             "西北": []  // 270°-360°
         ]
-
-        // 获取探索范围（基于订阅档位：1.0/2.0/3.0 km）
-        let explorationRadius = SubscriptionManager.shared.explorationRadius * 1000 // 转换为米
 
         // 用探索起点计算距离（explorationStartLocation 已在 startExploration 中保存）
         let distanceOrigin = explorationStartLocation ?? userLocation

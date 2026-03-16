@@ -213,19 +213,19 @@ final class LeaderboardManager: ObservableObject {
     private func fetchBuildingsRanking(timeFilter: TimeFilter) async throws -> [(userId: String, value: Double)] {
         struct Record: Codable {
             let userId: String
-            let startedAt: String?
+            let createdAt: String?
             enum CodingKeys: String, CodingKey {
                 case userId = "user_id"
-                case startedAt = "started_at"
+                case createdAt = "created_at"
             }
         }
 
         var query = supabase
             .from("player_buildings")
-            .select("user_id, started_at")
+            .select("user_id, created_at")
 
         if let start = timeFilter.startDate {
-            query = query.gte("started_at", value: ISO8601DateFormatter().string(from: start))
+            query = query.gte("created_at", value: ISO8601DateFormatter().string(from: start))
         }
 
         let records: [Record] = try await query.execute().value

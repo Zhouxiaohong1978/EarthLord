@@ -56,7 +56,7 @@ final class LeaderboardManager: ObservableObject {
                 if value >= 1_000_000 { return String(format: "%.2f km²", value / 1_000_000) }
                 return String(format: "%.0f m²", value)
             case .buildings:
-                return "\(Int(value)) 个"
+                return String(format: String(localized: "leaderboard.buildings.format"), Int(value))
             }
         }
     }

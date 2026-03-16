@@ -29,7 +29,7 @@ struct LeaderboardView: View {
                         selectedTime = filter
                         Task { await manager.load(category: selectedCategory, timeFilter: filter) }
                     } label: {
-                        Text(filter.rawValue)
+                        Text(LocalizedStringKey(filter.rawValue))
                             .font(.subheadline)
                             .fontWeight(selectedTime == filter ? .semibold : .regular)
                             .foregroundColor(selectedTime == filter ? .white : ApocalypseTheme.textSecondary)
@@ -55,7 +55,7 @@ struct LeaderboardView: View {
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: cat.icon).font(.caption2)
-                            Text(cat.rawValue)
+                            Text(LocalizedStringKey(cat.rawValue))
                                 .font(.caption)
                                 .fontWeight(selectedCategory == cat ? .semibold : .regular)
                         }

@@ -3379,9 +3379,6 @@
         }
       }
     },
-    "与同城幸存者一较高下" : {
-
-    },
     "与幸存者通讯" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8346,6 +8343,22 @@
         }
       }
     },
+    "我的排名：第 %lld 名 / 共 %lld 名玩家" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Rank: #%1$lld / %2$lld Players"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的排名：第 %1$lld 名 / 共 %2$lld 名玩家"
+          }
+        }
+      }
+    },
     "我的领地" : {
       "localizations" : {
         "en" : {
@@ -9530,7 +9543,20 @@
       }
     },
     "暂无数据" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无数据"
+          }
+        }
+      }
     },
     "暂无日志\n\n请前往地图页面开始圈地追踪" : {
       "localizations" : {
@@ -9900,6 +9926,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本周"
+          }
+        }
+      }
+    },
+    "总榜" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Time"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总榜"
+          }
+        }
+      }
+    },
+    "探索距离" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索距离"
+          }
+        }
+      }
+    },
+    "领地面积" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地面积"
+          }
+        }
+      }
+    },
+    "建筑数量" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buildings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建筑数量"
+          }
+        }
+      }
+    },
+    "leaderboard.buildings.format" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d buildings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 个"
           }
         }
       }

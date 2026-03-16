@@ -521,14 +521,7 @@ final class ExplorationManager: NSObject, ObservableObject {
         return speedMs * 3.6  // m/s 转 km/h
     }
 
-    /// 处理超速情况
-    private func handleOverSpeed() {
-        if overSpeedTimer == nil {
-            startOverSpeedCountdown()
-        }
-    }
-
-    /// 处理正常速度
+/// 处理正常速度
     private func handleNormalSpeed(location: CLLocation) {
         // 如果之前在超速状态，取消倒计时
         if overSpeedTimer != nil {

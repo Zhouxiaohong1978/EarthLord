@@ -272,7 +272,7 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         logger.logExplorationStart()
         logger.logStateChange(from: "idle", to: "exploring")
-        logger.log("速度限制: \(speedLimit) km/h, 超速警告时间: \(warningDuration) 秒", type: .info)
+        logger.log("速度警告阈值: \(explorationSpeedWarningThreshold) km/h, 暂停阈值: \(explorationSpeedPauseThreshold) km/h", type: .info)
 
         // 搜索附近POI（使用已保存的起点，确保距离过滤一致）
         Task {
@@ -600,60 +600,7 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     // MARK: - Over Speed Handling
 
-    /// 开始超速倒计时
-    private func startOverSpeedCountdown() {
-        countdownValue = warningDuration
-        overSpeedCountdown = countdownValue
-        explorationState = .overSpeedWarning(secondsRemaining: countdownValue)
-
-        logger.log("🚨 ========== 超速警告开始 ==========", type: .warning)
-        logger.log(
-            String(format: "当前速度: %.1f km/h, 限制: %.1f km/h", currentSpeed, speedLimit),
-            type: .warning
-        )
-        logger.log("倒计时: \(warningDuration) 秒内需降低速度，否则探索将失败", type: .warning)
-        logger.logStateChange(from: "exploring", to: "overSpeedWarning(\(countdownValue))")
-
-        overSpeedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.tickCountdown()
-            }
-        }
-    }
-
-    /// 倒计时滴答
-    private func tickCountdown() {
-        countdownValue -= 1
-        overSpeedCountdown = countdownValue
-        explorationState = .overSpeedWarning(secondsRemaining: countdownValue)
-
-        logger.log(
-            String(format: "⏱️ 超速倒计时: %d 秒, 当前速度: %.1f km/h", countdownValue, currentSpeed),
-            type: .warning
-        )
-
-        if countdownValue <= 0 {
-            logger.log("⏱️ 倒计时结束，检查当前速度...", type: .warning)
-            // 倒计时结束，检查当前速度
-            if currentSpeed > speedLimit {
-                // 仍然超速，探索失败
-                logger.log(
-                    String(format: "❌ 速度仍超限 (%.1f > %.1f)，探索失败！", currentSpeed, speedLimit),
-                    type: .error
-                )
-                failExploration()
-            } else {
-                // 速度已恢复，取消倒计时
-                logger.log(
-                    String(format: "✅ 速度已恢复正常 (%.1f km/h)，继续探索", currentSpeed),
-                    type: .success
-                )
-                cancelOverSpeedCountdown()
-            }
-        }
-    }
-
-    /// 取消超速倒计时
+    /// 取消超速倒计时（兼容旧状态清理）
     private func cancelOverSpeedCountdown() {
         overSpeedTimer?.invalidate()
         overSpeedTimer = nil
@@ -661,18 +608,13 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         if isExploring, case .overSpeedWarning = explorationState {
             explorationState = .exploring
-            logger.log("✓ 速度恢复正常，取消超速倒计时", type: .success)
-            logger.logStateChange(from: "overSpeedWarning", to: "exploring")
         }
     }
 
-    /// 探索失败（超速）
+    /// 探索失败（超速，保留供旧路径调用）
     private func failExploration() {
         logger.log("🛑 ========== 探索失败处理 ==========", type: .error)
-        logger.log(
-            String(format: "失败原因: 超速时间过长 (持续超过 %d 秒)", warningDuration),
-            type: .error
-        )
+        logger.log("失败原因: 连续超速自动停止", type: .error)
         logger.log(
             String(format: "最终速度: %.1f km/h, 行走距离: %.1fm, 路径点: %d",
                    currentSpeed, totalDistance, pathPoints.count),

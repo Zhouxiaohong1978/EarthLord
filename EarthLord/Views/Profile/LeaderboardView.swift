@@ -93,6 +93,20 @@ struct LeaderboardView: View {
 
     private var entriesList: some View {
         VStack(spacing: 8) {
+            // 我的排名 / 总玩家数
+            if let my = manager.myEntry {
+                HStack(spacing: 4) {
+                    Image(systemName: "person.fill")
+                        .font(.caption2)
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                    Text("我的排名：第 \(my.rank) 名 / 共 \(manager.totalPlayerCount) 名玩家")
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 2)
+            }
+
             VStack(spacing: 1) {
                 ForEach(manager.entries) { entry in
                     entryRow(entry)
@@ -109,20 +123,6 @@ struct LeaderboardView: View {
                 }
                 .background(ApocalypseTheme.cardBackground)
                 .cornerRadius(12)
-            }
-
-            // 我的排名 / 总玩家数
-            if let my = manager.myEntry {
-                HStack(spacing: 4) {
-                    Image(systemName: "person.fill")
-                        .font(.caption2)
-                        .foregroundColor(ApocalypseTheme.textMuted)
-                    Text("我的排名：第 \(my.rank) 名 / 共 \(manager.totalPlayerCount) 名玩家")
-                        .font(.caption)
-                        .foregroundColor(ApocalypseTheme.textMuted)
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 4)
             }
         }
     }

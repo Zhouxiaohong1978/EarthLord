@@ -1133,20 +1133,23 @@ extension ExplorationManager {
             balancedResults.append(contentsOf: pois.prefix(perQuadrant))
         }
 
-        // 第二轮：如果还有配额，从有POI的象限补充（优先补充POI多的象限）
+        // 第二轮：如果还有配额，从有POI的象限补充（优先选取距离适中的POI，避免选出最近的）
         if balancedResults.count < targetPOICount {
             let remaining = targetPOICount - balancedResults.count
             let allRemaining = quadrants.values.flatMap { $0 }.filter { poi in
                 !balancedResults.contains(where: { $0.id == poi.id })
             }
-            // 按距离排序，优先选择最近的
+            // 按距离适中排序：优先选取在有效范围中段的POI（避免总选最近的）
+            let idealDistance = (500.0 + explorationRadius) / 2
             let sortedRemaining = allRemaining.sorted { poi1, poi2 in
                 let loc1 = CLLocation(latitude: poi1.coordinate.latitude, longitude: poi1.coordinate.longitude)
                 let loc2 = CLLocation(latitude: poi2.coordinate.latitude, longitude: poi2.coordinate.longitude)
-                return userLocation.distance(from: loc1) < userLocation.distance(from: loc2)
+                let d1 = abs(userLocation.distance(from: loc1) - idealDistance)
+                let d2 = abs(userLocation.distance(from: loc2) - idealDistance)
+                return d1 < d2
             }
             balancedResults.append(contentsOf: sortedRemaining.prefix(remaining))
-            logger.log("📊 基础配额不足，从剩余POI中补充 \(min(remaining, sortedRemaining.count)) 个", type: .info)
+            logger.log("📊 基础配额不足，从剩余POI中补充 \(min(remaining, sortedRemaining.count)) 个（理想距离: \(String(format: "%.0f", idealDistance))m）", type: .info)
         }
 
         allResults = balancedResults

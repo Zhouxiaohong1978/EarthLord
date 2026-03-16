@@ -84,7 +84,7 @@ final class LeaderboardManager: ObservableObject {
     @Published var errorMessage: String?
 
     private var supabase: SupabaseClient { SupabaseManager.shared.client }
-    private var currentUserId: String? { AuthManager.shared.currentUser?.id.uuidString }
+    private var currentUserId: String? { AuthManager.shared.currentUser?.id.uuidString.lowercased() }
 
     private init() {}
 

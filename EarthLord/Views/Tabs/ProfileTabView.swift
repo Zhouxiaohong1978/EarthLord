@@ -358,7 +358,7 @@ struct ProfileTabView: View {
     private var subTabContent: some View {
         switch selectedTab {
         case .stats:    statsContent
-        case .rank:     comingSoonPlaceholder(icon: "chart.bar.fill", title: "排行榜", subtitle: "即将推出")
+        case .rank:     LeaderboardView()
         case .achieve:  comingSoonPlaceholder(icon: "trophy.fill", title: "成就系统", subtitle: "即将推出")
         case .physique: comingSoonPlaceholder(icon: "figure.walk", title: "体征数据", subtitle: "即将推出")
         }

@@ -1,6 +1,29 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "矿泉水" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Water Bottle" } } } },
+    "罐头食品" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Canned Food" } } } },
+    "绷带" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Bandage" } } } },
+    "药品" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Medicine" } } } },
+    "布料" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Cloth" } } } },
+    "种子" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Seeds" } } } },
+    "钉子" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Nails" } } } },
+    "工具" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Tool" } } } },
+    "工具箱" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Toolbox" } } } },
+    "手电筒" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Flashlight" } } } },
+    "绳子" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rope" } } } },
+    "面包" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Bread" } } } },
+    "建筑加速令" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Build Speedup" } } } },
+    "急救包" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "First Aid Kit" } } } },
+    "抗生素" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Antibiotics" } } } },
+    "电子元件" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Electronic Component" } } } },
+    "卫星模块" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Satellite Module" } } } },
+    "燃料" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Fuel" } } } },
+    "搜刮令" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Scavenge Pass" } } } },
+    "基础图纸" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Basic Blueprint" } } } },
+    "史诗图纸" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Epic Blueprint" } } } },
+    "稀有装备" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rare Equipment" } } } },
+    "史诗装备" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Epic Equipment" } } } },
     "" : {
       "localizations" : {
         "en" : {
@@ -4368,6 +4391,7 @@
       }
     },
     "使用" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4391,36 +4415,6 @@
             "value" : "使用设备语言"
           }
         }
-      }
-    },
-    "前往地图探索，获取食物和水" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explore the map to find food and water" } }
-      }
-    },
-    "打开资源背包，找到食物/水/药品" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open your backpack and find food / water / medicine" } }
-      }
-    },
-    "点击「使用」即可恢复体征并激活增益" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap \"Use\" to restore vitals and activate buffs" } }
-      }
-    },
-    "步骤 1" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step 1" } }
-      }
-    },
-    "步骤 2" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step 2" } }
-      }
-    },
-    "步骤 3" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step 3" } }
       }
     },
     "使用食物、水或药品获得增益" : {
@@ -5223,6 +5217,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Go to Map to explore and discover nearby scavengeable locations"
+          }
+        }
+      }
+    },
+    "前往地图探索，获取食物和水" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore the map to find food and water"
           }
         }
       }
@@ -6756,6 +6761,7 @@
       }
     },
     "存储" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9092,6 +9098,17 @@
         }
       }
     },
+    "打开资源背包，找到食物/水/药品" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open your backpack and find food / water / medicine"
+          }
+        }
+      }
+    },
     "扩大领地" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11081,6 +11098,39 @@
         }
       }
     },
+    "步骤 1" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step 1"
+          }
+        }
+      }
+    },
+    "步骤 2" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step 2"
+          }
+        }
+      }
+    },
+    "步骤 3" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step 3"
+          }
+        }
+      }
+    },
     "武器" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11655,6 +11705,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Critical"
+          }
+        }
+      }
+    },
+    "点击「使用」即可恢复体征并激活增益" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap \"Use\" to restore vitals and activate buffs"
           }
         }
       }

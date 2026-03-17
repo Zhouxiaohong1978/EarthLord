@@ -1016,7 +1016,7 @@ struct BackpackFilterChip: View {
                 Image(systemName: filter.icon)
                     .font(.system(size: 12))
 
-                Text(filter.title)
+                Text(LanguageManager.shared.localizedString(for: filter.title))
                     .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
             }
             .foregroundColor(isSelected ? .white : ApocalypseTheme.textSecondary)
@@ -1062,7 +1062,7 @@ struct BackpackItemCardNew: View {
             VStack(alignment: .leading, spacing: 6) {
                 // 名称和数量
                 HStack(spacing: 8) {
-                    Text(definition.name)
+                    Text(LanguageManager.shared.localizedString(for: definition.name))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -1082,7 +1082,7 @@ struct BackpackItemCardNew: View {
                     .foregroundColor(ApocalypseTheme.textSecondary)
 
                     // 稀有度
-                    Text(definition.rarity.rawValue)
+                    Text(LanguageManager.shared.localizedString(for: definition.rarity.rawValue))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(definition.rarity.color)
                         .padding(.horizontal, 6)

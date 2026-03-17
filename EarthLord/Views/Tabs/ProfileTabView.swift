@@ -359,7 +359,7 @@ struct ProfileTabView: View {
         switch selectedTab {
         case .stats:    statsContent
         case .rank:     LeaderboardView()
-        case .achieve:  comingSoonPlaceholder(icon: "trophy.fill", title: "成就系统", subtitle: "即将推出")
+        case .achieve:  AchievementView()
         case .physique: comingSoonPlaceholder(icon: "figure.walk", title: "体征数据", subtitle: "即将推出")
         }
     }

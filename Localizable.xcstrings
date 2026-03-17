@@ -176,6 +176,9 @@
         }
       }
     },
+    "/ %lld" : {
+
+    },
     "/ 年" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -238,6 +241,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ (%2$lld%3$@)"
+          }
+        }
+      }
+    },
+    "%@ / %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ / %2$@"
           }
         }
       }
@@ -965,6 +978,9 @@
         }
       }
     },
+    "🔒" : {
+
+    },
     "001" : {
       "localizations" : {
         "en" : {
@@ -998,6 +1014,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "99+"
+          }
+        }
+      }
+    },
+    "achievement.progress.format" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d%% complete"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d%% 已完成"
           }
         }
       }
@@ -1785,6 +1818,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "木材"
+          }
+        }
+      }
+    },
+    "leaderboard.buildings.format" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d buildings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 个"
           }
         }
       }
@@ -4080,6 +4129,23 @@
         }
       }
     },
+    "传奇建造者" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legendary Builder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "传奇建造者"
+          }
+        }
+      }
+    },
     "传说" : {
       "localizations" : {
         "en" : {
@@ -4196,6 +4262,23 @@
         }
       }
     },
+    "你从废墟中醒来" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You wake from the ruins"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你从废墟中醒来"
+          }
+        }
+      }
+    },
     "你发现了新的区域和物资" : {
       "localizations" : {
         "en" : {
@@ -4208,6 +4291,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你发现了新的区域和物资"
+          }
+        }
+      }
+    },
+    "你的家园正在成形" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your home is taking shape"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的家园正在成形"
           }
         }
       }
@@ -4476,6 +4576,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "全部"
+          }
+        }
+      }
+    },
+    "全部完成" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Done"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部完成"
+          }
+        }
+      }
+    },
+    "全部章节已完成" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Chapters Complete"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部章节已完成"
           }
         }
       }
@@ -4794,6 +4928,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "创建频道"
+          }
+        }
+      }
+    },
+    "初探废土" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First Foray"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "初探废土"
           }
         }
       }
@@ -5312,6 +5463,23 @@
         }
       }
     },
+    "千里之行" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thousand Miles"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "千里之行"
+          }
+        }
+      }
+    },
     "升级" : {
       "localizations" : {
         "en" : {
@@ -5356,6 +5524,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "卖家"
+          }
+        }
+      }
+    },
+    "占领一角" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claim a Corner"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "占领一角"
           }
         }
       }
@@ -6198,12 +6383,46 @@
         }
       }
     },
+    "圈定第一块领地" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claim your first territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圈定第一块领地"
+          }
+        }
+      }
+    },
     "在地图中查看" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "View on Map"
+          }
+        }
+      }
+    },
+    "在废土上找到了立足之地" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've found your footing in the wasteland"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在废土上找到了立足之地"
           }
         }
       }
@@ -6268,6 +6487,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "坐标点数量不足（至少需要3个点）"
+          }
+        }
+      }
+    },
+    "城市规划师" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "City Planner"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "城市规划师"
           }
         }
       }
@@ -6484,6 +6720,23 @@
         }
       }
     },
+    "完成第一次探索" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete your first exploration"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成第一次探索"
+          }
+        }
+      }
+    },
     "官方发布的重要信息" : {
       "localizations" : {
         "en" : {
@@ -6512,6 +6765,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "官方频道"
+          }
+        }
+      }
+    },
+    "家园" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "家园"
           }
         }
       }
@@ -6581,6 +6851,23 @@
         }
       }
     },
+    "封疆大吏" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frontier Lord"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "封疆大吏"
+          }
+        }
+      }
+    },
     "将获得以下物品" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6610,6 +6897,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "小时"
+          }
+        }
+      }
+    },
+    "小有规模" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Small Scale"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小有规模"
           }
         }
       }
@@ -7006,6 +7310,23 @@
         }
       }
     },
+    "已解锁成就" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Achievements Unlocked"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已解锁成就"
+          }
+        }
+      }
+    },
     "已解锁权益" : {
       "localizations" : {
         "en" : {
@@ -7310,6 +7631,23 @@
         }
       }
     },
+    "幸存者诞生" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Born Survivor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "幸存者诞生"
+          }
+        }
+      }
+    },
     "庇护所收益 10次/天" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7388,6 +7726,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "库存充足，可以接受交易"
+          }
+        }
+      }
+    },
+    "废土传奇" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wasteland Legend"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "废土传奇"
+          }
+        }
+      }
+    },
+    "废土探险家" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wasteland Explorer"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "废土探险家"
           }
         }
       }
@@ -7521,6 +7893,23 @@
         }
       }
     },
+    "建筑数量" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buildings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建筑数量"
+          }
+        }
+      }
+    },
     "建筑模板不存在" : {
       "localizations" : {
         "en" : {
@@ -7597,6 +7986,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "建造"
+          }
+        }
+      }
+    },
+    "建造 5 座建筑" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build 5 structures"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建造 5 座建筑"
+          }
+        }
+      }
+    },
+    "建造 20 座建筑" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build 20 structures"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建造 20 座建筑"
+          }
+        }
+      }
+    },
+    "建造 50 座建筑" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build 50 structures"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建造 50 座建筑"
+          }
+        }
+      }
+    },
+    "建造 100 座建筑" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build 100 structures"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建造 100 座建筑"
           }
         }
       }
@@ -7710,6 +8167,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "建造时间"
+          }
+        }
+      }
+    },
+    "建造第一座建筑" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build your first structure"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建造第一座建筑"
           }
         }
       }
@@ -7862,6 +8336,23 @@
         }
       }
     },
+    "开拓 · 家园" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pioneer · Home"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开拓 · 家园"
+          }
+        }
+      }
+    },
     "当前" : {
       "localizations" : {
         "en" : {
@@ -7991,6 +8482,23 @@
         }
       }
     },
+    "当前章节" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current Chapter"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前章节"
+          }
+        }
+      }
+    },
     "征服世界，从这里开始" : {
       "localizations" : {
         "en" : {
@@ -8051,6 +8559,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "快捷消息"
+          }
+        }
+      }
+    },
+    "总榜" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Time"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总榜"
           }
         }
       }
@@ -8294,7 +8819,6 @@
       }
     },
     "成就" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8452,6 +8976,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "所需资源"
+          }
+        }
+      }
+    },
+    "扩大领地" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expand Territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "扩大领地"
           }
         }
       }
@@ -8897,6 +9438,23 @@
         }
       }
     },
+    "探索距离" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索距离"
+          }
+        }
+      }
+    },
     "探索过程中发生未知错误" : {
       "localizations" : {
         "en" : {
@@ -9159,6 +9717,23 @@
         }
       }
     },
+    "搭建庇护所" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build Shelter"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搭建庇护所"
+          }
+        }
+      }
+    },
     "支持与隐私" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9288,6 +9863,23 @@
         }
       }
     },
+    "新世界的缔造者" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creator of the new world"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新世界的缔造者"
+          }
+        }
+      }
+    },
     "新名称" : {
       "localizations" : {
         "en" : {
@@ -9317,6 +9909,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新手教程"
+          }
+        }
+      }
+    },
+    "新芽" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprout"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新芽"
+          }
+        }
+      }
+    },
+    "新芽 · 萌发" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprout · Awaken"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新芽 · 萌发"
           }
         }
       }
@@ -9399,6 +10025,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "日志"
+          }
+        }
+      }
+    },
+    "旷世奇行" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Epic Journey"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旷世奇行"
           }
         }
       }
@@ -9897,6 +10540,23 @@
         }
       }
     },
+    "末日帝国" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doomsday Empire"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "末日帝国"
+          }
+        }
+      }
+    },
     "末日广播站" : {
       "localizations" : {
         "en" : {
@@ -9926,86 +10586,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本周"
-          }
-        }
-      }
-    },
-    "总榜" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "All Time"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "总榜"
-          }
-        }
-      }
-    },
-    "探索距离" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Distance"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "探索距离"
-          }
-        }
-      }
-    },
-    "领地面积" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Territory"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地面积"
-          }
-        }
-      }
-    },
-    "建筑数量" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buildings"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "建筑数量"
-          }
-        }
-      }
-    },
-    "leaderboard.buildings.format" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d buildings"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d 个"
           }
         }
       }
@@ -11301,6 +11881,23 @@
         }
       }
     },
+    "百战老将" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Battle-Hardened"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "百战老将"
+          }
+        }
+      }
+    },
     "省%lld%%" : {
       "localizations" : {
         "en" : {
@@ -11361,6 +11958,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "石头"
+          }
+        }
+      }
+    },
+    "破土" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rise"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "破土"
+          }
+        }
+      }
+    },
+    "破土 · 重生" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rise · Reborn"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "破土 · 重生"
           }
         }
       }
@@ -11885,6 +12516,23 @@
         }
       }
     },
+    "第一株希望开始生长" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The first seed of hope takes root"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第一株希望开始生长"
+          }
+        }
+      }
+    },
     "第一步：输入邮箱" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12114,6 +12762,159 @@
         }
       }
     },
+    "累计完成 5 次探索" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete 5 explorations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计完成 5 次探索"
+          }
+        }
+      }
+    },
+    "累计完成 20 次探索" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete 20 explorations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计完成 20 次探索"
+          }
+        }
+      }
+    },
+    "累计完成 50 次探索" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete 50 explorations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计完成 50 次探索"
+          }
+        }
+      }
+    },
+    "累计完成 100 次探索" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete 100 explorations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计完成 100 次探索"
+          }
+        }
+      }
+    },
+    "累计完成 200 次探索" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete 200 explorations"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计完成 200 次探索"
+          }
+        }
+      }
+    },
+    "累计探索 1,000 公里" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore 1,000 km total"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计探索 1,000 公里"
+          }
+        }
+      }
+    },
+    "累计探索 10 公里" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore 10 km total"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计探索 10 公里"
+          }
+        }
+      }
+    },
+    "累计探索 100 公里" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore 100 km total"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计探索 100 公里"
+          }
+        }
+      }
+    },
+    "累计探索 500 公里" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore 500 km total"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计探索 500 公里"
+          }
+        }
+      }
+    },
     "结束探索" : {
       "localizations" : {
         "en" : {
@@ -12239,6 +13040,40 @@
         }
       }
     },
+    "缔造" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legend"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缔造"
+          }
+        }
+      }
+    },
+    "缔造 · 新世界" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legend · New World"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缔造 · 新世界"
+          }
+        }
+      }
+    },
     "编号" : {
       "localizations" : {
         "en" : {
@@ -12316,6 +13151,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "缺少 %lld"
+          }
+        }
+      }
+    },
+    "老兵出征" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veteran"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "老兵出征"
           }
         }
       }
@@ -12534,6 +13386,23 @@
         }
       }
     },
+    "脚踏实地" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ground Level"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "脚踏实地"
+          }
+        }
+      }
+    },
     "自动滚动" : {
       "localizations" : {
         "en" : {
@@ -12660,6 +13529,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "营地内部通讯"
+          }
+        }
+      }
+    },
+    "营地建设者" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camp Builder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "营地建设者"
           }
         }
       }
@@ -13817,6 +14703,23 @@
         }
       }
     },
+    "踏入末日世界" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the apocalyptic world"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "踏入末日世界"
+          }
+        }
+      }
+    },
     "轨迹不能穿越他人领地！" : {
       "localizations" : {
         "en" : {
@@ -13984,6 +14887,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "边界点"
+          }
+        }
+      }
+    },
+    "迈出第一步" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First Step"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迈出第一步"
           }
         }
       }
@@ -14565,6 +15485,23 @@
         }
       }
     },
+    "长途跋涉" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long March"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "长途跋涉"
+          }
+        }
+      }
+    },
     "附件物品" : {
       "localizations" : {
         "en" : {
@@ -14710,6 +15647,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "隐私设置"
+          }
+        }
+      }
+    },
+    "零日" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day 0"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "零日"
+          }
+        }
+      }
+    },
+    "零日 · 幸存" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day Zero · Survive"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "零日 · 幸存"
           }
         }
       }
@@ -14974,6 +15945,23 @@
         }
       }
     },
+    "领地主人" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory Master"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地主人"
+          }
+        }
+      }
+    },
     "领地大小: %lld 米" : {
       "localizations" : {
         "en" : {
@@ -14986,6 +15974,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地大小: %lld 米"
+          }
+        }
+      }
+    },
+    "领地总面积 10,000 m²" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total territory 10,000 m²"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地总面积 10,000 m²"
+          }
+        }
+      }
+    },
+    "领地总面积 100,000 m²" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total territory 100,000 m²"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地总面积 100,000 m²"
+          }
+        }
+      }
+    },
+    "领地总面积达到 1 km²" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total territory reaches 1 km²"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地总面积达到 1 km²"
+          }
+        }
+      }
+    },
+    "领地总面积达到 5 km²" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total territory reaches 5 km²"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地总面积达到 5 km²"
           }
         }
       }
@@ -15018,6 +16074,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地登记成功！"
+          }
+        }
+      }
+    },
+    "领地面积" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地面积"
           }
         }
       }

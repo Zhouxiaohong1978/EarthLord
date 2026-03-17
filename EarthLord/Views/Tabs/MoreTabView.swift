@@ -15,6 +15,21 @@ struct MoreTabView: View {
                     .ignoresSafeArea()
 
                 List {
+                    NavigationLink {
+                        AchievementView()
+                            .navigationTitle("成就")
+                            .navigationBarTitleDisplayMode(.large)
+                            .toolbarColorScheme(.dark, for: .navigationBar)
+                    } label: {
+                        MoreMenuRow(
+                            icon: "trophy.fill",
+                            iconColor: ApocalypseTheme.warning,
+                            title: "成就",
+                            subtitle: "查看你的末日旅程"
+                        )
+                    }
+                    .listRowBackground(ApocalypseTheme.cardBackground)
+                    .listRowSeparatorTint(Color.white.opacity(0.08))
                 }
                 .scrollContentBackground(.hidden)
             }

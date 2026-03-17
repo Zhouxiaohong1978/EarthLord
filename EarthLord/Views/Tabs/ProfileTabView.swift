@@ -422,8 +422,8 @@ struct ProfileTabView: View {
 
             // 次级数据网格
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                miniStatCard(icon: "flag.fill",       iconColor: ApocalypseTheme.primary, value: "\(myTerritories.count)",                   label: "圈地总数")
-                miniStatCard(icon: "building.2.fill", iconColor: ApocalypseTheme.info,    value: "\(buildingManager.playerBuildings.count)", label: "建筑总数")
+                miniStatCard(icon: "binoculars.fill", iconColor: ApocalypseTheme.warning, value: "\(filteredExplorationCount)", label: "探索废墟")
+                miniStatCard(icon: "trophy.fill",     iconColor: ApocalypseTheme.warning, value: "\(AchievementManager.shared.totalUnlocked)/\(AchievementManager.shared.totalCount)", label: "解锁成就")
             }
 
             // 每日礼包（订阅用户）
@@ -529,6 +529,13 @@ struct ProfileTabView: View {
             return String(format: "%.2f km²", total / 1_000_000)
         }
         return String(format: "%.0f m²", total)
+    }
+
+    /// 时间筛选后的探索次数
+    private var filteredExplorationCount: Int {
+        let history = explorationStatsManager.history
+        guard let start = statsTimeFilter.startDate else { return history.count }
+        return history.filter { $0.startTime >= start }.count
     }
 
     private func bigMetricCard(icon: String, iconColor: Color, value: String, label: String) -> some View {

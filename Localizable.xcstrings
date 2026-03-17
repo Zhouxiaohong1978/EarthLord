@@ -1,29 +1,8 @@
 {
   "sourceLanguage" : "zh-Hans",
-  "strings" : {
-    "矿泉水" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Water Bottle" } } } },
-    "罐头食品" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Canned Food" } } } },
-    "绷带" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Bandage" } } } },
-    "药品" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Medicine" } } } },
-    "布料" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Cloth" } } } },
-    "种子" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Seeds" } } } },
-    "钉子" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Nails" } } } },
-    "工具" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Tool" } } } },
-    "工具箱" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Toolbox" } } } },
-    "手电筒" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Flashlight" } } } },
-    "绳子" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rope" } } } },
-    "面包" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Bread" } } } },
-    "建筑加速令" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Build Speedup" } } } },
-    "急救包" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "First Aid Kit" } } } },
-    "抗生素" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Antibiotics" } } } },
-    "电子元件" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Electronic Component" } } } },
-    "卫星模块" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Satellite Module" } } } },
-    "燃料" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Fuel" } } } },
-    "搜刮令" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Scavenge Pass" } } } },
-    "基础图纸" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Basic Blueprint" } } } },
-    "史诗图纸" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Epic Blueprint" } } } },
-    "稀有装备" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rare Equipment" } } } },
-    "史诗装备" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Epic Equipment" } } } },
+  "strings" : {\
+    "探索废墟" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Ruins Explored" } } } },\
+    "解锁成就" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Achievements" } } } },
     "" : {
       "localizations" : {
         "en" : {
@@ -5640,6 +5619,17 @@
         }
       }
     },
+    "卫星模块" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Satellite Module"
+          }
+        }
+      }
+    },
     "卫星电话" : {
       "localizations" : {
         "en" : {
@@ -6280,6 +6270,28 @@
         }
       }
     },
+    "史诗图纸" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Epic Blueprint"
+          }
+        }
+      }
+    },
+    "史诗装备" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Epic Equipment"
+          }
+        }
+      }
+    },
     "呼叫" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6627,6 +6639,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Basic Vitals"
+          }
+        }
+      }
+    },
+    "基础图纸" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basic Blueprint"
           }
         }
       }
@@ -7138,13 +7161,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tools"
+            "value" : "Tool"
           }
-        },
-        "zh-Hans" : {
+        }
+      }
+    },
+    "工具箱" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "工具"
+            "value" : "Toolbox"
           }
         }
       }
@@ -7665,6 +7693,17 @@
         }
       }
     },
+    "布料" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloth"
+          }
+        }
+      }
+    },
     "帮助" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7958,6 +7997,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "建筑列表"
+          }
+        }
+      }
+    },
+    "建筑加速令" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build Speedup"
           }
         }
       }
@@ -8681,6 +8731,17 @@
         }
       }
     },
+    "急救包" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First Aid Kit"
+          }
+        }
+      }
+    },
     "总榜" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9098,6 +9159,17 @@
         }
       }
     },
+    "手电筒" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flashlight"
+          }
+        }
+      }
+    },
     "打开资源背包，找到食物/水/药品" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9155,6 +9227,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "技术支持"
+          }
+        }
+      }
+    },
+    "抗生素" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antibiotics"
           }
         }
       }
@@ -9671,6 +9754,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "提交评价"
+          }
+        }
+      }
+    },
+    "搜刮令" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scavenge Pass"
           }
         }
       }
@@ -11784,6 +11878,17 @@
         }
       }
     },
+    "燃料" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuel"
+          }
+        }
+      }
+    },
     "版本信息" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12062,6 +12167,17 @@
         }
       }
     },
+    "电子元件" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Electronic Component"
+          }
+        }
+      }
+    },
     "电子店" : {
       "localizations" : {
         "en" : {
@@ -12208,6 +12324,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "石头"
+          }
+        }
+      }
+    },
+    "矿泉水" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Water Bottle"
           }
         }
       }
@@ -12654,6 +12781,17 @@
         }
       }
     },
+    "种子" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seeds"
+          }
+        }
+      }
+    },
     "秒" : {
       "localizations" : {
         "en" : {
@@ -12698,6 +12836,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "稀有"
+          }
+        }
+      }
+    },
+    "稀有装备" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rare Equipment"
           }
         }
       }
@@ -13274,6 +13423,28 @@
         }
       }
     },
+    "绳子" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rope"
+          }
+        }
+      }
+    },
+    "绷带" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bandage"
+          }
+        }
+      }
+    },
     "综合统计" : {
       "localizations" : {
         "en" : {
@@ -13401,6 +13572,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "缺少 %lld"
+          }
+        }
+      }
+    },
+    "罐头食品" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canned Food"
           }
         }
       }
@@ -13692,6 +13874,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Good"
+          }
+        }
+      }
+    },
+    "药品" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medicine"
           }
         }
       }
@@ -15713,6 +15906,17 @@
         }
       }
     },
+    "钉子" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nails"
+          }
+        }
+      }
+    },
     "错误" : {
       "localizations" : {
         "en" : {
@@ -15970,6 +16174,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "需要先开始探索才能搜刮"
+          }
+        }
+      }
+    },
+    "面包" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bread"
           }
         }
       }

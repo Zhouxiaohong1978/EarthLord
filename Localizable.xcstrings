@@ -1,8 +1,6 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
-    "探索废墟" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Ruins Explored" } } } },
-    "解锁成就" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Achievements" } } } },
     "" : {
       "localizations" : {
         "en" : {
@@ -9499,6 +9497,17 @@
         }
       }
     },
+    "探索废墟" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruins Explored"
+          }
+        }
+      }
+    },
     "探索收集资源" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14095,6 +14104,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "解锁专属特权"
+          }
+        }
+      }
+    },
+    "解锁成就" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Achievements"
           }
         }
       }

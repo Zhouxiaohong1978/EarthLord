@@ -643,7 +643,7 @@ struct BackpackItemCard: View {
     private var actionButtons: some View {
         VStack(spacing: 6) {
             // 使用按钮（仅食物/水/药品显示）
-            if PhysiqueManager.shared.canUse(itemId: item.itemId) {
+            if definition.category == .food || definition.category == .water || definition.category == .medical {
                 Button {
                     onUse?()
                 } label: {

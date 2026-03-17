@@ -948,7 +948,14 @@ struct BackpackContentView: View {
                         BackpackItemCardNew(
                             itemId: group.itemId,
                             totalQuantity: group.totalQuantity,
-                            definition: definition
+                            definition: definition,
+                            onUse: {
+                                Task { @MainActor in
+                                    if let backpackItem = inventoryManager.items.first(where: { $0.itemId == group.itemId }) {
+                                        try? await PhysiqueManager.shared.useItem(backpackItem)
+                                    }
+                                }
+                            }
                         )
                     }
                 }
@@ -1036,6 +1043,7 @@ struct BackpackItemCardNew: View {
     let itemId: String
     let totalQuantity: Int
     let definition: ItemDefinition
+    var onUse: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1088,31 +1096,18 @@ struct BackpackItemCardNew: View {
 
             Spacer()
 
-            // 操作按钮
-            VStack(spacing: 6) {
+            // 使用按钮（仅食物/水/药品）
+            if definition.category == .food || definition.category == .water || definition.category == .medical {
                 Button {
-                    print("使用: \(definition.name)")
+                    onUse?()
                 } label: {
-                    Text(LocalizedStringKey("使用"))
+                    Text(LanguageManager.shared.localizedString(for: "使用"))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white)
                         .frame(width: 48, height: 26)
                         .background(
                             RoundedRectangle(cornerRadius: 6)
                                 .fill(ApocalypseTheme.primary)
-                        )
-                }
-
-                Button {
-                    print("存储: \(definition.name)")
-                } label: {
-                    Text(LocalizedStringKey("存储"))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(ApocalypseTheme.textSecondary)
-                        .frame(width: 48, height: 26)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(ApocalypseTheme.textMuted.opacity(0.5), lineWidth: 1)
                         )
                 }
             }

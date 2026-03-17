@@ -420,7 +420,7 @@ struct BackpackView: View {
                         BackpackItemCard(item: item, definition: definition, onUse: {
                             Task {
                                 try? await PhysiqueManager.shared.useItem(item)
-                                await InventoryManager.shared.getInventory()
+                                _ = try? await InventoryManager.shared.getInventory()
                             }
                         })
                             .transition(.asymmetric(

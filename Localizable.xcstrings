@@ -1,7 +1,7 @@
 {
   "sourceLanguage" : "zh-Hans",
-  "strings" : {\
-    "探索废墟" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Ruins Explored" } } } },\
+  "strings" : {
+    "探索废墟" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Ruins Explored" } } } },
     "解锁成就" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Achievements" } } } },
     "" : {
       "localizations" : {

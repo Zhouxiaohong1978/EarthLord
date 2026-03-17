@@ -360,7 +360,7 @@ struct ProfileTabView: View {
         case .stats:    statsContent
         case .rank:     LeaderboardView()
         case .achieve:  AchievementView()
-        case .physique: comingSoonPlaceholder(icon: "figure.walk", title: "体征数据", subtitle: "即将推出")
+        case .physique: PhysiqueView()
         }
     }
 

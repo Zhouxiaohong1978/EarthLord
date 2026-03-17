@@ -417,7 +417,12 @@ struct BackpackView: View {
             LazyVStack(spacing: 10) {
                 ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
                     if let definition = MockExplorationData.getItemDefinition(by: item.itemId) {
-                        BackpackItemCard(item: item, definition: definition)
+                        BackpackItemCard(item: item, definition: definition, onUse: {
+                            Task {
+                                try? await PhysiqueManager.shared.useItem(item)
+                                await InventoryManager.shared.getInventory()
+                            }
+                        })
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .move(edge: .trailing)),
                                 removal: .opacity.combined(with: .move(edge: .leading))
@@ -542,6 +547,7 @@ struct CategoryChip: View {
 struct BackpackItemCard: View {
     let item: BackpackItem
     let definition: ItemDefinition
+    var onUse: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -636,33 +642,22 @@ struct BackpackItemCard: View {
 
     private var actionButtons: some View {
         VStack(spacing: 6) {
-            // 使用按钮
-            Button {
-                print("使用物品: \(definition.name)")
-            } label: {
-                Text("使用")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 26)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(ApocalypseTheme.primary)
-                    )
+            // 使用按钮（仅食物/水/药品显示）
+            if PhysiqueManager.shared.canUse(itemId: item.itemId) {
+                Button {
+                    onUse?()
+                } label: {
+                    Text(LanguageManager.shared.localizedString(for: "使用"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 48, height: 26)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(ApocalypseTheme.primary)
+                        )
+                }
             }
 
-            // 存储按钮
-            Button {
-                print("存储物品: \(definition.name)")
-            } label: {
-                Text("存储")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(ApocalypseTheme.textSecondary)
-                    .frame(width: 48, height: 26)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(ApocalypseTheme.textMuted.opacity(0.5), lineWidth: 1)
-                    )
-            }
         }
     }
 }

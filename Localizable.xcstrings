@@ -1,6 +1,111 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "激活的增益" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Active Buffs" } }
+      }
+    },
+    "没有激活的增益" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No Active Buffs" } }
+      }
+    },
+    "使用食物、水或药品获得增益" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use food, water, or medicine to gain buffs" } }
+      }
+    },
+    "领主光环：体征衰减 -30%" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lord Aura: Vitals decay -30%" } }
+      }
+    },
+    "探索者加持：体征衰减 -15%" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explorer Boost: Vitals decay -15%" } }
+      }
+    },
+    "Critical Life Warning" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Critical Life Warning" } }
+      }
+    },
+    "严重缺水，请立即补充水分" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Severely dehydrated, replenish water immediately" } }
+      }
+    },
+    "长时间未进食，体力急剧下降" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Haven't eaten for a long time, stamina dropping fast" } }
+      }
+    },
+    "Until Death" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Until Death" } }
+      }
+    },
+    "%.0f 小时" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%.0f hrs" } }
+      }
+    },
+    "%d 天" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d days" } }
+      }
+    },
+    "核心生命" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Core Life" } }
+      }
+    },
+    "基础体征" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Basic Vitals" } }
+      }
+    },
+    "饱食度" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Satiety" } }
+      }
+    },
+    "水分" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hydration" } }
+      }
+    },
+    "饱食度/水分>80时获得增益，请及时补给" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Satiety/Hydration >80 grants buffs — replenish regularly" } }
+      }
+    },
+    "巅峰" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Peak" } }
+      }
+    },
+    "良好" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Good" } }
+      }
+    },
+    "疲惫" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tired" } }
+      }
+    },
+    "濒死" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Critical" } }
+      }
+    },
+    "使用" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use" } }
+      }
+    },
     "" : {
       "localizations" : {
         "en" : {

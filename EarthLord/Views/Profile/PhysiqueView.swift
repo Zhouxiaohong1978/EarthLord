@@ -48,19 +48,21 @@ struct PhysiqueView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.success.opacity(0.1)))
             } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(.title2)
-                        .foregroundColor(ApocalypseTheme.textMuted)
-                    Text(lm.localizedString(for: "没有激活的增益"))
-                        .font(.subheadline)
-                        .foregroundColor(ApocalypseTheme.textSecondary)
-                    Text(lm.localizedString(for: "使用食物、水或药品获得增益"))
-                        .font(.caption)
-                        .foregroundColor(ApocalypseTheme.textMuted)
+                VStack(spacing: 10) {
+                    buffGuideRow(step: "1",
+                                 icon: "figure.walk",
+                                 iconColor: ApocalypseTheme.info,
+                                 textKey: "前往地图探索，获取食物和水")
+                    buffGuideRow(step: "2",
+                                 icon: "backpack.fill",
+                                 iconColor: ApocalypseTheme.warning,
+                                 textKey: "打开资源背包，找到食物/水/药品")
+                    buffGuideRow(step: "3",
+                                 icon: "hand.tap.fill",
+                                 iconColor: ApocalypseTheme.success,
+                                 textKey: "点击「使用」即可恢复体征并激活增益")
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
+                .padding(.vertical, 4)
             }
         }
         .padding(16)
@@ -231,6 +233,27 @@ struct PhysiqueView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+    }
+
+    private func buffGuideRow(step: String, icon: String, iconColor: Color, textKey: String) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(iconColor.opacity(0.15)).frame(width: 36, height: 36)
+                Image(systemName: icon)
+                    .font(.system(size: 15))
+                    .foregroundColor(iconColor)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(lm.localizedString(for: "步骤 \(step)"))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(iconColor)
+                Text(lm.localizedString(for: textKey))
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 4)
     }
 
     private var lifeBarColor: Color {

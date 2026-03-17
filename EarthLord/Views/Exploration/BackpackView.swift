@@ -418,9 +418,8 @@ struct BackpackView: View {
                 ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
                     if let definition = MockExplorationData.getItemDefinition(by: item.itemId) {
                         BackpackItemCard(item: item, definition: definition, onUse: {
-                            Task {
+                            Task { @MainActor in
                                 try? await PhysiqueManager.shared.useItem(item)
-                                _ = try? await InventoryManager.shared.getInventory()
                             }
                         })
                             .transition(.asymmetric(

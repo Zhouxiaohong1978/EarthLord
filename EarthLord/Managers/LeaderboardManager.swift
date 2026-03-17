@@ -109,7 +109,7 @@ final class LeaderboardManager: ObservableObject {
                 aggregated = try await fetchBuildingsRanking(timeFilter: timeFilter)
             }
 
-            totalPlayerCount = aggregated.count
+            totalPlayerCount = aggregated.count  // 已含全部注册用户（含 0 分）
             let top20 = Array(aggregated.prefix(20))
             let userIds = top20.map { $0.userId }
             let names = try await fetchUsernames(userIds: userIds)
@@ -152,6 +152,26 @@ final class LeaderboardManager: ObservableObject {
 
     // MARK: - Queries
 
+    /// 获取所有注册用户 id → displayName
+    private func fetchAllProfiles() async throws -> [String: String] {
+        struct Profile: Codable {
+            let id: String
+            let username: String?
+            let callsign: String?
+        }
+        let profiles: [Profile] = try await supabase
+            .from("profiles")
+            .select("id, username, callsign")
+            .execute()
+            .value
+
+        var result: [String: String] = [:]
+        for p in profiles {
+            result[p.id] = p.username ?? p.callsign ?? maskUserId(p.id)
+        }
+        return result
+    }
+
     private func fetchDistanceRanking(timeFilter: TimeFilter) async throws -> [(userId: String, value: Double)] {
         struct Record: Codable {
             let userId: String
@@ -164,19 +184,25 @@ final class LeaderboardManager: ObservableObject {
             }
         }
 
+        async let allProfilesTask = fetchAllProfiles()
+
         var query = supabase
             .from("exploration_sessions")
             .select("user_id, distance_walked, started_at")
             .eq("status", value: "completed")
-
         if let start = timeFilter.startDate {
             query = query.gte("started_at", value: ISO8601DateFormatter().string(from: start))
         }
-
         let records: [Record] = try await query.execute().value
 
         var totals: [String: Double] = [:]
         for r in records { totals[r.userId, default: 0] += r.distanceWalked }
+
+        // 合并全部用户，无记录默认 0
+        let allProfiles = try await allProfilesTask
+        for uid in allProfiles.keys where totals[uid] == nil {
+            totals[uid] = 0
+        }
         return totals.map { ($0.key, $0.value) }.sorted { $0.value > $1.value }
     }
 
@@ -184,29 +210,32 @@ final class LeaderboardManager: ObservableObject {
         struct Record: Codable {
             let userId: String
             let area: Double
-            let completedAt: String?
             let createdAt: String?
             enum CodingKeys: String, CodingKey {
                 case userId = "user_id"
                 case area
-                case completedAt = "completed_at"
                 case createdAt = "created_at"
             }
         }
 
+        async let allProfilesTask = fetchAllProfiles()
+
         var query = supabase
             .from("territories")
-            .select("user_id, area, completed_at, created_at")
+            .select("user_id, area, created_at")
             .eq("is_active", value: true)
-
         if let start = timeFilter.startDate {
             query = query.gte("created_at", value: ISO8601DateFormatter().string(from: start))
         }
-
         let records: [Record] = try await query.execute().value
 
         var totals: [String: Double] = [:]
         for r in records { totals[r.userId, default: 0] += r.area }
+
+        let allProfiles = try await allProfilesTask
+        for uid in allProfiles.keys where totals[uid] == nil {
+            totals[uid] = 0
+        }
         return totals.map { ($0.key, $0.value) }.sorted { $0.value > $1.value }
     }
 
@@ -220,18 +249,23 @@ final class LeaderboardManager: ObservableObject {
             }
         }
 
+        async let allProfilesTask = fetchAllProfiles()
+
         var query = supabase
             .from("player_buildings")
             .select("user_id, created_at")
-
         if let start = timeFilter.startDate {
             query = query.gte("created_at", value: ISO8601DateFormatter().string(from: start))
         }
-
         let records: [Record] = try await query.execute().value
 
         var counts: [String: Double] = [:]
         for r in records { counts[r.userId, default: 0] += 1 }
+
+        let allProfiles = try await allProfilesTask
+        for uid in allProfiles.keys where counts[uid] == nil {
+            counts[uid] = 0
+        }
         return counts.map { ($0.key, $0.value) }.sorted { $0.value > $1.value }
     }
 

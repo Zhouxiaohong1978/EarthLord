@@ -408,7 +408,7 @@ struct ProfileTabView: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 bigMetricCard(icon: "figure.walk",    iconColor: ApocalypseTheme.info,    value: filteredDistance,                      label: "距离")
                 bigMetricCard(icon: "map.fill",       iconColor: ApocalypseTheme.success, value: filteredArea,                          label: "面积")
-                bigMetricCard(icon: "binoculars.fill", iconColor: ApocalypseTheme.primary, value: "\(filteredExplorationCount) 次",     label: "探索废墟")
+                bigMetricCard(icon: "binoculars.fill", iconColor: ApocalypseTheme.primary, value: "\(filteredExplorationCount) \(LanguageManager.shared.localizedString(for: "次"))", label: "探索废墟")
                 achievementCard
             }
 
@@ -547,7 +547,7 @@ struct ProfileTabView: View {
             .frame(width: 36, height: 36)
 
             // 数字
-            Text(verbatim: "\(unlocked)/\(total) 项")
+            Text(verbatim: "\(unlocked)/\(total) \(LanguageManager.shared.localizedString(for: "项"))")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)

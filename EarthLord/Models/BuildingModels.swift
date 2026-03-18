@@ -19,52 +19,45 @@ enum BuildingCategory: String, Codable, CaseIterable {
     case production = "production"       // 生产
     case energy = "energy"               // 能源
     case communication = "communication" // 通讯
+    case defense = "defense"             // 防御
+    case glory = "glory"                 // 荣耀
 
     /// 本地化显示名称
     var displayName: String {
         switch self {
-        case .survival:
-            return String(localized: "生存")
-        case .storage:
-            return String(localized: "储存")
-        case .production:
-            return String(localized: "生产")
-        case .energy:
-            return String(localized: "能源")
-        case .communication:
-            return String(localized: "通讯")
+        case .survival:      return String(localized: "生存")
+        case .storage:       return String(localized: "储存")
+        case .production:    return String(localized: "生产")
+        case .energy:        return String(localized: "能源")
+        case .communication: return String(localized: "通讯")
+        case .defense:       return String(localized: "防御")
+        case .glory:         return String(localized: "荣耀")
         }
     }
 
     /// SF Symbol 图标
     var icon: String {
         switch self {
-        case .survival:
-            return "flame.fill"
-        case .storage:
-            return "archivebox.fill"
-        case .production:
-            return "hammer.fill"
-        case .energy:
-            return "bolt.fill"
-        case .communication:
-            return "antenna.radiowaves.left.and.right"
+        case .survival:      return "flame.fill"
+        case .storage:       return "archivebox.fill"
+        case .production:    return "hammer.fill"
+        case .energy:        return "bolt.fill"
+        case .communication: return "antenna.radiowaves.left.and.right"
+        case .defense:       return "shield.fill"
+        case .glory:         return "crown.fill"
         }
     }
 
     /// 分类颜色
     var color: Color {
         switch self {
-        case .survival:
-            return ApocalypseTheme.primary
-        case .storage:
-            return ApocalypseTheme.info
-        case .production:
-            return ApocalypseTheme.success
-        case .energy:
-            return ApocalypseTheme.warning
-        case .communication:
-            return ApocalypseTheme.danger
+        case .survival:      return ApocalypseTheme.primary
+        case .storage:       return ApocalypseTheme.info
+        case .production:    return ApocalypseTheme.success
+        case .energy:        return ApocalypseTheme.warning
+        case .communication: return ApocalypseTheme.danger
+        case .defense:       return Color(red: 0.6, green: 0.4, blue: 0.2)
+        case .glory:         return Color(red: 1.0, green: 0.85, blue: 0.0)
         }
     }
 }

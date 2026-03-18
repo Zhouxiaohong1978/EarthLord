@@ -102,6 +102,23 @@ final class BuildingManager: ObservableObject {
         territoryId: String,
         playerResources: [String: Int]
     ) -> CanBuildResult {
+        // 检查 blueprint 解锁条件
+        // lord_banner 需要 blueprint_basic，lord_command 需要 blueprint_epic
+        if template.templateId == "lord_banner" {
+            let hasBlueprint = (playerResources["blueprint_basic"] ?? 0) >= 1
+            if !hasBlueprint {
+                logger.log("建造检查失败：\(template.name) 需要基础图纸解锁", type: .warning)
+                return .insufficientResources(["blueprint_basic": 1], currentCount: 0, maxCount: template.maxPerTerritory)
+            }
+        }
+        if template.templateId == "lord_command" {
+            let hasBlueprint = (playerResources["blueprint_epic"] ?? 0) >= 1
+            if !hasBlueprint {
+                logger.log("建造检查失败：\(template.name) 需要史诗图纸解锁", type: .warning)
+                return .insufficientResources(["blueprint_epic": 1], currentCount: 0, maxCount: template.maxPerTerritory)
+            }
+        }
+
         // 检查领地内该建筑的数量
         let currentCount = playerBuildings.filter {
             $0.territoryId == territoryId && $0.templateId == template.templateId
@@ -130,6 +147,38 @@ final class BuildingManager: ObservableObject {
 
         logger.log("建造检查通过：\(template.name) (\(currentCount)/\(template.maxPerTerritory))", type: .success)
         return .success(currentCount: currentCount, maxCount: template.maxPerTerritory)
+    }
+
+    /// 使用建造加速令缩短当前建造时间（每个-30分钟，最多5个）
+    func applyBuildSpeedup(buildingId: UUID, tokenCount: Int) async throws {
+        guard tokenCount > 0 else { return }
+        let count = min(tokenCount, 5)
+
+        // 消耗背包中的 build_speedup
+        let items = InventoryManager.shared.items.filter { $0.itemId == "build_speedup" }
+        var remaining = count
+        for item in items {
+            guard remaining > 0 else { break }
+            let use = min(item.quantity, remaining)
+            try await InventoryManager.shared.useItem(inventoryId: item.id, quantity: use)
+            remaining -= use
+        }
+
+        // 更新建筑完成时间
+        guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }),
+              let currentCompletedAt = playerBuildings[index].buildCompletedAt else { return }
+
+        let reduction = TimeInterval(count * 1800) // 每个减30分钟
+        let newCompletedAt = max(Date(), currentCompletedAt - reduction)
+
+        try await supabase
+            .from("player_buildings")
+            .update(["build_completed_at": newCompletedAt.ISO8601Format()])
+            .eq("id", value: buildingId.uuidString)
+            .execute()
+
+        playerBuildings[index].buildCompletedAt = newCompletedAt
+        logger.log("建造加速：使用\(count)个加速令，缩短\(count * 30)分钟", type: .success)
     }
 
     /// 使用 InventoryManager 的背包数据检查是否可以建造
@@ -298,6 +347,9 @@ final class BuildingManager: ObservableObject {
             playerBuildings[index].updatedAt = now
 
             logger.log("建筑 \(building.buildingName) 建造完成", type: .success)
+
+            // 触发建筑效果
+            await applyBuildingEffects(templateId: building.templateId)
 
         } catch {
             logger.logError("完成建造失败", error: error)
@@ -517,13 +569,39 @@ final class BuildingManager: ObservableObject {
     }
 
     /// 获取领地内指定模板的建筑数量
-    /// - Parameters:
-    ///   - templateId: 模板 ID
-    ///   - territoryId: 领地 ID
-    /// - Returns: 建筑数量
     func getBuildingCount(templateId: String, territoryId: String) -> Int {
         return playerBuildings.filter {
             $0.templateId == templateId && $0.territoryId == territoryId
         }.count
+    }
+
+    /// 检查是否已建有指定建筑（任意领地，状态为active）
+    func hasActiveBuilding(templateId: String) -> Bool {
+        playerBuildings.contains { $0.templateId == templateId && $0.status == .active }
+    }
+
+    // MARK: - Building Effects
+
+    /// 建造完成后触发对应效果
+    private func applyBuildingEffects(templateId: String) async {
+        switch templateId {
+        case "signal_tower", "watchtower":
+            // 解锁对讲机通讯设备
+            await CommunicationManager.shared.unlockDeviceByBuilding(deviceType: "walkie_talkie")
+        case "radio_station":
+            // 解锁营地通讯设备
+            await CommunicationManager.shared.unlockDeviceByBuilding(deviceType: "camp_radio")
+        case "lord_command":
+            // 解锁卫星通讯设备
+            await CommunicationManager.shared.unlockDeviceByBuilding(deviceType: "satellite")
+        default:
+            break
+        }
+        logger.log("建筑效果已应用: \(templateId)", type: .info)
+    }
+
+    /// 计算发电机棚对通讯范围的加成倍率
+    var generatorRangeBonus: Double {
+        hasActiveBuilding(templateId: "generator_shed") ? 1.2 : 1.0
     }
 }

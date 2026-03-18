@@ -312,9 +312,52 @@ final class CommunicationManager: ObservableObject {
         return currentDevice?.canSend ?? false
     }
 
-    /// 获取当前通讯范围
+    /// 获取当前通讯范围（含建筑加成×订阅加成）
     func getCurrentRange() -> Double {
-        return currentDevice?.currentRange ?? 0
+        guard let device = currentDevice, device.canSend else { return 0 }
+        let base = device.currentRange
+        let generator = BuildingManager.shared.generatorRangeBonus
+        let subscription = SubscriptionManager.shared.communicationMultiplier
+        return base * generator * subscription
+    }
+
+    /// 由建筑完成触发设备解锁（供 BuildingManager 调用）
+    func unlockDeviceByBuilding(deviceType: String) async {
+        guard let userId = AuthManager.shared.currentUser?.id else { return }
+
+        // Lord 订阅者卫星设备已由订阅直接解锁，跳过
+        if deviceType == "satellite" && SubscriptionManager.shared.hasSatelliteAccess { return }
+
+        guard let type = DeviceType(rawValue: deviceType) else { return }
+        guard !(devices.first(where: { $0.deviceType == type })?.isUnlocked ?? false) else { return }
+
+        do {
+            try await unlockDevice(userId: userId, deviceType: type)
+            logger.log("建筑触发解锁通讯设备: \(type.displayName)", type: .success)
+        } catch {
+            logger.logError("建筑触发解锁通讯设备失败", error: error)
+        }
+    }
+
+    /// 使用设备升级令升级当前设备（供内购调用）
+    func applyDeviceUpgradeTokens(count: Int) async throws {
+        guard let userId = AuthManager.shared.currentUser?.id,
+              let device = currentDevice, device.isUnlocked else { return }
+        let applyCount = min(count, 10 - device.deviceLevel)
+        guard applyCount > 0 else { return }
+        for _ in 0..<applyCount {
+            try await upgradeDevice(userId: userId, deviceType: device.deviceType)
+        }
+        logger.log("设备升级令：升级 \(applyCount) 级", type: .success)
+    }
+
+    /// 检查 Lord 订阅者是否应自动解锁卫星
+    func ensureLordSatelliteAccess() async {
+        guard SubscriptionManager.shared.hasSatelliteAccess,
+              let userId = AuthManager.shared.currentUser?.id else { return }
+        let satType = DeviceType(rawValue: "satellite") ?? DeviceType.radio
+        guard !(devices.first(where: { $0.deviceType == satType })?.isUnlocked ?? false) else { return }
+        try? await unlockDevice(userId: userId, deviceType: satType)
     }
 
     /// 检查指定设备是否已解锁

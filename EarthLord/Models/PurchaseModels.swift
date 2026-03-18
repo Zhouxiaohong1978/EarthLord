@@ -15,6 +15,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
     case constructorPack = "com.earthlord.constructor_pack"
     case engineerPack    = "com.earthlord.engineer_pack"
     case rarePack        = "com.earthlord.rare_pack"
+    case capacityPack    = "com.earthlord.capacity_expansion"
+    case commPack        = "com.earthlord.comm_upgrade"
 
     var id: String { rawValue }
 
@@ -24,6 +26,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return String(localized: "pack.constructor.name")
         case .engineerPack:    return String(localized: "pack.engineer.name")
         case .rarePack:        return String(localized: "pack.rare.name")
+        case .capacityPack:    return String(localized: "pack.capacity.name")
+        case .commPack:        return String(localized: "pack.comm.name")
         }
     }
 
@@ -33,6 +37,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return 18
         case .engineerPack:    return 30
         case .rarePack:        return 68
+        case .capacityPack:    return 12
+        case .commPack:        return 25
         }
     }
 
@@ -42,6 +48,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return "hammer.fill"
         case .engineerPack:    return "wrench.and.screwdriver.fill"
         case .rarePack:        return "crown.fill"
+        case .capacityPack:    return "backpack.fill"
+        case .commPack:        return "antenna.radiowaves.left.and.right"
         }
     }
 
@@ -51,6 +59,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return "blue"
         case .engineerPack:    return "purple"
         case .rarePack:        return "orange"
+        case .capacityPack:    return "teal"
+        case .commPack:        return "cyan"
         }
     }
 }
@@ -146,6 +156,24 @@ extension SupplyPackConfig {
                 BonusItem(item: PackItem(itemId: "blueprint_epic",  quantity: 1, quality: nil),          probability: 30),
                 BonusItem(item: PackItem(itemId: "blueprint_basic", quantity: 2, quality: nil),          probability: 55)
             ]
+        ),
+
+        // ¥12 — 永久背包扩容，最多购买3次（每次+300格）
+        .capacityPack: SupplyPackConfig(
+            product: .capacityPack,
+            baseItems: [
+                PackItem(itemId: "capacity_expansion", quantity: 1, quality: nil)
+            ],
+            bonusItems: []
+        ),
+
+        // ¥25 — 通讯设备升级令×5，每个立即升当前设备1级
+        .commPack: SupplyPackConfig(
+            product: .commPack,
+            baseItems: [
+                PackItem(itemId: "device_upgrade_token", quantity: 5, quality: nil)
+            ],
+            bonusItems: []
         )
     ]
 }
@@ -182,6 +210,8 @@ extension String {
         case "blueprint_epic":        return String(localized: "item.blueprint_epic")
         case "equipment_rare":        return String(localized: "item.equipment_rare")
         case "equipment_epic":        return String(localized: "item.equipment_epic")
+        case "capacity_expansion":    return String(localized: "item.capacity_expansion")
+        case "device_upgrade_token":  return String(localized: "item.device_upgrade_token")
         default:                      return self
         }
     }
@@ -388,9 +418,9 @@ enum SubscriptionTier: String, Codable {
     // MARK: 背包容量
     var backpackCapacity: Int {
         switch self {
-        case .free:     return 100
-        case .explorer: return 200
-        case .lord:     return 300
+        case .free:     return 500
+        case .explorer: return 1500
+        case .lord:     return 3000
         }
     }
 
@@ -412,13 +442,21 @@ enum SubscriptionTier: String, Codable {
         }
     }
 
-    // MARK: 通讯范围（km）— 免费3km，探索者30km，领主100km
-    var communicationRadius: Double {
+    // MARK: 通讯范围倍率（叠加在建筑基础范围上）
+    // Free: 只能接收，建信号旗台后才能发送
+    // Explorer: 范围×1.3 + 营地频道权限
+    // Lord: 范围×1.6 + 全频道 + 卫星通讯免建筑直接解锁
+    var communicationMultiplier: Double {
         switch self {
-        case .free:     return 3.0
-        case .explorer: return 30.0
-        case .lord:     return 100.0
+        case .free:     return 1.0
+        case .explorer: return 1.3
+        case .lord:     return 1.6
         }
+    }
+
+    // MARK: Lord档是否直接解锁卫星通讯（无需建领主指挥所）
+    var hasSatelliteAccess: Bool {
+        self == .lord
     }
 
     // MARK: 步行奖励倍率 — 免费1x，探索者1.5x，领主2x

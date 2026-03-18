@@ -696,6 +696,30 @@ struct MockExplorationData {
             hasQuality: false
         ),
 
+        // 功能道具
+        ItemDefinition(
+            id: "capacity_expansion",
+            name: "背包扩容令",
+            category: .misc,
+            weight: 0.0,
+            volume: 0.0,
+            rarity: .rare,
+            description: "使用后永久增加300格背包容量，最多使用3次。",
+            maxStack: 3,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "device_upgrade_token",
+            name: "设备升级令",
+            category: .misc,
+            weight: 0.0,
+            volume: 0.0,
+            rarity: .rare,
+            description: "使用后当前通讯设备立即升1级，最高10级。",
+            maxStack: 10,
+            hasQuality: false
+        ),
+
         // 装备
         ItemDefinition(
             id: "equipment_rare",

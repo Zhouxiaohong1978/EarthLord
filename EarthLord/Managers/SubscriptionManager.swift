@@ -214,6 +214,9 @@ final class SubscriptionManager: ObservableObject {
                 // 5. 刷新订阅状态
                 await refreshSubscriptionStatus()
 
+                // 6. Lord 档自动解锁卫星通讯
+                await CommunicationManager.shared.ensureLordSatelliteAccess()
+
                 logger.log("订阅成功: \(product.displayName)", type: .success)
 
             case .userCancelled:
@@ -444,9 +447,14 @@ final class SubscriptionManager: ObservableObject {
         currentTier.dailyExplorationLimit
     }
 
-    /// 通讯范围（km）
-    var communicationRadius: Double {
-        currentTier.communicationRadius
+    /// 通讯范围倍率（叠加在建筑基础范围上）
+    var communicationMultiplier: Double {
+        currentTier.communicationMultiplier
+    }
+
+    /// Lord档是否直接解锁卫星通讯
+    var hasSatelliteAccess: Bool {
+        currentTier.hasSatelliteAccess
     }
 
     /// 步行探索奖励倍率

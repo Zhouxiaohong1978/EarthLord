@@ -312,14 +312,14 @@ final class InventoryManager: ObservableObject {
         SubscriptionManager.shared.backpackCapacity
     }
 
-    /// 检查背包是否已满
+    /// 检查背包是否已满（按物品总数量）
     var isBackpackFull: Bool {
-        itemTypeCount >= backpackCapacity
+        totalItemCount >= backpackCapacity
     }
 
-    /// 获取剩余背包容量
+    /// 获取剩余背包容量（按物品总数量）
     var remainingCapacity: Int {
-        max(0, backpackCapacity - itemTypeCount)
+        max(0, backpackCapacity - totalItemCount)
     }
 
     // MARK: - Private Methods

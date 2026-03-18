@@ -713,16 +713,20 @@ struct BackpackContentView: View {
     @State private var selectedFilter: BackpackFilterType = .all
     @State private var animatedCapacity: Double = 0
 
-    private let maxCapacity: Double = 100
-
-    /// 当前容量（从背包管理器动态获取 - 使用总重量kg）
+    /// 当前容量（物品总数量）
     private var currentCapacity: Double {
-        inventoryManager.totalWeight
+        Double(inventoryManager.totalItemCount)
+    }
+
+    /// 背包上限（订阅档位决定）
+    private var maxCapacity: Double {
+        Double(inventoryManager.backpackCapacity)
     }
 
     /// 容量使用百分比
     private var capacityPercentage: Double {
-        currentCapacity / maxCapacity
+        guard maxCapacity > 0 else { return 0 }
+        return currentCapacity / maxCapacity
     }
 
     /// 容量进度条颜色
@@ -851,21 +855,21 @@ struct BackpackContentView: View {
 
                 Spacer()
 
-                let itemTypes = inventoryManager.itemTypeCount  // 物品种类数
-                let maxSlots = inventoryManager.backpackCapacity  // 背包容量（基于订阅档位）
-                let slotsPercentage = Double(itemTypes) / Double(maxSlots)
+                let totalQty = inventoryManager.totalItemCount
+                let maxSlots = inventoryManager.backpackCapacity
+                let slotsPercentage = Double(totalQty) / Double(maxSlots)
                 let slotsColor: Color = slotsPercentage > 0.9 ? ApocalypseTheme.danger : (slotsPercentage > 0.7 ? ApocalypseTheme.warning : ApocalypseTheme.success)
 
-                Text("\(itemTypes) / \(maxSlots)")
+                Text("\(totalQty) / \(maxSlots)")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(slotsColor)
             }
 
             // 进度条
             GeometryReader { geometry in
-                let itemTypes = inventoryManager.itemTypeCount
+                let totalQty = inventoryManager.totalItemCount
                 let maxSlots = inventoryManager.backpackCapacity
-                let slotsPercentage = Double(itemTypes) / Double(maxSlots)
+                let slotsPercentage = Double(totalQty) / Double(maxSlots)
                 let slotsColor: Color = slotsPercentage > 0.9 ? ApocalypseTheme.danger : (slotsPercentage > 0.7 ? ApocalypseTheme.warning : ApocalypseTheme.success)
 
                 ZStack(alignment: .leading) {
@@ -875,7 +879,7 @@ struct BackpackContentView: View {
 
                     RoundedRectangle(cornerRadius: 4)
                         .fill(slotsColor)
-                        .frame(width: geometry.size.width * slotsPercentage, height: 8)
+                        .frame(width: geometry.size.width * min(slotsPercentage, 1.0), height: 8)
                 }
             }
             .frame(height: 8)

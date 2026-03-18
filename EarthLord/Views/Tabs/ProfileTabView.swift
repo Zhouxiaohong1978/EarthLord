@@ -404,26 +404,12 @@ struct ProfileTabView: View {
             .padding(3)
             .background(RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.cardBackground))
 
-            // 距离 + 面积 主指标卡
-            HStack(spacing: 10) {
-                bigMetricCard(
-                    icon: "figure.walk",
-                    iconColor: ApocalypseTheme.info,
-                    value: filteredDistance,
-                    label: "距离"
-                )
-                bigMetricCard(
-                    icon: "map.fill",
-                    iconColor: ApocalypseTheme.success,
-                    value: filteredArea,
-                    label: "面积"
-                )
-            }
-
-            // 次级数据网格
+            // 四格等大指标卡
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                miniStatCard(icon: "binoculars.fill", iconColor: ApocalypseTheme.warning, value: "\(filteredExplorationCount)", label: "探索废墟")
-                miniStatCard(icon: "trophy.fill",     iconColor: ApocalypseTheme.warning, value: "\(AchievementManager.shared.totalUnlocked)/\(AchievementManager.shared.totalCount)", label: "解锁成就")
+                bigMetricCard(icon: "figure.walk",    iconColor: ApocalypseTheme.info,    value: filteredDistance,                      label: "距离")
+                bigMetricCard(icon: "map.fill",       iconColor: ApocalypseTheme.success, value: filteredArea,                          label: "面积")
+                bigMetricCard(icon: "binoculars.fill", iconColor: ApocalypseTheme.primary, value: "\(filteredExplorationCount) 次",     label: "探索废墟")
+                achievementCard
             }
 
             // 每日礼包（订阅用户）
@@ -536,6 +522,46 @@ struct ProfileTabView: View {
         let history = explorationStatsManager.history
         guard let start = statsTimeFilter.startDate else { return history.count }
         return history.filter { $0.startTime >= start }.count
+    }
+
+    private var achievementCard: some View {
+        let unlocked = AchievementManager.shared.totalUnlocked
+        let total    = AchievementManager.shared.totalCount
+        let progress = total > 0 ? Double(unlocked) / Double(total) : 0
+        let gold     = Color(red: 1.0, green: 0.85, blue: 0.0)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            // 圆形进度环
+            ZStack {
+                Circle()
+                    .stroke(gold.opacity(0.2), lineWidth: 4)
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(gold, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.6), value: progress)
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(gold)
+            }
+            .frame(width: 36, height: 36)
+
+            // 数字
+            Text(verbatim: "\(unlocked)/\(total) 项")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(ApocalypseTheme.textPrimary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+
+            Text(LocalizedStringKey("解锁成就"))
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(ApocalypseTheme.cardBackground)
+        .cornerRadius(14)
     }
 
     private func bigMetricCard(icon: String, iconColor: Color, value: String, label: String) -> some View {

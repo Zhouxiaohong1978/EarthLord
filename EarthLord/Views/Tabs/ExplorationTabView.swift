@@ -233,7 +233,14 @@ struct POIContentView: View {
         }
         switch sortOption {
         case .distance:
-            break // 保持 MapKit 返回的原始顺序（已按距离排序）
+            if let userCoord = locationManager.userLocation {
+                let userLoc = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
+                pois.sort {
+                    let aLoc = CLLocation(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude)
+                    let bLoc = CLLocation(latitude: $1.coordinate.latitude, longitude: $1.coordinate.longitude)
+                    return userLoc.distance(from: aLoc) < userLoc.distance(from: bLoc)
+                }
+            }
         case .discovered:
             pois.sort { a, b in
                 let aDiscovered = a.status != .undiscovered

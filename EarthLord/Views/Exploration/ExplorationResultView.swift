@@ -577,7 +577,7 @@ struct ExplorationResultView: View {
                     .background(
                         Group {
                             if isOverCapacity {
-                                Color(ApocalypseTheme.textMuted)
+                                ApocalypseTheme.textMuted
                             } else {
                                 LinearGradient(
                                     colors: [ApocalypseTheme.primary, ApocalypseTheme.primaryDark],

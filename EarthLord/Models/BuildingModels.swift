@@ -128,9 +128,11 @@ struct BuildingTemplate: Identifiable, Codable {
     let id: String
     let templateId: String
     let name: String
+    let nameEn: String?
     let category: BuildingCategory
     let tier: Int
     let description: String
+    let descriptionEn: String?
     let icon: String
     let requiredResources: [String: Int]
     let buildTimeSeconds: Int
@@ -141,9 +143,11 @@ struct BuildingTemplate: Identifiable, Codable {
         case id
         case templateId = "template_id"
         case name
+        case nameEn = "name_en"
         case category
         case tier
         case description
+        case descriptionEn = "description_en"
         case icon
         case requiredResources = "required_resources"
         case buildTimeSeconds = "build_time_seconds"
@@ -151,14 +155,28 @@ struct BuildingTemplate: Identifiable, Codable {
         case maxLevel = "max_level"
     }
 
-    /// 获取格式化的建造时间
+    /// 根据当前语言返回本地化名称
+    var localizedName: String {
+        let lang = Bundle.main.preferredLocalizations.first ?? "zh-Hans"
+        return lang.hasPrefix("en") ? (nameEn ?? name) : name
+    }
+
+    /// 根据当前语言返回本地化描述
+    var localizedDescription: String {
+        let lang = Bundle.main.preferredLocalizations.first ?? "zh-Hans"
+        return lang.hasPrefix("en") ? (descriptionEn ?? description) : description
+    }
+
+    /// 获取格式化的建造时间（本地化）
     var formattedBuildTime: String {
         let minutes = buildTimeSeconds / 60
         let seconds = buildTimeSeconds % 60
-        if minutes > 0 {
-            return "\(minutes)分\(seconds)秒"
+        if minutes > 0 && seconds > 0 {
+            return String(format: String(localized: "%d分%d秒"), minutes, seconds)
+        } else if minutes > 0 {
+            return String(format: String(localized: "%d分钟"), minutes)
         } else {
-            return "\(seconds)秒"
+            return String(format: String(localized: "%d秒"), seconds)
         }
     }
 

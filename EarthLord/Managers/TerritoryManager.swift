@@ -31,6 +31,14 @@ final class TerritoryManager {
     /// 已加载的领地数据（用于碰撞检测）
     private(set) var territories: [Territory] = []
 
+    /// 领地是否在地图上对其他玩家可见（信号旗台建成后设为 true）
+    private(set) var isTerritoryMapVisible: Bool = false
+
+    /// 设置领地地图可见性（由信号旗台建筑触发）
+    func setTerritoryMapVisible(_ visible: Bool) {
+        isTerritoryMapVisible = visible
+    }
+
     // MARK: - 坐标转换方法
 
     /// 将坐标数组转换为 path JSON 格式

@@ -113,7 +113,11 @@ struct MapTabView: View {
                 explorationPathVersion: explorationManager.explorationPathVersion,
                 isExploring: explorationManager.isExploring,
                 nearbyPOIs: explorationManager.isExploring ? explorationManager.nearbyPOIs : [],
-                coolingDownPOIKeys: []
+                coolingDownPOIKeys: Set(
+                    explorationManager.nearbyPOIs
+                        .filter { explorationManager.isCoolingDown($0) }
+                        .map { explorationManager.coordKey(for: $0.coordinate) }
+                )
             )
             .ignoresSafeArea()
 
@@ -206,9 +210,9 @@ struct MapTabView: View {
 
                 ScavengeResultView(
                     result: result,
-                    onConfirm: {
+                    onConfirm: { selectedIds in
                         Task {
-                            await explorationManager.confirmScavengeResult()
+                            await explorationManager.confirmScavengeResult(selectedIds: selectedIds)
                         }
                     },
                     onDiscard: {
@@ -250,7 +254,9 @@ struct MapTabView: View {
         // 探索结果弹窗
         .sheet(isPresented: $showExplorationResult) {
             if let result = explorationManager.explorationResult {
-                ExplorationResultView(result: result)
+                ExplorationResultView(result: result) { selectedIds in
+                    Task { await explorationManager.confirmExplorationRewards(selectedIds: selectedIds) }
+                }
             }
         }
         // 探索失败弹窗

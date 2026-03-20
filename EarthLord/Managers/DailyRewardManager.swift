@@ -198,15 +198,19 @@ final class DailyRewardManager: ObservableObject {
                 throw DailyRewardError.claimFailed("未找到礼包配置")
             }
 
-            // 将物品添加到背包
-            for item in config.items {
-                try await InventoryManager.shared.addItem(
-                    itemId: item.itemId,
-                    quantity: item.quantity,
-                    quality: item.quality,
-                    obtainedFrom: "每日礼包"
-                )
+            // 通过邮箱投递（支持背包已满时安全接收）
+            let mailItems = config.items.map { item in
+                MailItem(itemId: item.itemId, quantity: item.quantity, quality: item.quality?.rawValue)
             }
+            let tierName = currentTier.displayName
+            try await MailboxManager.shared.deliverItems(
+                to: userId,
+                mailType: .reward,
+                title: "\(tierName)\(String(localized: "每日礼包"))",
+                content: String(localized: "您的每日专属礼包已到达，请前往邮箱领取。"),
+                items: mailItems,
+                expiresInDays: 3
+            )
 
             // 记录到数据库
             try await saveRewardRecord(userId: userId, tier: currentTier, items: config.items)
@@ -214,7 +218,7 @@ final class DailyRewardManager: ObservableObject {
             // 更新状态
             hasClaimedToday = true
 
-            logger.log("每日礼包领取成功", type: .success)
+            logger.log("每日礼包已投递至邮箱", type: .success)
 
         } catch {
             logger.logError("领取每日礼包失败", error: error)

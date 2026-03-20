@@ -202,6 +202,16 @@ enum ItemQuality: String, CaseIterable, Codable {
     case normal = "普通"           // 正常效果
     case good = "良好"             // 效果略微提升
     case excellent = "优秀"        // 效果大幅提升
+
+    var displayName: String {
+        switch self {
+        case .broken:   return String(localized: "破损")
+        case .worn:     return String(localized: "磨损")
+        case .normal:   return String(localized: "普通")
+        case .good:     return String(localized: "良好")
+        case .excellent: return String(localized: "优秀")
+        }
+    }
 }
 
 /// 物品定义模型
@@ -704,8 +714,8 @@ struct MockExplorationData {
             weight: 0.0,
             volume: 0.0,
             rarity: .rare,
-            description: "使用后永久增加300格背包容量，最多使用3次。",
-            maxStack: 3,
+            description: "购买后永久增加500格背包容量，一次性非消耗品。",
+            maxStack: 1,
             hasQuality: false
         ),
         ItemDefinition(

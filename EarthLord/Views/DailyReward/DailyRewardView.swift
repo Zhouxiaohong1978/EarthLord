@@ -271,7 +271,7 @@ struct DailyRewardView: View {
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 if let quality = item.quality {
-                    Text(quality.rawValue)
+                    Text(quality.displayName)
                         .font(.caption2)
                         .foregroundColor(getQualityColor(quality: quality))
                 }
@@ -369,7 +369,7 @@ struct DailyRewardView: View {
     // MARK: - Helper Methods
 
     private func getItemName(itemId: String) -> String {
-        MockExplorationData.getItemDefinition(by: itemId)?.name ?? itemId
+        resourceDisplayName(for: itemId)
     }
 
     private func getItemIcon(itemId: String) -> String {

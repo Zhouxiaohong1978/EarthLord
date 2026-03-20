@@ -32,14 +32,14 @@ struct OfficialChannelDetailView: View {
             }
         }
         .background(ApocalypseTheme.background)
-        .navigationTitle("末日广播站")
+        .navigationTitle(String(localized: "末日广播站"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 4) {
                     Image(systemName: "megaphone.fill")
                         .foregroundColor(ApocalypseTheme.primary)
-                    Text("末日广播站")
+                    Text(String(localized: "末日广播站"))
                         .font(.headline)
                         .foregroundColor(ApocalypseTheme.textPrimary)
                     Image(systemName: "checkmark.seal.fill")
@@ -73,7 +73,7 @@ struct OfficialChannelDetailView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 // All category
-                categoryButton(nil, title: "全部")
+                categoryButton(nil, title: String(localized: "全部"))
 
                 // Specific categories
                 ForEach(MessageCategory.allCases, id: \.rawValue) { category in
@@ -140,7 +140,7 @@ struct OfficialChannelDetailView: View {
             Spacer()
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
-            Text("加载中...")
+            Text(String(localized: "加载中..."))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
                 .padding(.top, 8)
@@ -156,11 +156,11 @@ struct OfficialChannelDetailView: View {
                 .font(.system(size: 50))
                 .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
 
-            Text(selectedCategory == nil ? "暂无广播" : "暂无\(selectedCategory!.displayName)")
+            Text(selectedCategory == nil ? String(localized: "暂无广播") : String(format: String(localized: "暂无%@"), selectedCategory!.displayName))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("请稍后再来查看")
+            Text(String(localized: "请稍后再来查看"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -222,7 +222,7 @@ struct OfficialMessageCard: View {
             HStack {
                 Image(systemName: "megaphone.fill")
                     .font(.caption2)
-                Text(message.senderCallsign ?? "末日广播站")
+                Text(message.senderCallsign ?? String(localized: "末日广播站"))
                     .font(.caption2)
             }
             .foregroundColor(ApocalypseTheme.textSecondary)

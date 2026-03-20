@@ -30,7 +30,7 @@ struct TerritoryBuildingRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 // 名称 + 等级
                 HStack(spacing: 6) {
-                    Text(building.buildingName)
+                    Text(template?.localizedName ?? building.buildingName)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -236,9 +236,11 @@ struct CircularProgressView: View {
         id: "1",
         templateId: "campfire",
         name: "篝火",
+        nameEn: "Campfire",
         category: .survival,
         tier: 1,
         description: "提供温暖和照明",
+        descriptionEn: "Provides warmth and light.",
         icon: "flame.fill",
         requiredResources: ["wood": 30, "stone": 20],
         buildTimeSeconds: 300,

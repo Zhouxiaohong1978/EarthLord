@@ -15,7 +15,7 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
     case constructorPack = "com.earthlord.constructor_pack"
     case engineerPack    = "com.earthlord.engineer_pack"
     case rarePack        = "com.earthlord.rare_pack"
-    case capacityPack    = "com.earthlord.capacity_expansion"
+    case capacityPack    = "com.earthlord.capacity_expansion.v2"
     case commPack        = "com.earthlord.comm_upgrade"
 
     var id: String { rawValue }
@@ -158,12 +158,10 @@ extension SupplyPackConfig {
             ]
         ),
 
-        // ¥12 — 永久背包扩容，最多购买3次（每次+300格）
+        // ¥15 — Non-consumable，买一次永久扩容 +500格（由 PurchaseManager 直接处理，无物品）
         .capacityPack: SupplyPackConfig(
             product: .capacityPack,
-            baseItems: [
-                PackItem(itemId: "capacity_expansion", quantity: 1, quality: nil)
-            ],
+            baseItems: [],
             bonusItems: []
         ),
 
@@ -336,10 +334,10 @@ enum PurchaseError: LocalizedError {
 // MARK: - 订阅商品枚举
 
 enum SubscriptionProduct: String, CaseIterable, Identifiable {
-    case explorerMonthly = "com.earthlord.sub.basic.monthly"
-    case explorerYearly  = "com.earthlord.sub.basic.yearly"
-    case lordMonthly     = "com.earthlord.sub.premium.monthly"
-    case lordYearly      = "com.earthlord.sub.premium.yearly"
+    case explorerMonthly = "com.earthlord.sub.basic.monthly.v2"
+    case explorerYearly  = "com.earthlord.sub.basic.yearly.v2"
+    case lordMonthly     = "com.earthlord.sub.premium.monthly.v2"
+    case lordYearly      = "com.earthlord.sub.premium.yearly.v2"
 
     var id: String { rawValue }
 
@@ -375,8 +373,8 @@ enum SubscriptionProduct: String, CaseIterable, Identifiable {
 
     var savingsPercent: Int? {
         switch self {
-        case .explorerYearly: return 39
-        case .lordYearly:     return 44
+        case .explorerYearly: return 45
+        case .lordYearly:     return 45
         default:              return nil
         }
     }
@@ -421,6 +419,15 @@ enum SubscriptionTier: String, Codable {
         case .free:     return 500
         case .explorer: return 1500
         case .lord:     return 3000
+        }
+    }
+
+    // MARK: 探索POI数量（每次探索显示的兴趣点数）
+    var poiCount: Int {
+        switch self {
+        case .free:     return 4
+        case .explorer: return 8
+        case .lord:     return 12
         }
     }
 

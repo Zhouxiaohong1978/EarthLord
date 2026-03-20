@@ -28,31 +28,14 @@ enum PlayerDensityLevel: String, CaseIterable {
         }
     }
 
-    /// 该密度等级对应的POI显示数量范围
-    var poiCountRange: ClosedRange<Int> {
+    /// 稀有物品概率修正（影响搜刮物品质量）
+    /// 正值=提升稀有率（无人区废墟物资丰富），负值=降低稀有率（热门区物资匮乏）
+    var rareProbabilityModifier: Double {
         switch self {
-        case .loner:
-            return 1...1
-        case .low:
-            return 2...3
-        case .medium:
-            return 4...6
-        case .high:
-            return 7...Int.max  // 显示全部
-        }
-    }
-
-    /// 推荐的POI数量 (-1 表示不限制)
-    var recommendedPOICount: Int {
-        switch self {
-        case .loner:
-            return 1
-        case .low:
-            return 3
-        case .medium:
-            return 5
-        case .high:
-            return -1  // -1 表示不限制
+        case .loner:  return  0.30  // +30%：无人涉足的废墟，物资保存完好
+        case .low:    return  0.00  // 基准
+        case .medium: return -0.15  // -15%：经常有人搜刮
+        case .high:   return -0.30  // -30%：热门区域，几乎被翻遍
         }
     }
 

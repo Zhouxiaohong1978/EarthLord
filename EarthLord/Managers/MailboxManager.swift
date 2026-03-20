@@ -246,6 +246,32 @@ final class MailboxManager: ObservableObject {
         }
     }
 
+    // MARK: - 自动投递（供其他系统调用）
+
+    /// 自动将物品投递到玩家邮箱（探索溢出/交易完成/每日礼包调用）
+    func deliverItems(
+        to userId: UUID,
+        mailType: MailType,
+        title: String,
+        content: String,
+        items: [MailItem],
+        expiresInDays: Int = 7
+    ) async throws {
+        let itemsData = try JSONEncoder().encode(items)
+        let itemsString = String(data: itemsData, encoding: .utf8) ?? "[]"
+
+        let params: [String: AnyJSON] = [
+            "p_user_id": .string(userId.uuidString),
+            "p_mail_type": .string(mailType.rawValue),
+            "p_title": .string(title),
+            "p_content": .string(content),
+            "p_items": .string(itemsString)
+        ]
+
+        _ = try await supabase.rpc("send_mail", params: params).execute()
+        logger.log("自动投递邮件: \(title)，\(items.count) 种物品", type: .success)
+    }
+
     // MARK: - 测试方法（开发用）
 
     #if DEBUG

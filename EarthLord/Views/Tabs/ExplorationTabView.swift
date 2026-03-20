@@ -234,7 +234,8 @@ struct POIContentView: View {
         switch sortOption {
         case .distance:
             if let userCoord = locationManager.userLocation {
-                let userLoc = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
+                let gcj02 = CoordinateConverter.wgs84ToGcj02(userCoord)
+                let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
                 pois.sort {
                     let aLoc = CLLocation(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude)
                     let bLoc = CLLocation(latitude: $1.coordinate.latitude, longitude: $1.coordinate.longitude)
@@ -258,7 +259,8 @@ struct POIContentView: View {
 
     private func distanceString(for poi: POI) -> String? {
         guard let userCoord = locationManager.userLocation else { return nil }
-        let userLoc = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
+        let gcj02 = CoordinateConverter.wgs84ToGcj02(userCoord)
+        let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
         let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
         let meters = userLoc.distance(from: poiLoc)
         if meters < 1000 {

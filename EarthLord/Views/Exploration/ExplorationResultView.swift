@@ -22,8 +22,13 @@ struct ExplorationResultView: View {
     /// 重试回调
     var onRetry: (() -> Void)? = nil
 
+    /// 确认收取回调（传入勾选的物品 ID 集合）
+    var onConfirm: ((Set<UUID>) -> Void)? = nil
+
     /// 环境变量 - 关闭页面
     @Environment(\.dismiss) private var dismiss
+
+    @ObservedObject private var inventoryManager = InventoryManager.shared
 
     /// 动画状态
     @State private var showContent = false
@@ -35,6 +40,24 @@ struct ExplorationResultView: View {
     /// 累计距离和排名（异步加载）
     @State private var totalDistance: Double = 0
     @State private var rank: Int = 0
+
+    /// 勾选的物品 ID
+    @State private var selectedItemIds: Set<UUID> = []
+
+    /// 是否显示订阅升级弹窗
+    @State private var showSubscription = false
+
+    private var obtainedItems: [ObtainedItem] { result?.obtainedItems ?? [] }
+
+    private var remainingCapacity: Int { inventoryManager.remainingCapacity }
+
+    private var selectedTotalQuantity: Int {
+        obtainedItems
+            .filter { selectedItemIds.contains($0.id) }
+            .reduce(0) { $0 + $1.quantity }
+    }
+
+    private var isOverCapacity: Bool { selectedTotalQuantity > remainingCapacity }
 
     /// 是否为错误状态
     private var isError: Bool {
@@ -93,8 +116,20 @@ struct ExplorationResultView: View {
                 }
             }
         }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
+        }
         .onAppear {
             guard !isError else { return }
+            // 预选能装下的物品
+            var usedCapacity = 0
+            let capacity = inventoryManager.remainingCapacity
+            for item in obtainedItems {
+                if usedCapacity + item.quantity <= capacity {
+                    selectedItemIds.insert(item.id)
+                    usedCapacity += item.quantity
+                }
+            }
             // 延迟显示动画
             withAnimation(.easeOut(duration: 0.5)) {
                 showContent = true
@@ -380,9 +415,7 @@ struct ExplorationResultView: View {
     // MARK: - 奖励物品卡片
 
     private var rewardsCard: some View {
-        let obtainedItems = result?.obtainedItems ?? []
-
-        return VStack(spacing: 16) {
+        VStack(spacing: 16) {
             // 标题
             HStack {
                 Image(systemName: "gift.fill")
@@ -402,7 +435,6 @@ struct ExplorationResultView: View {
 
             // 物品列表
             if obtainedItems.isEmpty {
-                // 空状态
                 VStack(spacing: 8) {
                     Image(systemName: "tray")
                         .font(.system(size: 30))
@@ -415,40 +447,68 @@ struct ExplorationResultView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 20)
             } else {
+                // 背包容量提示
+                capacityBanner
+
                 VStack(spacing: 10) {
                     ForEach(Array(obtainedItems.enumerated()), id: \.element.id) { index, item in
                         if let definition = MockExplorationData.getItemDefinition(by: item.itemId) {
-                            RewardItemRow(
+                            SelectableRewardItemRow(
+                                item: item,
                                 name: definition.name,
-                                quantity: item.quantity,
                                 icon: definition.category.icon,
                                 color: definition.category.color,
-                                quality: item.quality,
-                                showCheckmark: showItems,
-                                animationDelay: Double(index) * 0.2
-                            )
+                                isSelected: selectedItemIds.contains(item.id)
+                            ) {
+                                if selectedItemIds.contains(item.id) {
+                                    selectedItemIds.remove(item.id)
+                                } else {
+                                    selectedItemIds.insert(item.id)
+                                }
+                            }
                             .opacity(showItems ? 1 : 0)
                             .offset(x: showItems ? 0 : -20)
                             .animation(
-                                .easeOut(duration: 0.4).delay(Double(index) * 0.2),
+                                .easeOut(duration: 0.4).delay(Double(index) * 0.1),
                                 value: showItems
                             )
                         }
                     }
                 }
 
-                // 底部提示
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(ApocalypseTheme.success)
-
-                    Text(LocalizedStringKey("已添加到背包"))
-                        .font(.system(size: 13))
-                        .foregroundColor(ApocalypseTheme.textMuted)
+                // 超出容量警告
+                if isOverCapacity {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(ApocalypseTheme.danger)
+                        Text(LocalizedStringKey("已选物品超出剩余容量，请取消勾选部分物品"))
+                            .font(.system(size: 12))
+                            .foregroundColor(ApocalypseTheme.danger)
+                    }
+                    .padding(.top, 4)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 8)
+
+                // 升级背包容量按钮
+                Button {
+                    showSubscription = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 13))
+                        Text(LocalizedStringKey("升级背包容量"))
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.primary)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(
+                        Capsule()
+                            .strokeBorder(ApocalypseTheme.primary.opacity(0.5), lineWidth: 1)
+                    )
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 4)
             }
         }
         .padding(18)
@@ -460,30 +520,88 @@ struct ExplorationResultView: View {
         .offset(y: showItems ? 0 : 20)
     }
 
+    private var capacityBanner: some View {
+        VStack(spacing: 6) {
+            HStack {
+                Text(LocalizedStringKey("背包容量"))
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                Spacer()
+                Text("\(inventoryManager.totalItemCount + selectedTotalQuantity)/\(inventoryManager.backpackCapacity)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isOverCapacity ? ApocalypseTheme.danger : ApocalypseTheme.textSecondary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(ApocalypseTheme.textMuted.opacity(0.2))
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(isOverCapacity ? ApocalypseTheme.danger : ApocalypseTheme.success)
+                        .frame(width: geo.size.width * min(1, Double(inventoryManager.totalItemCount + selectedTotalQuantity) / Double(max(1, inventoryManager.backpackCapacity))))
+                }
+            }
+            .frame(height: 6)
+            Text(String(format: String(localized: "剩余 %lld 格，已选 %lld 格"), remainingCapacity, selectedTotalQuantity))
+                .font(.system(size: 11))
+                .foregroundColor(isOverCapacity ? ApocalypseTheme.danger : ApocalypseTheme.textMuted)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(ApocalypseTheme.background)
+        )
+    }
+
     // MARK: - 确认按钮
 
     private var confirmButton: some View {
-        Button {
-            dismiss()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 16, weight: .bold))
-
-                Text(LocalizedStringKey("确认收下"))
-                    .font(.system(size: 17, weight: .bold))
+        VStack(spacing: 12) {
+            // 确认收取按钮
+            if !obtainedItems.isEmpty {
+                Button {
+                    onConfirm?(selectedItemIds)
+                    dismiss()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 16, weight: .bold))
+                        Text(selectedItemIds.isEmpty
+                             ? LocalizedStringKey("放弃全部物品")
+                             : LocalizedStringKey("确认收取"))
+                            .font(.system(size: 17, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(
+                        Group {
+                            if isOverCapacity {
+                                Color(ApocalypseTheme.textMuted)
+                            } else {
+                                LinearGradient(
+                                    colors: [ApocalypseTheme.primary, ApocalypseTheme.primaryDark],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            }
+                        }
+                    )
+                    .cornerRadius(14)
+                }
+                .disabled(isOverCapacity)
             }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(
-                LinearGradient(
-                    colors: [ApocalypseTheme.primary, ApocalypseTheme.primaryDark],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(14)
+
+            // 关闭/跳过按钮
+            Button {
+                dismiss()
+            } label: {
+                Text(obtainedItems.isEmpty ? LocalizedStringKey("关闭") : LocalizedStringKey("跳过，不收取物品"))
+                    .font(.system(size: 15))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+            }
         }
         .opacity(showItems ? 1 : 0)
     }
@@ -653,6 +771,72 @@ struct RewardItemRow: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(ApocalypseTheme.background)
         )
+    }
+}
+
+// MARK: - 可勾选奖励物品行
+
+struct SelectableRewardItemRow: View {
+    let item: ObtainedItem
+    let name: String
+    let icon: String
+    let color: Color
+    let isSelected: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 12) {
+                // 勾选框
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundColor(isSelected ? ApocalypseTheme.success : ApocalypseTheme.textMuted)
+
+                // 物品图标
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(isSelected ? 0.2 : 0.08))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(isSelected ? color : color.opacity(0.4))
+                }
+
+                // 物品信息
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(isSelected ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
+                    if let quality = item.quality {
+                        Text(quality.rawValue)
+                            .font(.system(size: 12))
+                            .foregroundColor(isSelected ? quality.color : quality.color.opacity(0.4))
+                    }
+                }
+
+                Spacer()
+
+                // 数量
+                Text("x\(item.quantity)")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(isSelected ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected
+                          ? ApocalypseTheme.background
+                          : ApocalypseTheme.background.opacity(0.5))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(
+                        isSelected ? ApocalypseTheme.success.opacity(0.3) : Color.clear,
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

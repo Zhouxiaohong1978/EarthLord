@@ -27,7 +27,7 @@ struct BuildingCard: View {
                 }
 
                 // 建筑名称
-                Text(template.name)
+                Text(template.localizedName)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
                     .lineLimit(1)
@@ -96,7 +96,7 @@ struct SelectableBuildingCard: View {
                 }
 
                 // 建筑名称
-                Text(template.name)
+                Text(template.localizedName)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
                     .lineLimit(1)
@@ -144,9 +144,11 @@ struct SelectableBuildingCard: View {
         id: "1",
         templateId: "campfire",
         name: "篝火",
+        nameEn: "Campfire",
         category: .survival,
         tier: 1,
         description: "提供温暖和照明",
+        descriptionEn: "Provides warmth and light.",
         icon: "flame.fill",
         requiredResources: ["wood": 30, "stone": 20],
         buildTimeSeconds: 300,
@@ -158,9 +160,11 @@ struct SelectableBuildingCard: View {
         id: "2",
         templateId: "storage",
         name: "小仓库",
+        nameEn: "Small Storage",
         category: .storage,
         tier: 1,
         description: "存储物资",
+        descriptionEn: "Store your supplies.",
         icon: "archivebox.fill",
         requiredResources: ["wood": 40, "scrap_metal": 20],
         buildTimeSeconds: 480,

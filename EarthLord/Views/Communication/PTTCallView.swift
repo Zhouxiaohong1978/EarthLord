@@ -24,14 +24,16 @@ struct PTTCallView: View {
     @State private var navigateToChannel: CommunicationChannel?
 
     // Quick message templates
-    private let quickMessages = [
-        "收到，明白",
-        "需要支援",
-        "发现资源",
-        "位置安全",
-        "正在撤离",
-        "保持静默"
-    ]
+    private var quickMessages: [String] {
+        [
+            String(localized: "收到，明白"),
+            String(localized: "需要支援"),
+            String(localized: "发现资源"),
+            String(localized: "位置安全"),
+            String(localized: "正在撤离"),
+            String(localized: "保持静默")
+        ]
+    }
 
     /// 可选择的目标频道（排除官方频道）
     private var availableChannels: [SubscribedChannel] {
@@ -89,7 +91,7 @@ struct PTTCallView: View {
 
     private var headerView: some View {
         VStack(spacing: 8) {
-            Text("PTT 通话")
+            Text(String(localized: "PTT 通话"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
@@ -99,7 +101,7 @@ struct PTTCallView: View {
                     Image(systemName: device.deviceType.iconName)
                     Text(device.deviceType.displayName)
                     Text("·")
-                    Text("覆盖 \(device.deviceType.rangeText)")
+                    Text(String(format: String(localized: "覆盖 %@"), device.deviceType.rangeText))
                 }
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textSecondary)
@@ -107,7 +109,7 @@ struct PTTCallView: View {
 
             // Callsign
             if let callsign = communicationManager.userCallsign {
-                Text("呼号: \(callsign)")
+                Text(String(format: String(localized: "呼号: %@"), callsign))
                     .font(.caption)
                     .foregroundColor(ApocalypseTheme.primary)
                     .padding(.top, 4)
@@ -128,14 +130,14 @@ struct PTTCallView: View {
                     .font(.caption)
 
                 if let target = targetChannel {
-                    Text("发送到: \(target.name)")
+                    Text(String(format: String(localized: "发送到: %@"), target.name))
                         .font(.caption)
                         .fontWeight(.medium)
                 } else if availableChannels.isEmpty {
-                    Text("请先订阅频道")
+                    Text(String(localized: "请先订阅频道"))
                         .font(.caption)
                 } else {
-                    Text("选择目标频道")
+                    Text(String(localized: "选择目标频道"))
                         .font(.caption)
                 }
 
@@ -162,10 +164,10 @@ struct PTTCallView: View {
                         Image(systemName: "antenna.radiowaves.left.and.right.slash")
                             .font(.system(size: 40))
                             .foregroundColor(ApocalypseTheme.textSecondary)
-                        Text("暂无可用频道")
+                        Text(String(localized: "暂无可用频道"))
                             .font(.headline)
                             .foregroundColor(ApocalypseTheme.textPrimary)
-                        Text("请先在频道中心订阅或创建频道")
+                        Text(String(localized: "请先在频道中心订阅或创建频道"))
                             .font(.caption)
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }
@@ -215,11 +217,11 @@ struct PTTCallView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(ApocalypseTheme.background)
-            .navigationTitle("选择目标频道")
+            .navigationTitle(String(localized: "选择目标频道"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { showChannelPicker = false }
+                    Button(String(localized: "取消")) { showChannelPicker = false }
                 }
             }
         }
@@ -254,7 +256,7 @@ struct PTTCallView: View {
             .frame(height: 160)
 
             // Status text
-            Text(isPressing ? "正在发送..." : (canSend ? "按住按钮发送消息" : "当前设备无法发送"))
+            Text(isPressing ? String(localized: "正在发送...") : (canSend ? String(localized: "按住按钮发送消息") : String(localized: "当前设备无法发送")))
                 .font(.subheadline)
                 .foregroundColor(isPressing ? ApocalypseTheme.primary : ApocalypseTheme.textSecondary)
         }
@@ -268,10 +270,10 @@ struct PTTCallView: View {
 
     private var cannotSendReason: String {
         if !(communicationManager.currentDevice?.canSend ?? false) {
-            return "请切换到可发送设备"
+            return String(localized: "请切换到可发送设备")
         }
         if targetChannel == nil {
-            return "请选择目标频道"
+            return String(localized: "请选择目标频道")
         }
         return ""
     }
@@ -280,7 +282,7 @@ struct PTTCallView: View {
         VStack(spacing: 16) {
             // Text input (optional)
             HStack {
-                TextField("输入消息（可选）", text: $messageText)
+                TextField(String(localized: "输入消息（可选）"), text: $messageText)
                     .textFieldStyle(.plain)
                     .padding(12)
                     .background(ApocalypseTheme.cardBackground)
@@ -334,7 +336,7 @@ struct PTTCallView: View {
                     }
             )
 
-            Text(canSend ? "按住发送" : cannotSendReason)
+            Text(canSend ? String(localized: "按住发送") : cannotSendReason)
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textSecondary)
         }
@@ -346,7 +348,7 @@ struct PTTCallView: View {
         VStack(spacing: 8) {
             Button(action: { withAnimation { showQuickMessages.toggle() } }) {
                 HStack {
-                    Text("快捷消息")
+                    Text(String(localized: "快捷消息"))
                         .font(.caption)
                     Image(systemName: showQuickMessages ? "chevron.down" : "chevron.up")
                         .font(.caption)
@@ -388,7 +390,7 @@ struct PTTCallView: View {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(isEmergencyMode ? .red : ApocalypseTheme.textSecondary)
-                    Text("紧急模式")
+                    Text(String(localized: "紧急模式"))
                         .font(.subheadline)
                         .foregroundColor(ApocalypseTheme.textPrimary)
                 }
@@ -413,12 +415,12 @@ struct PTTCallView: View {
                     .font(.system(size: 40))
                     .foregroundColor(.green)
 
-                Text("已发送")
+                Text(String(localized: "已发送"))
                     .font(.headline)
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 if let channelName = sentToChannel {
-                    Text("发送到: \(channelName)")
+                    Text(String(format: String(localized: "发送到: %@"), channelName))
                         .font(.subheadline)
                         .foregroundColor(ApocalypseTheme.primary)
                 }
@@ -439,7 +441,7 @@ struct PTTCallView: View {
                 }) {
                     HStack {
                         Image(systemName: "bubble.left.and.bubble.right")
-                        Text("查看消息")
+                        Text(String(localized: "查看消息"))
                     }
                     .font(.subheadline)
                     .fontWeight(.medium)

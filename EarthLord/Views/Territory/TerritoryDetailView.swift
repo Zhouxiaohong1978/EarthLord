@@ -417,18 +417,18 @@ struct TerritoryDetailView: View {
             case .buildNeeded:
                 let days = territory.daysUntilBuildDeadline ?? 0
                 return ("hammer.fill",
-                        "建设期剩余 \(days) 天，请在领地内建造至少 1 个建筑，否则领地将被回收",
+                        String(format: String(localized: "建设期剩余 %d 天，请在领地内建造至少 1 个建筑，否则领地将被回收"), days),
                         Color.orange)
             case .caution:
                 return ("clock.fill",
-                        "领地将在 \(territory.daysUntilExpiry ?? 0) 天后到期回收，请保持活跃",
+                        String(format: String(localized: "领地将在 %d 天后到期回收，请保持活跃"), territory.daysUntilExpiry ?? 0),
                         Color.yellow)
             case .danger:
                 return ("exclamationmark.triangle.fill",
-                        "领地即将到期！仅剩 \(territory.daysUntilExpiry ?? 0) 天，请立即建造或操作",
+                        String(format: String(localized: "领地即将到期！仅剩 %d 天，请立即建造或操作"), territory.daysUntilExpiry ?? 0),
                         Color.red)
             case .expired:
-                return ("xmark.circle.fill", "领地已到期，即将被系统回收", Color.red)
+                return ("xmark.circle.fill", String(localized: "领地已到期，即将被系统回收"), Color.red)
             case .none:
                 return ("", "", .clear)
             }
@@ -458,10 +458,10 @@ struct TerritoryDetailView: View {
                     .foregroundColor(allowTrading ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("允许他人发现交易")
+                    Text(String(localized: "允许他人发现交易"))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textPrimary)
-                    Text("进入领地 100 米范围内的玩家可见你的挂单")
+                    Text(String(localized: "进入领地 100 米范围内的玩家可见你的挂单"))
                         .font(.system(size: 12))
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }

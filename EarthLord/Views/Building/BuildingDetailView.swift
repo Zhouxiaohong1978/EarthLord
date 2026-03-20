@@ -37,7 +37,7 @@ struct BuildingDetailView: View {
                 .padding(20)
             }
             .background(ApocalypseTheme.background)
-            .navigationTitle(template.name)
+            .navigationTitle(template.localizedName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -93,7 +93,7 @@ struct BuildingDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle(String(localized: "描述"))
 
-            Text(template.description)
+            Text(template.localizedDescription)
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textSecondary)
                 .lineSpacing(4)
@@ -225,9 +225,11 @@ struct BuildingDetailView: View {
         id: "1",
         templateId: "campfire",
         name: "篝火",
+        nameEn: "Campfire",
         category: .survival,
         tier: 1,
         description: "篝火是最基本的生存设施，提供温暖和照明。在寒冷的夜晚，篝火可以帮助你抵御低温，同时也能驱赶野兽。",
+        descriptionEn: "A basic fire source providing light and warmth.",
         icon: "flame.fill",
         requiredResources: ["wood": 30, "stone": 20],
         buildTimeSeconds: 300,

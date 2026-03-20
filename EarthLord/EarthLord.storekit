@@ -93,6 +93,46 @@
       "productID" : "com.earthlord.rare_pack",
       "referenceName" : "Rare Supply Pack",
       "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "15.00",
+      "familyShareable" : false,
+      "internalID" : "1005",
+      "localizations" : [
+        {
+          "description" : "一次性购买，永久扩充背包容量+500格",
+          "displayName" : "背包扩容券",
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "One-time purchase, permanently adds 500 slots",
+          "displayName" : "Capacity Expansion",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.earthlord.capacity_expansion.v2",
+      "referenceName" : "Capacity Expansion v2",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "25.00",
+      "familyShareable" : false,
+      "internalID" : "1006",
+      "localizations" : [
+        {
+          "description" : "升级通讯设备，解锁更远通讯范围",
+          "displayName" : "通讯设备升级包",
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "Upgrade communication device, unlock extended range",
+          "displayName" : "Comm Device Upgrade",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.earthlord.comm_upgrade",
+      "referenceName" : "Comm Device Upgrade",
+      "type" : "Consumable"
     }
   ],
   "settings" : {
@@ -189,7 +229,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "25.00",
+          "displayPrice" : "30.00",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "2001",
@@ -206,7 +246,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.earthlord.sub.premium.monthly",
+          "productID" : "com.earthlord.sub.premium.monthly.v2",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Lord Monthly",
           "subscriptionGroupID" : "earthlord_privileges",
@@ -222,7 +262,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "168.00",
+          "displayPrice" : "198.00",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "2002",
@@ -239,7 +279,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.earthlord.sub.premium.yearly",
+          "productID" : "com.earthlord.sub.premium.yearly.v2",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Lord Yearly",
           "subscriptionGroupID" : "earthlord_privileges",
@@ -255,7 +295,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "12.00",
+          "displayPrice" : "18.00",
           "familyShareable" : false,
           "groupNumber" : 2,
           "internalID" : "2003",
@@ -272,7 +312,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.earthlord.sub.basic.monthly",
+          "productID" : "com.earthlord.sub.basic.monthly.v2",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Explorer Monthly",
           "subscriptionGroupID" : "earthlord_privileges",
@@ -288,7 +328,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "88.00",
+          "displayPrice" : "98.00",
           "familyShareable" : false,
           "groupNumber" : 2,
           "internalID" : "2004",
@@ -305,7 +345,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.earthlord.sub.basic.yearly",
+          "productID" : "com.earthlord.sub.basic.yearly.v2",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Explorer Yearly",
           "subscriptionGroupID" : "earthlord_privileges",

@@ -312,6 +312,21 @@ final class TradeManager: ObservableObject {
             }
             tradeHistory.insert(history, at: 0)
 
+            // 向买家邮箱发送交易完成通知（附带收到的物品）
+            let receivedMailItems = offer.offeringItems.map {
+                MailItem(itemId: $0.itemId, quantity: $0.quantity, quality: $0.quality?.rawValue)
+            }
+            if !receivedMailItems.isEmpty {
+                try? await MailboxManager.shared.deliverItems(
+                    to: user.id,
+                    mailType: .trade,
+                    title: String(localized: "交易完成"),
+                    content: String(format: String(localized: "与 %@ 的交易已完成，共收到 %lld 种物品。"), offer.ownerUsername, receivedMailItems.count),
+                    items: receivedMailItems,
+                    expiresInDays: 7
+                )
+            }
+
             logger.log("交易完成: \(history.id)", type: .success)
 
             return history

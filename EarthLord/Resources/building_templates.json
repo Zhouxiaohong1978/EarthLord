@@ -191,8 +191,8 @@
       "name_en": "Signal Tower",
       "category": "defense",
       "tier": 2,
-      "description": "旗帜飘扬的信号台，让其他幸存者知道这里有人。解锁对讲机发送功能。",
-      "description_en": "A signal tower with flags. Lets other survivors know you're here. Unlocks walkie-talkie sending.",
+      "description": "旗帜飘扬的信号台，让你的领地在地图上对所有幸存者可见。可见范围扩大至2km，吸引盟友、震慑入侵者。",
+      "description_en": "A flag-flying signal tower. Makes your territory visible to all survivors on the map within 2km. Attract allies, deter enemies.",
       "icon": "flag.2.crossed.fill",
       "required_resources": {
         "wood": 60,
@@ -210,11 +210,11 @@
       "name_en": "Greenhouse",
       "category": "production",
       "tier": 2,
-      "description": "玻璃屋顶的农业设施，不再依赖天气，每日自动产出罐头食品×2。",
-      "description_en": "A glass-roofed farm. Weather-independent. Auto-produces 2 canned food daily.",
+      "description": "用废旧金属框架和塑料布搭建的简易温室，不再依赖天气，每日自动产出罐头食品×2。",
+      "description_en": "A simple greenhouse built from scrap metal frames. Weather-independent. Auto-produces 2 canned food daily.",
       "icon": "sun.and.horizon.fill",
       "required_resources": {
-        "glass": 30,
+        "scrap_metal": 40,
         "wood": 60,
         "seeds": 5
       },
@@ -309,8 +309,7 @@
       "icon": "antenna.radiowaves.left.and.right",
       "required_resources": {
         "scrap_metal": 150,
-        "electronic_component": 30,
-        "satellite_module": 1
+        "electronic_component": 50
       },
       "build_time_seconds": 1800,
       "max_per_territory": 1,

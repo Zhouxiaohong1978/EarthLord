@@ -77,10 +77,17 @@ final class PurchaseManager: ObservableObject {
             let products = try await Product.products(for: productIds)
 
             await MainActor.run {
-                self.availableProducts = products.sorted { p1, p2 in
-                    // 按价格排序
-                    p1.price < p2.price
-                }
+                // 按 enum 定义顺序排列（幸存者→建造者→工程师→稀有→扩容）
+                // 通讯设备升级包暂时隐藏，等通讯系统设计完成后再上线
+                let hiddenProducts: Set<String> = [SupplyPackProduct.commPack.rawValue]
+                let order = SupplyPackProduct.allCases.map { $0.rawValue }
+                self.availableProducts = products
+                    .filter { !hiddenProducts.contains($0.id) }
+                    .sorted { p1, p2 in
+                        let i1 = order.firstIndex(of: p1.id) ?? 999
+                        let i2 = order.firstIndex(of: p2.id) ?? 999
+                        return i1 < i2
+                    }
             }
 
             logger.log("成功加载 \(products.count) 个商品", type: .success)
@@ -173,7 +180,22 @@ final class PurchaseManager: ObservableObject {
             throw PurchaseError.notAuthenticated
         }
 
+        // 订阅产品由 SubscriptionManager 处理，不走邮箱发货流程
+        let subscriptionProductIds = SubscriptionProduct.allCases.map { $0.rawValue }
+        guard !subscriptionProductIds.contains(transaction.productID) else {
+            logger.log("跳过订阅产品发货（由SubscriptionManager处理）: \(transaction.productID)", type: .info)
+            return
+        }
+
         logger.log("开始发货: \(transaction.productID)", type: .info)
+
+        // 背包扩容券：Non-consumable，直接生效，不走邮件
+        if transaction.productID == SupplyPackProduct.capacityPack.rawValue {
+            InventoryManager.shared.hasCapacityExpansion = true
+            logger.log("背包扩容成功：永久 +500格", type: .success)
+            _ = try? await savePurchaseRecord(transaction, userId: userId)
+            return
+        }
 
         // 1. 保存购买订单
         let purchaseId = try await savePurchaseRecord(transaction, userId: userId)

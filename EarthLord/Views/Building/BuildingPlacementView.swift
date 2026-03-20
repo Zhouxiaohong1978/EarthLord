@@ -155,7 +155,7 @@ struct BuildingPlacementView: View {
 
             // 建筑信息
             VStack(alignment: .leading, spacing: 6) {
-                Text(template.name)
+                Text(template.localizedName)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -383,9 +383,11 @@ struct BuildingPlacementView: View {
         id: "1",
         templateId: "campfire",
         name: "篝火",
+        nameEn: "Campfire",
         category: .survival,
         tier: 1,
         description: "提供温暖和照明",
+        descriptionEn: "Provides warmth and light.",
         icon: "flame.fill",
         requiredResources: ["wood": 30, "stone": 20],
         buildTimeSeconds: 300,

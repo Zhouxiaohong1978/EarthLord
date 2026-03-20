@@ -42,7 +42,7 @@ struct MessageCenterView: View {
 
     private var headerView: some View {
         HStack {
-            Text("消息")
+            Text(String(localized: "消息"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
@@ -52,7 +52,7 @@ struct MessageCenterView: View {
             // Unread badge
             let totalUnread = communicationManager.channelPreviews.reduce(0) { $0 + $1.unreadCount }
             if totalUnread > 0 {
-                Text("\(totalUnread) 条未读")
+                Text(String(format: String(localized: "%d 条未读"), totalUnread))
                     .font(.caption)
                     .foregroundColor(ApocalypseTheme.primary)
             }
@@ -96,7 +96,7 @@ struct MessageCenterView: View {
                     .environmentObject(authManager)
             } else {
                 // Fallback - 重新加载
-                Text("加载中...")
+                Text(String(localized: "加载中..."))
                     .task {
                         if let userId = authManager.currentUser?.id {
                             _ = try? await communicationManager.loadSubscribedChannels(userId: userId)
@@ -113,7 +113,7 @@ struct MessageCenterView: View {
             Spacer()
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
-            Text("加载中...")
+            Text(String(localized: "加载中..."))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
             Spacer()
@@ -128,11 +128,11 @@ struct MessageCenterView: View {
                 .font(.system(size: 50))
                 .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
 
-            Text("暂无消息")
+            Text(String(localized: "暂无消息"))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("订阅频道后消息将显示在这里")
+            Text(String(localized: "订阅频道后消息将显示在这里"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -243,7 +243,7 @@ struct ChannelPreviewRow: View {
                                 .lineLimit(1)
                         }
                     } else {
-                        Text("暂无消息")
+                        Text(String(localized: "暂无消息"))
                             .font(.caption)
                             .foregroundColor(ApocalypseTheme.textMuted)
                     }

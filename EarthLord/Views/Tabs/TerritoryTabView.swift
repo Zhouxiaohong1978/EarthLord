@@ -113,7 +113,7 @@ struct TerritoryTabView: View {
                 .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
                 .scaleEffect(1.5)
 
-            Text("加载中...")
+            Text(String(localized: "加载中..."))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
         }
@@ -129,13 +129,13 @@ struct TerritoryTabView: View {
                 .foregroundColor(ApocalypseTheme.textMuted)
 
             // 标题
-            Text("暂无领地")
+            Text(String(localized: "暂无领地"))
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
             // 说明
-            Text("前往地图页面，开始圈地来占领你的第一块领地吧！")
+            Text(String(localized: "前往地图页面，开始圈地来占领你的第一块领地吧！"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -147,7 +147,7 @@ struct TerritoryTabView: View {
             }) {
                 HStack {
                     Image(systemName: "arrow.clockwise")
-                    Text("刷新")
+                    Text(String(localized: "刷新"))
                 }
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.primary)
@@ -228,7 +228,7 @@ struct TerritoryTabView: View {
         if area >= 1_000_000 {
             return String(format: "%.2f km²", area / 1_000_000)
         } else if area >= 10_000 {
-            return String(format: "%.1f 万m²", area / 10_000)
+            return String(format: "%.1f \(String(localized: "万m²"))", area / 10_000)
         } else {
             return String(format: "%.0f m²", area)
         }
@@ -369,7 +369,7 @@ private struct TerritoryCard: View {
                 if let pointCount = territory.pointCount {
                     DetailItem(
                         icon: "point.topleft.down.curvedto.point.bottomright.up",
-                        value: "\(pointCount) 个点"
+                        value: String(format: String(localized: "%d 个点"), pointCount)
                     )
                 }
 
@@ -397,17 +397,17 @@ private struct TerritoryCard: View {
     /// 到期徽章（label + color）
     private var expiryBadge: (label: String, color: Color)? {
         if territory.isExpired {
-            return ("已到期", .red)
+            return (String(localized: "已到期"), .red)
         }
         if let days = territory.daysUntilExpiry, days <= 7 {
-            return ("剩余\(days)天", .red)
+            return (String(format: String(localized: "剩余%d天"), days), .red)
         }
         if let days = territory.daysUntilExpiry, days <= 14 {
-            return ("剩余\(days)天", .orange)
+            return (String(format: String(localized: "剩余%d天"), days), .orange)
         }
         if territory.isInBuildPeriod {
             if let days = territory.daysUntilBuildDeadline {
-                return ("建设期\(days)天", Color(red: 0.2, green: 0.6, blue: 1.0))
+                return (String(format: String(localized: "建设期%d天"), days), Color(red: 0.2, green: 0.6, blue: 1.0))
             }
         }
         return nil

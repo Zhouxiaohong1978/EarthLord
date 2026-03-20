@@ -54,7 +54,7 @@ struct ChannelCenterView: View {
 
     private var headerView: some View {
         HStack {
-            Text("频道中心")
+            Text(String(localized: "频道中心"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
@@ -75,8 +75,8 @@ struct ChannelCenterView: View {
 
     private var tabSelector: some View {
         HStack(spacing: 0) {
-            tabButton(title: "我的频道", count: communicationManager.subscribedChannels.count, tag: 0)
-            tabButton(title: "发现频道", count: nil, tag: 1)
+            tabButton(title: String(localized: "我的频道"), count: communicationManager.subscribedChannels.count, tag: 0)
+            tabButton(title: String(localized: "发现频道"), count: nil, tag: 1)
         }
         .background(ApocalypseTheme.cardBackground)
     }
@@ -135,7 +135,7 @@ struct ChannelCenterView: View {
                             .buttonStyle(PlainButtonStyle())
                             .contextMenu {
                                 Button(action: { selectedChannel = subscribedChannel.channel }) {
-                                    Label("频道详情", systemImage: "info.circle")
+                                    Label(String(localized: "频道详情"), systemImage: "info.circle")
                                 }
                             }
                         }
@@ -157,18 +157,18 @@ struct ChannelCenterView: View {
                 .font(.system(size: 50))
                 .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
 
-            Text("暂无订阅频道")
+            Text(String(localized: "暂无订阅频道"))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("创建新频道或去发现页面订阅")
+            Text(String(localized: "创建新频道或去发现页面订阅"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
             Button(action: { showCreateSheet = true }) {
                 HStack {
                     Image(systemName: "plus.circle")
-                    Text("创建频道")
+                    Text(String(localized: "创建频道"))
                 }
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -236,7 +236,7 @@ struct ChannelCenterView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            TextField("搜索频道...", text: $searchText)
+            TextField(String(localized: "搜索频道..."), text: $searchText)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
             if !searchText.isEmpty {
@@ -272,11 +272,11 @@ struct ChannelCenterView: View {
                 .font(.system(size: 50))
                 .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
 
-            Text(searchText.isEmpty ? "暂无公共频道" : "未找到匹配频道")
+            Text(searchText.isEmpty ? String(localized: "暂无公共频道") : String(localized: "未找到匹配频道"))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text(searchText.isEmpty ? "成为第一个创建频道的人" : "尝试其他关键词")
+            Text(searchText.isEmpty ? String(localized: "成为第一个创建频道的人") : String(localized: "尝试其他关键词"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -292,7 +292,7 @@ struct ChannelCenterView: View {
             Spacer()
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
-            Text("加载中...")
+            Text(String(localized: "加载中..."))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
             Spacer()
@@ -337,7 +337,7 @@ struct ChannelRowView: View {
             // 频道信息
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(isOfficial ? "末日广播站" : channel.name)
+                    Text(isOfficial ? String(localized: "末日广播站") : channel.name)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(ApocalypseTheme.textPrimary)
@@ -354,7 +354,7 @@ struct ChannelRowView: View {
                     }
                 }
 
-                Text(isOfficial ? "全球覆盖 · 官方公告" : channel.channelCode)
+                Text(isOfficial ? String(localized: "全球覆盖 · 官方公告") : channel.channelCode)
                     .font(.caption)
                     .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -365,7 +365,7 @@ struct ChannelRowView: View {
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }
 
-                    Text(isOfficial ? "官方频道" : channel.channelType.displayName)
+                    Text(isOfficial ? String(localized: "官方频道") : channel.channelType.displayName)
                         .font(.caption2)
                         .foregroundColor(isOfficial ? ApocalypseTheme.primary : channel.channelType.color)
                         .padding(.horizontal, 6)

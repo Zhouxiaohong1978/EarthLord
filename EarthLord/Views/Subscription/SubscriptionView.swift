@@ -311,7 +311,7 @@ struct SubscriptionView: View {
 
             // 权益列表
             VStack(alignment: .leading, spacing: 8) {
-                benefitRow(icon: "backpack.fill", text: "背包容量 100")
+                benefitRow(icon: "backpack.fill", text: "背包容量 \(SubscriptionTier.free.backpackCapacity)")
                 benefitRow(icon: "map.fill", text: "探索范围 1km")
                 benefitRow(icon: "building.2.fill", text: "建造速度 1倍")
                 benefitRow(icon: "figure.walk", text: "探索次数 10次/天")

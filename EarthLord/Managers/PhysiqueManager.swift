@@ -64,6 +64,7 @@ enum PhysiqueError: LocalizedError {
 @MainActor
 final class PhysiqueManager: ObservableObject {
     static let shared = PhysiqueManager()
+    private let logger = ExplorationLogger.shared
     private init() {}
 
     @Published var satiety: Double = 80      // 0–100
@@ -183,6 +184,32 @@ final class PhysiqueManager: ObservableObject {
         case "antibiotics":   return ItemVitalEffect(satietyBoost: 10, hydrationBoost: 10)
         default:              return ItemVitalEffect(satietyBoost:  0, hydrationBoost:  0)
         }
+    }
+
+    // MARK: - 系统消耗（供其他系统调用）
+
+    /// 探索时体征消耗（每次探索事件触发）
+    /// - Parameter distanceKm: 探索距离（公里），影响消耗量
+    func consumeByExploration(distanceKm: Double) async {
+        let base = min(distanceKm * 0.5, 10.0)  // 每公里消耗0.5，最多10点
+        let mult = decayMultiplier
+        satiety   = max(satiety   - base * 0.6 * mult, 0)
+        hydration = max(hydration - base * 0.8 * mult, 0)
+        await saveVitals()
+        logger.log("探索消耗体征: 饱食-\(String(format: "%.1f", base * 0.6 * mult)), 水分-\(String(format: "%.1f", base * 0.8 * mult))", type: .info)
+    }
+
+    /// 建造时体征消耗（开始建造时触发）
+    /// - Parameter buildTimeSeconds: 建造时间（秒），影响消耗量
+    func consumeByBuilding(buildTimeSeconds: Int) async {
+        let hours = Double(buildTimeSeconds) / 3600.0
+        let mult = decayMultiplier
+        let satietyCost   = min(hours * satietyDecayPerHour   * mult * 1.5, 15.0)  // 建造比静止多50%消耗，最多15点
+        let hydrationCost = min(hours * hydrationDecayPerHour * mult * 1.5, 15.0)
+        satiety   = max(satiety   - satietyCost,   0)
+        hydration = max(hydration - hydrationCost, 0)
+        await saveVitals()
+        logger.log("建造消耗体征: 饱食-\(String(format: "%.1f", satietyCost)), 水分-\(String(format: "%.1f", hydrationCost))", type: .info)
     }
 
     // MARK: - Save

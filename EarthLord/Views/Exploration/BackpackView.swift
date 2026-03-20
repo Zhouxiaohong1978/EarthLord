@@ -168,7 +168,7 @@ struct BackpackView: View {
 
     // MARK: - 容量配置
 
-    private let maxCapacity: Double = 100
+    private var maxCapacity: Double { Double(InventoryManager.shared.backpackCapacity) }
 
     /// 当前容量（从背包管理器获取）
     private var currentCapacity: Double {

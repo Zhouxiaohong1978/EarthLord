@@ -174,6 +174,9 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 当前连续超速计数（与圈地系统一致）
     private var explorationConsecutiveOverspeedCount: Int = 0
 
+    /// 当前区域的密度质量修正系数（影响搜刮物品稀有率）
+    private var currentDensityModifier: Double = 0.0
+
     /// 超速计时器（保留兼容，新逻辑不再使用）
     private var overSpeedTimer: Timer?
 
@@ -346,9 +349,13 @@ final class ExplorationManager: NSObject, ObservableObject {
             incrementTodayExplorationCount()
         }
 
-        // 异步保存到数据库
+        // 异步保存会话到数据库（物品等用户确认后再保存）+ 体征消耗
         Task {
-            await saveExplorationToDatabase(result: result, rewards: rewards)
+            await saveExplorationToDatabase(result: result, rewards: [])
+            if !cancelled {
+                let distanceKm = totalDistance / 1000.0
+                await PhysiqueManager.shared.consumeByExploration(distanceKm: distanceKm)
+            }
         }
 
         return result
@@ -768,8 +775,8 @@ final class ExplorationManager: NSObject, ObservableObject {
             // 生存基础 + 核心建造材料（木头/石头）
             return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone", "cloth"]
         case .uncommon:
-            // 进阶建造材料 + 基础工具
-            return ["scrap_metal", "nails", "rope", "seeds", "medicine", "tool"]
+            // 进阶建造材料 + 基础工具 + 玻璃（废墟窗户/橱柜）
+            return ["scrap_metal", "nails", "rope", "seeds", "medicine", "tool", "glass"]
         case .rare:
             // Tier2 建造材料 + 工具箱
             return ["first_aid_kit", "toolbox", "fuel", "blueprint_basic", "build_speedup"]
@@ -852,23 +859,51 @@ final class ExplorationManager: NSObject, ObservableObject {
         logger.log("✅ 已保存 \(rewards.count) 件物品到离线队列，网络恢复后自动同步", type: .success)
     }
 
-    /// 保存奖励物品到背包（使用 InventoryManager 支持堆叠）
-    private func saveRewardsToInventory(items: [ObtainedItem], sessionId: String) async {
+    /// 保存奖励物品到背包（使用 InventoryManager 支持堆叠，背包已满时投递到邮箱）
+    private func saveRewardsToInventory(items: [ObtainedItem], sessionId: String?) async {
         var failedItems: [ObtainedItem] = []
+        var overflowItems: [ObtainedItem] = []
+
+        let capacity = InventoryManager.shared.backpackCapacity
 
         for item in items {
+            // 检查背包是否已满（按物品总数量）
+            let currentTotal = InventoryManager.shared.totalItemCount
+            if currentTotal >= capacity {
+                overflowItems.append(item)
+                continue
+            }
+
             do {
                 try await InventoryManager.shared.addItem(
                     itemId: item.itemId,
                     quantity: item.quantity,
                     quality: item.quality,
                     obtainedFrom: "探索",
-                    sessionId: sessionId
+                    sessionId: sessionId?.isEmpty == false ? sessionId : nil
                 )
                 logger.log("✅ 物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
             } catch {
                 logger.logError("❌ 添加物品到背包失败: \(item.itemId)", error: error)
                 failedItems.append(item)
+            }
+        }
+
+        // 背包溢出 → 投递到邮箱
+        if !overflowItems.isEmpty, let userId = AuthManager.shared.currentUser?.id {
+            let mailItems = overflowItems.map { MailItem(itemId: $0.itemId, quantity: $0.quantity, quality: $0.quality?.rawValue) }
+            do {
+                try await MailboxManager.shared.deliverItems(
+                    to: userId,
+                    mailType: .reward,
+                    title: String(localized: "探索奖励（背包已满）"),
+                    content: String(format: String(localized: "你的背包已满，%lld 种物品已转入邮箱，请及时领取。"), overflowItems.count),
+                    items: mailItems
+                )
+                logger.log("📬 \(overflowItems.count) 种溢出物品已投递到邮箱", type: .warning)
+            } catch {
+                logger.logError("邮箱投递失败，加入离线队列", error: error)
+                failedItems.append(contentsOf: overflowItems)
             }
         }
 
@@ -881,7 +916,7 @@ final class ExplorationManager: NSObject, ObservableObject {
                     quantity: item.quantity,
                     quality: item.quality,
                     obtainedFrom: "探索",
-                    sessionId: sessionId
+                    sessionId: sessionId?.isEmpty == false ? sessionId : nil
                 )
             }
         }
@@ -962,32 +997,22 @@ extension ExplorationManager {
     private func searchNearbyPOIs(center: CLLocationCoordinate2D) async {
         logger.log("🔍 开始搜索POI - 中心坐标: \(center.latitude), \(center.longitude)", type: .info)
 
-        // ====== 查询玩家密度并确定POI数量 ======
-        var targetPOICount: Int = 12  // 默认12个POI（中等密度）
+        // ====== POI数量由订阅档位决定，密度影响物资质量 ======
+        let targetPOICount = SubscriptionManager.shared.currentTier.poiCount
+        logger.log("📦 订阅档位: \(SubscriptionManager.shared.currentTier.rawValue) - 显示 \(targetPOICount) 个POI", type: .info)
 
         do {
             let densityResult = try await PlayerDensityService.shared.queryNearbyPlayers(
                 latitude: center.latitude,
                 longitude: center.longitude
             )
-
             let level = densityResult.densityLevel
-            let recommendedCount = level.recommendedPOICount
-
-            // 根据推荐数量决定实际显示的POI数量
-            if recommendedCount == -1 {
-                // 不限制：低密度区域，显示所有找到的POI（最多20个）
-                targetPOICount = 20
-                logger.log("👥 附近玩家: \(densityResult.nearbyCount) 人, 密度: \(level.rawValue) - 不限制POI数量（最多20个）", type: .info)
-            } else {
-                // 限制数量：按玩家密度动态调整
-                targetPOICount = recommendedCount
-                logger.log("👥 附近玩家: \(densityResult.nearbyCount) 人, 密度: \(level.rawValue) - 限制 \(targetPOICount) 个POI", type: .info)
-            }
-
+            currentDensityModifier = level.rareProbabilityModifier
+            let modifierText = currentDensityModifier >= 0 ? "+\(Int(currentDensityModifier * 100))%" : "\(Int(currentDensityModifier * 100))%"
+            logger.log("👥 附近玩家: \(densityResult.nearbyCount)人, 密度: \(level.rawValue) - 物资质量修正: \(modifierText)", type: .info)
         } catch {
-            logger.logError("玩家密度查询失败，使用默认策略(12个POI)", error: error)
-            targetPOICount = 12  // 查询失败时默认中等密度
+            currentDensityModifier = 0.0
+            logger.logError("玩家密度查询失败，使用默认物资质量", error: error)
         }
         // ====== 密度查询结束 ======
 
@@ -1031,7 +1056,7 @@ extension ExplorationManager {
         let searchDiameter = explorationRadius * 2 + 500
 
         var allResults: [POI] = []
-        let maxPerQuery = 3  // 每个关键词最多取3个，确保多样性
+        let maxPerQuery = 10  // 每个关键词最多取10个，确保500m~2km范围内有足够候选
         var seenCoordinates: Set<String> = []  // 用于去重
 
         for (query, poiType) in searchQueries {
@@ -1089,9 +1114,9 @@ extension ExplorationManager {
             let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
             let distance = distanceOrigin.distance(from: poiLocation)
 
-            // 只保留距探索起点 800m ~ explorationRadius 范围内、且未在冷却中的POI
-            // 最小距离设为 800m（补偿中国地图 WGS84/GCJ02 坐标偏移约 200-500m）
-            guard distance >= 800 && distance <= explorationRadius && !isCoolingDown(poi) else { continue }
+            // 只保留距探索起点 500m ~ explorationRadius 范围内、且未在冷却中的POI
+            // 最小距离 500m：鼓励用户步行前往，同时足够覆盖 WGS84/GCJ02 坐标偏移
+            guard distance >= 500 && distance <= explorationRadius && !isCoolingDown(poi) else { continue }
 
             // 计算方位角（0°=正北，顺时针）
             let dx = poi.coordinate.longitude - center.longitude
@@ -1345,13 +1370,14 @@ extension ExplorationManager {
             generatedByAI = false
         }
 
-        let sessionId = poi.id.uuidString
+        // POI 搜刮不属于探索会话，sessionId 传 nil 避免触发外键约束
+        let sessionId: String? = nil
 
         // 创建搜刮结果，等待用户确认
         scavengeResult = ScavengeResult(
             poi: poi,
             items: aiItems,
-            sessionId: sessionId,
+            sessionId: sessionId ?? "",
             generatedByAI: generatedByAI
         )
         showScavengeResult = true
@@ -1372,9 +1398,13 @@ extension ExplorationManager {
         return items
     }
 
-    /// 根据危险等级确定稀有度
+    /// 根据危险等级确定稀有度（叠加区域密度修正）
+    /// currentDensityModifier > 0：独行者区域，物资丰富，稀有率提升
+    /// currentDensityModifier < 0：热门区域，物资匮乏，稀有率下降
     private func determineRarityByDangerLevel(_ dangerLevel: Int) -> String {
-        let randomValue = Double.random(in: 0...1)
+        // 将密度修正叠加到随机值：正修正 → 随机值偏高 → 更易命中稀有档
+        let raw = Double.random(in: 0...1)
+        let randomValue = min(1.0, max(0.0, raw + currentDensityModifier))
 
         switch dangerLevel {
         case 1, 2:
@@ -1462,17 +1492,18 @@ extension ExplorationManager {
         )
     }
 
-    /// 确认搜刮结果，将物品添加到背包
-    func confirmScavengeResult() async {
+    /// 确认搜刮结果，将玩家勾选的物品添加到背包
+    func confirmScavengeResult(selectedIds: Set<UUID>) async {
         guard let result = scavengeResult else {
             logger.logError("没有待确认的搜刮结果")
             return
         }
 
-        logger.log("用户确认搜刮结果，保存 \(result.items.count) 件物品到背包", type: .info)
+        let selectedItems = result.items.filter { selectedIds.contains($0.id) }
+        logger.log("用户确认搜刮结果，保存 \(selectedItems.count)/\(result.items.count) 件物品到背包", type: .info)
 
         // 将 AIGeneratedItem 转换为 ObtainedItem
-        let obtainedItems = result.items.map { $0.toObtainedItem() }
+        let obtainedItems = selectedItems.map { $0.toObtainedItem() }
         await saveRewardsToInventory(items: obtainedItems, sessionId: result.sessionId)
 
         // 立即将该POI状态更新为已搜空（地图上马上变灰，无需等待重新加载）
@@ -1492,5 +1523,16 @@ extension ExplorationManager {
         logger.log("用户放弃搜刮结果", type: .info)
         scavengeResult = nil
         showScavengeResult = false
+    }
+
+    /// 确认探索距离奖励，将玩家勾选的物品添加到背包
+    func confirmExplorationRewards(selectedIds: Set<UUID>) async {
+        guard let result = explorationResult else {
+            logger.logError("没有待确认的探索奖励结果")
+            return
+        }
+        let selectedItems = result.obtainedItems.filter { selectedIds.contains($0.id) }
+        logger.log("用户确认探索奖励，保存 \(selectedItems.count)/\(result.obtainedItems.count) 件物品到背包", type: .info)
+        await saveRewardsToInventory(items: selectedItems, sessionId: nil)
     }
 }

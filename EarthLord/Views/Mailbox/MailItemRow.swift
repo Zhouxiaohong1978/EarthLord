@@ -51,13 +51,13 @@ struct MailItemRow: View {
                 // 状态标签
                 HStack(spacing: 6) {
                     if mail.isClaimed {
-                        statusBadge(text: "已领取", color: .gray)
+                        statusBadge(text: String(localized: "已领取"), color: .gray)
                     } else if !mail.isRead {
-                        statusBadge(text: "未读", color: .red)
+                        statusBadge(text: String(localized: "未读"), color: .red)
                     }
 
                     if mail.isExpired {
-                        statusBadge(text: "已过期", color: .red)
+                        statusBadge(text: String(localized: "已过期"), color: .red)
                     }
                 }
             }
@@ -98,6 +98,7 @@ struct MailItemRow: View {
         case .purchase: return ApocalypseTheme.primary
         case .reward: return .green
         case .gift: return .pink
+        case .trade: return ApocalypseTheme.info
         }
     }
 
@@ -123,16 +124,16 @@ extension Mail {
         let interval = now.timeIntervalSince(createdAt)
 
         if interval < 60 {
-            return "刚刚"
+            return String(localized: "刚刚")
         } else if interval < 3600 {
             let minutes = Int(interval / 60)
-            return "\(minutes)分钟前"
+            return String(format: String(localized: "%d分钟前"), minutes)
         } else if interval < 86400 {
             let hours = Int(interval / 3600)
-            return "\(hours)小时前"
+            return String(format: String(localized: "%d小时前"), hours)
         } else {
             let days = Int(interval / 86400)
-            return "\(days)天前"
+            return String(format: String(localized: "%d天前"), days)
         }
     }
 }

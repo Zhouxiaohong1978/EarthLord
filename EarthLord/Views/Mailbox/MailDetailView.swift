@@ -128,7 +128,7 @@ struct MailDetailView: View {
                     Text("•")
                         .foregroundColor(ApocalypseTheme.textSecondary)
 
-                    Text("\(days)\(String(localized: "天后过期"))")
+                    Text(String(format: String(localized: "%lld天后过期"), days))
                         .font(.caption)
                         .foregroundColor(days <= 7 ? .orange : ApocalypseTheme.textSecondary)
                 }
@@ -181,13 +181,13 @@ struct MailDetailView: View {
 
     // MARK: - 背包容量提示
     private var backpackCapacityHint: some View {
-        let currentTypes = InventoryManager.shared.items.count  // 当前物品种类数
-        let maxSlots = 100  // 最大格子数
-        let remainingSlots = max(0, maxSlots - currentTypes)
+        let currentCount = InventoryManager.shared.totalItemCount  // 当前物品总数量
+        let maxSlots = InventoryManager.shared.backpackCapacity  // 基于订阅档位动态获取
+        let remainingSlots = max(0, maxSlots - currentCount)
 
-        // 计算邮件中有多少种不同物品
-        let mailItemTypes = Set(mail.items.map { $0.itemId }).count
-        let canClaimAll = mailItemTypes <= remainingSlots
+        // 计算邮件中物品总数量
+        let mailItemCount = mail.items.reduce(0) { $0 + $1.quantity }
+        let canClaimAll = mailItemCount <= remainingSlots
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -198,7 +198,7 @@ struct MailDetailView: View {
                     .fontWeight(.medium)
                     .foregroundColor(ApocalypseTheme.textPrimary)
                 Spacer()
-                Text("\(currentTypes)/\(maxSlots)")
+                Text("\(currentCount)/\(maxSlots)")
                     .font(.subheadline)
                     .foregroundColor(ApocalypseTheme.textSecondary)
             }
@@ -208,7 +208,7 @@ struct MailDetailView: View {
                     Image(systemName: "exclamationmark.circle")
                         .font(.caption)
                         .foregroundColor(.orange)
-                    Text(LocalizedStringKey("背包空间不足，剩余 \(remainingSlots) 个位置，邮件包含 \(mailItemTypes) 种物品"))
+                    Text(LocalizedStringKey("背包空间不足，剩余 \(remainingSlots) 个位置，邮件包含 \(mailItemCount) 件物品"))
                         .font(.caption)
                         .foregroundColor(.orange)
                 }
@@ -325,18 +325,19 @@ struct MailItemCard: View {
 
             // 物品信息
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.itemId)
+                Text(resourceDisplayName(for: item.itemId))
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 HStack(spacing: 4) {
-                    Text("数量: \(item.quantity)")
+                    Text(String(format: String(localized: "数量: %d"), item.quantity))
                         .font(.caption)
                         .foregroundColor(ApocalypseTheme.textSecondary)
 
                     if let quality = item.quality {
-                        Text("• \(quality)")
+                        let displayQuality = ItemQuality(rawValue: quality)?.displayName ?? quality
+                        Text("• \(displayQuality)")
                             .font(.caption)
                             .foregroundColor(qualityColor(quality))
                     }

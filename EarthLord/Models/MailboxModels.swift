@@ -14,12 +14,14 @@ enum MailType: String, Codable, CaseIterable {
     case purchase = "purchase"    // 购买物品
     case reward = "reward"        // 系统奖励
     case gift = "gift"            // 玩家赠送
+    case trade = "trade"          // 交易完成通知
 
     var displayName: String {
         switch self {
-        case .purchase: return "购买物品"
-        case .reward: return "系统奖励"
-        case .gift: return "玩家赠送"
+        case .purchase: return String(localized: "购买物品")
+        case .reward: return String(localized: "系统奖励")
+        case .gift: return String(localized: "玩家赠送")
+        case .trade: return String(localized: "交易通知")
         }
     }
 
@@ -28,6 +30,7 @@ enum MailType: String, Codable, CaseIterable {
         case .purchase: return "bag.fill"
         case .reward: return "gift.fill"
         case .gift: return "heart.fill"
+        case .trade: return "arrow.left.arrow.right"
         }
     }
 }

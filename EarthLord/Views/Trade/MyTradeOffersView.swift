@@ -260,21 +260,21 @@ struct MyTradeOffersView: View {
 
     private var emptyStateTitle: String {
         switch selectedFilter {
-        case .all: return "还没有挂单"
-        case .active: return "没有进行中的挂单"
-        case .completed: return "没有已完成的挂单"
-        case .cancelled: return "没有已取消的挂单"
-        case .expired: return "没有已过期的挂单"
+        case .all: return String(localized: "还没有挂单")
+        case .active: return String(localized: "没有进行中的挂单")
+        case .completed: return String(localized: "没有已完成的挂单")
+        case .cancelled: return String(localized: "没有已取消的挂单")
+        case .expired: return String(localized: "没有已过期的挂单")
         }
     }
 
     private var emptyStateSubtitle: String {
         switch selectedFilter {
-        case .all: return "发布挂单，与其他玩家交换物资"
-        case .active: return "您可以发布新的挂单"
-        case .completed: return "完成的交易会显示在这里"
-        case .cancelled: return "取消的挂单会显示在这里"
-        case .expired: return "过期的挂单会显示在这里"
+        case .all: return String(localized: "发布挂单，与其他玩家交换物资")
+        case .active: return String(localized: "您可以发布新的挂单")
+        case .completed: return String(localized: "完成的交易会显示在这里")
+        case .cancelled: return String(localized: "取消的挂单会显示在这里")
+        case .expired: return String(localized: "过期的挂单会显示在这里")
         }
     }
 

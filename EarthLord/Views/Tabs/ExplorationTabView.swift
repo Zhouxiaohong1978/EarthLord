@@ -463,7 +463,7 @@ struct POIContentView: View {
                         withAnimation { sortOption = option }
                     } label: {
                         HStack {
-                            Text(option.rawValue)
+                            Text(LocalizedStringKey(option.rawValue))
                             if sortOption == option {
                                 Image(systemName: "checkmark")
                             }
@@ -474,7 +474,7 @@ struct POIContentView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 11, weight: .medium))
-                    Text(sortOption.rawValue)
+                    Text(LocalizedStringKey(sortOption.rawValue))
                         .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
                     Image(systemName: "chevron.down")
@@ -553,7 +553,7 @@ struct POIFilterChip: View {
                 Image(systemName: filter.icon)
                     .font(.system(size: 12))
 
-                Text(filter.rawValue)
+                Text(filter.displayName)
                     .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
             }
             .foregroundColor(isSelected ? .white : ApocalypseTheme.textSecondary)
@@ -1298,11 +1298,11 @@ struct TradeContentView: View {
 
             // 标题和副标题
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
-                Text(subtitle)
+                Text(LocalizedStringKey(subtitle))
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textSecondary)
             }
@@ -1315,7 +1315,7 @@ struct TradeContentView: View {
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(iconColor)
 
-                Text(countLabel)
+                Text(LocalizedStringKey(countLabel))
                     .font(.system(size: 11))
                     .foregroundColor(ApocalypseTheme.textMuted)
             }

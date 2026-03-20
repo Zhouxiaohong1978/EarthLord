@@ -450,7 +450,7 @@ struct ProfileTabView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(ApocalypseTheme.info.opacity(0.15)))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("呼号设置").font(.callout).fontWeight(.medium).foregroundColor(ApocalypseTheme.textPrimary)
-                        Text(CommunicationManager.shared.userCallsign ?? "未设置呼号")
+                        Text(CommunicationManager.shared.userCallsign ?? String(localized: "未设置呼号"))
                             .font(.caption)
                             .foregroundColor(CommunicationManager.shared.userCallsign == nil ? ApocalypseTheme.warning : ApocalypseTheme.info)
                     }

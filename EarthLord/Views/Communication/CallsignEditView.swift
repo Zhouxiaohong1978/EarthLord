@@ -79,7 +79,7 @@ struct CallsignEditView: View {
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text(communicationManager.userCallsign ?? "未设置")
+            Text(communicationManager.userCallsign ?? String(localized: "未设置"))
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.primary)

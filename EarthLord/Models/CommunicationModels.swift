@@ -135,13 +135,13 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
     var rangeText: String {
         switch self {
         case .radio:
-            return "无限制 (仅接收)"
+            return String(localized: "无限制 (仅接收)")
         case .walkieTalkie:
             return "3km"
         case .campRadio:
             return "30km"
         case .satellite:
-            return "全球"
+            return String(localized: "全球")
         }
     }
 
@@ -149,13 +149,13 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
     var unlockRequirement: String {
         switch self {
         case .radio:
-            return "默认解锁"
+            return String(localized: "默认解锁")
         case .walkieTalkie:
-            return "需要达到 5 级解锁"
+            return String(localized: "建造瞭望台后解锁")
         case .campRadio:
-            return "需要达到 15 级解锁"
+            return String(localized: "建造营地电台后解锁")
         case .satellite:
-            return "需要达到 30 级解锁"
+            return String(localized: "建造领主指挥所后解锁")
         }
     }
 }
@@ -777,10 +777,10 @@ enum MessageCategory: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .survival: return "生存指南"
-        case .news: return "游戏资讯"
-        case .mission: return "任务发布"
-        case .alert: return "紧急广播"
+        case .survival: return String(localized: "生存指南")
+        case .news:     return String(localized: "游戏资讯")
+        case .mission:  return String(localized: "任务发布")
+        case .alert:    return String(localized: "紧急广播")
         }
     }
 
@@ -910,16 +910,16 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         let interval = now.timeIntervalSince(createdAt)
 
         if interval < 60 {
-            return "刚刚"
+            return String(localized: "刚刚")
         } else if interval < 3600 {
             let minutes = Int(interval / 60)
-            return "\(minutes)分钟前"
+            return String(format: String(localized: "%d分钟前"), minutes)
         } else if interval < 86400 {
             let hours = Int(interval / 3600)
-            return "\(hours)小时前"
+            return String(format: String(localized: "%d小时前"), hours)
         } else {
             let days = Int(interval / 86400)
-            return "\(days)天前"
+            return String(format: String(localized: "%d天前"), days)
         }
     }
 
@@ -1033,7 +1033,7 @@ struct ChannelPreview: Codable, Identifiable {
             formatter.dateFormat = "HH:mm"
             return formatter.string(from: time)
         } else if calendar.isDateInYesterday(time) {
-            return "昨天"
+            return String(localized: "昨天")
         } else {
             let formatter = DateFormatter()
             formatter.dateFormat = "MM/dd"
@@ -1070,13 +1070,13 @@ struct ChannelPreview: Codable, Identifiable {
     static func officialChannelPreview() -> ChannelPreview {
         ChannelPreview(
             channelId: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
-            channelName: "末日广播站",
+            channelName: String(localized: "末日广播站"),
             channelType: "official",
             channelCode: "OFFICIAL",
             memberCount: 0,
             isMuted: false,
             unreadCount: 0,
-            lastMessageContent: "官方公告与生存指南",
+            lastMessageContent: String(localized: "官方公告与生存指南"),
             lastMessageTime: nil,
             lastMessageSender: nil
         )

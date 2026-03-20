@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MoreTabView: View {
+    @EnvironmentObject var languageManager: LanguageManager
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -15,6 +17,7 @@ struct MoreTabView: View {
                     .ignoresSafeArea()
 
                 List {
+                    // 成就
                     NavigationLink {
                         AchievementView()
                             .navigationTitle("成就")
@@ -30,6 +33,13 @@ struct MoreTabView: View {
                     }
                     .listRowBackground(ApocalypseTheme.cardBackground)
                     .listRowSeparatorTint(Color.white.opacity(0.08))
+
+                    // 语言设置（仅开发环境）
+                    #if DEBUG
+                    languagePickerRow
+                        .listRowBackground(ApocalypseTheme.cardBackground)
+                        .listRowSeparatorTint(Color.white.opacity(0.08))
+                    #endif
                 }
                 .scrollContentBackground(.hidden)
             }
@@ -37,6 +47,43 @@ struct MoreTabView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
+    }
+
+    // MARK: - 语言选择行
+
+    private var languagePickerRow: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(ApocalypseTheme.info.opacity(0.15))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: "globe")
+                    .font(.system(size: 18))
+                    .foregroundColor(ApocalypseTheme.info)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(LocalizedStringKey("语言"))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                Text(languageManager.currentLanguage.displayName)
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+
+            Spacer()
+
+            Picker("", selection: $languageManager.currentLanguage) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.displayName).tag(language)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(ApocalypseTheme.primary)
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -80,4 +127,5 @@ struct MoreMenuRow: View {
 
 #Preview {
     MoreTabView()
+        .environmentObject(LanguageManager.shared)
 }

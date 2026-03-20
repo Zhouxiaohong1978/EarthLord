@@ -641,7 +641,7 @@ struct ScavengeResultSheet: View {
                 ],
                 sessionId: "test"
             ),
-            onConfirm: {},
+            onConfirm: { _ in },
             onDiscard: {}
         )
     }

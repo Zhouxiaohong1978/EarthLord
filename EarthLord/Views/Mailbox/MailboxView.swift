@@ -14,6 +14,8 @@ struct MailboxView: View {
     @State private var selectedMail: Mail?
     @State private var showingDetail = false
     @State private var showingDeleteConfirm = false
+    @State private var mailToDelete: Mail?
+    @State private var showingSwipeDeleteConfirm = false
 
     var body: some View {
         ZStack {
@@ -72,22 +74,24 @@ struct MailboxView: View {
                     .foregroundColor(ApocalypseTheme.primary)
             }
 
-            // 批量删除
-            if !mailboxManager.mails.filter({ $0.isClaimed }).isEmpty {
-                Button(action: { showingDeleteConfirm = true }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 18))
-                        .foregroundColor(.red)
-                }
-                .alert(LocalizedStringKey("确认删除"), isPresented: $showingDeleteConfirm) {
-                    Button(LocalizedStringKey("取消"), role: .cancel) {}
-                    Button(LocalizedStringKey("删除"), role: .destructive) {
-                        Task {
-                            try? await mailboxManager.deleteClaimedMails()
-                        }
+            // 批量删除（始终显示）
+            Button(action: { showingDeleteConfirm = true }) {
+                Image(systemName: "trash")
+                    .font(.system(size: 18))
+                    .foregroundColor(.red)
+            }
+            .alert(LocalizedStringKey("清理已领取邮件"), isPresented: $showingDeleteConfirm) {
+                Button(LocalizedStringKey("取消"), role: .cancel) {}
+                Button(LocalizedStringKey("删除"), role: .destructive) {
+                    Task {
+                        try? await mailboxManager.deleteClaimedMails()
                     }
-                } message: {
-                    Text(LocalizedStringKey("删除所有已领取的邮件？"))
+                }
+            } message: {
+                if mailboxManager.mails.filter({ $0.isClaimed }).isEmpty {
+                    Text(LocalizedStringKey("暂无已领取的邮件可清理"))
+                } else {
+                    Text(LocalizedStringKey("删除所有已领取的邮件？此操作不可撤销"))
                 }
             }
         }
@@ -112,22 +116,74 @@ struct MailboxView: View {
 
     // MARK: - 空状态
     private var emptyView: some View {
-        VStack(spacing: 16) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 20) {
+                Spacer().frame(height: 20)
 
-            Image(systemName: "envelope.open")
-                .font(.system(size: 60))
-                .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
+                Image(systemName: "envelope.open")
+                    .font(.system(size: 56))
+                    .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.4))
 
-            Text(LocalizedStringKey("暂无邮件"))
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
+                Text(LocalizedStringKey("暂无邮件"))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text(LocalizedStringKey("购买的物资包会发送到这里"))
-                .font(.subheadline)
-                .foregroundColor(ApocalypseTheme.textSecondary)
+                // 功能说明卡片
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(LocalizedStringKey("邮箱用途"))
+                        .font(.headline)
+                        .foregroundColor(ApocalypseTheme.primary)
 
-            Spacer()
+                    mailboxUsageRow(icon: "bag.fill", color: ApocalypseTheme.primary,
+                                   title: "mailbox.usage.purchase.title",
+                                   desc: "mailbox.usage.purchase.desc")
+                    mailboxUsageRow(icon: "figure.walk", color: .green,
+                                   title: "mailbox.usage.exploration.title",
+                                   desc: "mailbox.usage.exploration.desc")
+                    mailboxUsageRow(icon: "gift.fill", color: .orange,
+                                   title: "mailbox.usage.daily.title",
+                                   desc: "mailbox.usage.daily.desc")
+                    mailboxUsageRow(icon: "arrow.left.arrow.right", color: ApocalypseTheme.info,
+                                   title: "mailbox.usage.trade.title",
+                                   desc: "mailbox.usage.trade.desc")
+
+                    Divider().background(ApocalypseTheme.textSecondary.opacity(0.3))
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Text(LocalizedStringKey("mailbox.usage.expiry_note"))
+                            .font(.caption)
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
+                }
+                .padding(16)
+                .background(ApocalypseTheme.cardBackground)
+                .cornerRadius(12)
+                .padding(.horizontal, 16)
+
+                Spacer().frame(height: 20)
+            }
+        }
+    }
+
+    private func mailboxUsageRow(icon: String, color: Color, title: LocalizedStringKey, desc: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(color)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                Text(desc)
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
         }
     }
 
@@ -141,10 +197,30 @@ struct MailboxView: View {
                             selectedMail = mail
                             showingDetail = true
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                mailToDelete = mail
+                                showingSwipeDeleteConfirm = true
+                            } label: {
+                                Label(LocalizedStringKey("删除"), systemImage: "trash")
+                            }
+                        }
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
+        }
+        .alert(LocalizedStringKey("删除邮件"), isPresented: $showingSwipeDeleteConfirm) {
+            Button(LocalizedStringKey("取消"), role: .cancel) { mailToDelete = nil }
+            Button(LocalizedStringKey("删除"), role: .destructive) {
+                guard let mail = mailToDelete else { return }
+                Task {
+                    try? await mailboxManager.deleteMail(mail)
+                    mailToDelete = nil
+                }
+            }
+        } message: {
+            Text(LocalizedStringKey("确定删除这封邮件？未领取的物品将一并删除"))
         }
     }
 }

@@ -262,6 +262,7 @@ struct BackpackItem: Identifiable, Equatable, Codable {
     let quality: ItemQuality?       // 品质（可选，部分物品无品质）
     let obtainedAt: Date            // 获得时间
     let obtainedFrom: String?       // 获得来源（如：废弃超市）
+    let customName: String?         // AI 生成的物品名（可选）
 
     init(
         id: UUID = UUID(),
@@ -269,7 +270,8 @@ struct BackpackItem: Identifiable, Equatable, Codable {
         quantity: Int,
         quality: ItemQuality? = nil,
         obtainedAt: Date = Date(),
-        obtainedFrom: String? = nil
+        obtainedFrom: String? = nil,
+        customName: String? = nil
     ) {
         self.id = id
         self.itemId = itemId
@@ -277,6 +279,7 @@ struct BackpackItem: Identifiable, Equatable, Codable {
         self.quality = quality
         self.obtainedAt = obtainedAt
         self.obtainedFrom = obtainedFrom
+        self.customName = customName
     }
 
     /// 计算该物品的总重量

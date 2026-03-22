@@ -62,7 +62,7 @@ struct DailyRewardView: View {
                 dismiss()
             }
         } message: {
-            Text("礼包已放入背包")
+            Text("礼包已发送至邮箱，请前往邮箱领取")
         }
         .alert("领取失败", isPresented: $showError) {
             Button("确定", role: .cancel) { }
@@ -352,7 +352,7 @@ struct DailyRewardView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("• 每日0点刷新，请及时领取")
-                Text("• 领取后物品将直接放入背包")
+                Text("• 领取后物品将发送至邮箱，可随时前往领取")
                 Text("• 礼包内容根据订阅档位变化")
                 Text("• 订阅期间每天都可领取")
             }

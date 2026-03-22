@@ -88,6 +88,12 @@ struct MapTabView: View {
     /// 是否显示日志查看器
     @State private var showLogViewer = false
 
+    /// 是否显示探索新手引导
+    @State private var showExplorationGuide = false
+
+    /// 自动停止原因弹窗
+    @State private var showAutoStopAlert = false
+
     // MARK: - 计算属性
 
     /// 当前用户 ID
@@ -112,9 +118,9 @@ struct MapTabView: View {
                 explorationPath: explorationManager.explorationPathCoordinates,
                 explorationPathVersion: explorationManager.explorationPathVersion,
                 isExploring: explorationManager.isExploring,
-                nearbyPOIs: explorationManager.isExploring ? explorationManager.nearbyPOIs : [],
+                nearbyPOIs: explorationManager.isExploring ? explorationManager.visiblePOIs : [],
                 coolingDownPOIKeys: Set(
-                    explorationManager.nearbyPOIs
+                    explorationManager.visiblePOIs
                         .filter { explorationManager.isCoolingDown($0) }
                         .map { explorationManager.coordKey(for: $0.coordinate) }
                 )
@@ -134,6 +140,11 @@ struct MapTabView: View {
                 // 探索超速警告横幅
                 if case .overSpeedWarning(let seconds) = explorationManager.explorationState {
                     explorationSpeedWarningBanner(countdown: seconds)
+                }
+
+                // 建筑物停留提醒横幅
+                if let warning = explorationManager.buildingEntryWarning {
+                    buildingEntryWarningBanner(message: warning)
                 }
 
                 // 探索状态覆盖层
@@ -267,6 +278,22 @@ struct MapTabView: View {
         } message: {
             Text(explorationFailReason)
         }
+        // 建筑物停留自动停止弹窗
+        .alert(Text("exploration.autostop.title"), isPresented: $showAutoStopAlert) {
+            Button(role: .cancel) {
+                explorationManager.resetExplorationState()
+            } label: {
+                Text("exploration.autostop.confirm")
+            }
+        } message: {
+            Text(explorationManager.autoStopMessage ?? "")
+        }
+        // 监听自动停止消息
+        .onReceive(explorationManager.$autoStopMessage) { message in
+            if message != nil {
+                showAutoStopAlert = true
+            }
+        }
         // 监听探索状态变化
         .onReceive(explorationManager.$explorationState) { state in
             handleExplorationStateChange(state)
@@ -274,6 +301,12 @@ struct MapTabView: View {
         // 日志查看器（显示圈地日志，崩溃后重启仍可查看）
         .sheet(isPresented: $showLogViewer) {
             TerritoryLogView()
+        }
+        // 探索新手引导 Sheet
+        .sheet(isPresented: $showExplorationGuide) {
+            ExplorationGuideView {
+                explorationManager.startExploration()
+            }
         }
         // 圈地规则说明 Sheet
         .sheet(isPresented: $showClaimingRules) {
@@ -640,9 +673,13 @@ struct MapTabView: View {
                 stopCollisionMonitoring()
                 locationManager.stopPathTracking()
             }
-            // 开始探索
-            print("  - 执行: 开始探索")
-            explorationManager.startExploration()
+            // 首次探索弹出引导，之后直接开始
+            if ExplorationGuideView.hasShown {
+                print("  - 执行: 开始探索")
+                explorationManager.startExploration()
+            } else {
+                showExplorationGuide = true
+            }
         }
 
         print("  - 新探索状态: \(explorationManager.isExploring)")
@@ -1247,6 +1284,74 @@ struct MapTabView: View {
                     }
                 }
             }
+
+            // 第三行：POI搜刮相关提示（三选一，优先级：接近提示 > 下一POI导引 > 解锁进度）
+            if let hint = explorationManager.poiApproachHint {
+                // 走到POI附近但步行不足500m
+                Divider().background(ApocalypseTheme.textMuted.opacity(0.3))
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.warning)
+                    Text("「\(hint.name)」附近")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                        .lineLimit(1)
+                    Text("·")
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                        .font(.system(size: 11))
+                    Text("再走")
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                    Text("\(hint.remaining)m")
+                        .font(.system(size: 11, weight: .bold).monospacedDigit())
+                        .foregroundColor(ApocalypseTheme.warning)
+                    Text("可搜刮")
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+            } else if let hint = explorationManager.nextPOIHint {
+                // 搜刮成功后导引到下一个POI
+                Divider().background(ApocalypseTheme.textMuted.opacity(0.3))
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.success)
+                    Text("下一目标：\(hint.name)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text("距你 \(hint.distance)m")
+                        .font(.system(size: 11, weight: .bold).monospacedDigit())
+                        .foregroundColor(ApocalypseTheme.success)
+                }
+            } else if explorationManager.totalDistance < 500 {
+                // 默认显示搜刮解锁进度
+                Divider().background(ApocalypseTheme.textMuted.opacity(0.3))
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                    Text("搜刮解锁")
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(ApocalypseTheme.textMuted.opacity(0.2))
+                                .frame(height: 6)
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(ApocalypseTheme.primary)
+                                .frame(width: geo.size.width * min(explorationManager.totalDistance / 500.0, 1.0), height: 6)
+                        }
+                    }
+                    .frame(height: 6)
+                    Text("\(Int(explorationManager.totalDistance))m/500m")
+                        .font(.system(size: 10, weight: .bold).monospacedDigit())
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
@@ -1304,6 +1409,30 @@ struct MapTabView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(Color.red.opacity(0.95))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    /// 建筑物停留提醒横幅
+    private func buildingEntryWarningBanner(message: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "building.2.fill")
+                .font(.system(size: 22))
+                .foregroundColor(.white)
+
+            Text(message)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(ApocalypseTheme.primary.opacity(0.95))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
         .padding(.horizontal, 16)

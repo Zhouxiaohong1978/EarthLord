@@ -405,11 +405,11 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
     /// 转换为 ObtainedItem（用于保存到背包）
     /// 注意：itemId 必须映射到数据库合法值，不能直接用 AI 生成的 name
     func toObtainedItem() -> ObtainedItem {
-        return ObtainedItem(itemId: mappedItemId, quantity: quantity, quality: quality)
+        return ObtainedItem(itemId: mappedItemId, quantity: quantity, quality: quality, customName: name)
     }
 
     /// 根据 category + rarity 映射到数据库合法的 item_id
-    private var mappedItemId: String {
+    var mappedItemId: String {
         switch category {
         case "water":
             return "water_bottle"
@@ -464,12 +464,14 @@ struct ObtainedItem: Identifiable, Equatable {
     let itemId: String
     let quantity: Int
     let quality: ItemQuality?
+    let customName: String?         // AI 生成的物品名（可选）
 
-    init(itemId: String, quantity: Int, quality: ItemQuality? = nil) {
+    init(itemId: String, quantity: Int, quality: ItemQuality? = nil, customName: String? = nil) {
         self.id = UUID()
         self.itemId = itemId
         self.quantity = quantity
         self.quality = quality
+        self.customName = customName
     }
 
     static func == (lhs: ObtainedItem, rhs: ObtainedItem) -> Bool {
@@ -546,6 +548,7 @@ struct InventoryItemDB: Codable {
     let quality: String?
     let obtainedFrom: String?
     let explorationSessionId: String?
+    let customName: String?
     let createdAt: String?
     let updatedAt: String?
 
@@ -557,6 +560,7 @@ struct InventoryItemDB: Codable {
         case quality
         case obtainedFrom = "obtained_from"
         case explorationSessionId = "exploration_session_id"
+        case customName = "custom_name"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }

@@ -198,6 +198,52 @@ final class MailboxManager: ObservableObject {
         }
     }
 
+    /// 领取邮件物品到仓库（不经过背包）
+    func claimMailToWarehouse(_ mail: Mail) async throws {
+        guard AuthManager.shared.currentUser?.id != nil else {
+            throw PurchaseError.notAuthenticated
+        }
+
+        let warehouse = WarehouseManager.shared
+        guard warehouse.hasWarehouse else {
+            throw NSError(domain: "MailboxManager", code: -2,
+                          userInfo: [NSLocalizedDescriptionKey: String(localized: "mailbox.claim.no_warehouse")])
+        }
+
+        let totalItems = mail.items.reduce(0) { $0 + $1.quantity }
+        guard warehouse.remainingCapacity >= totalItems else {
+            throw NSError(domain: "MailboxManager", code: -3,
+                          userInfo: [NSLocalizedDescriptionKey: String(format: String(localized: "mailbox.claim.warehouse_full %lld %lld"),
+                                                                       warehouse.remainingCapacity, totalItems)])
+        }
+
+        // 标记邮件为已领取
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let updateData: [String: AnyJSON] = [
+            "is_claimed": .bool(true),
+            "claimed_at": .string(formatter.string(from: Date()))
+        ]
+        try await supabase
+            .from("mailbox")
+            .update(updateData)
+            .eq("id", value: mail.id.uuidString)
+            .execute()
+
+        // 将每个物品存入仓库
+        for item in mail.items {
+            let quality = item.quality.flatMap { ItemQuality(rawValue: $0) }
+            try await warehouse.receiveFromMail(
+                itemId: item.itemId,
+                quantity: item.quantity,
+                quality: quality
+            )
+        }
+
+        await loadMails()
+        logger.log("邮件物品已全部存入仓库: \(mail.title)", type: .success)
+    }
+
     /// 删除邮件
     func deleteMail(_ mail: Mail) async throws {
         do {

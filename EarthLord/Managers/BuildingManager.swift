@@ -415,6 +415,24 @@ final class BuildingManager: ObservableObject {
             throw BuildingError.maxLevelReached
         }
 
+        // 检查升级所需材料
+        let upgradeIndex = building.level - 1  // Lv1→2 uses index 0, Lv2→3 uses index 1, etc.
+        if let upgradeResources = template.upgradeResources,
+           upgradeIndex < upgradeResources.count {
+            let cost = upgradeResources[upgradeIndex]
+            let inventory = InventoryManager.shared
+            var missing: [String: Int] = [:]
+            for (itemId, required) in cost {
+                let owned = inventory.items.first(where: { $0.itemId == itemId })?.quantity ?? 0
+                if owned < required {
+                    missing[itemId] = required - owned
+                }
+            }
+            if !missing.isEmpty {
+                throw BuildingError.insufficientResources(missing)
+            }
+        }
+
         logger.log("升级建筑: \(building.buildingName) Lv.\(building.level) -> Lv.\(building.level + 1)", type: .info)
         isLoading = true
         defer { isLoading = false }
@@ -423,6 +441,15 @@ final class BuildingManager: ObservableObject {
         let newLevel = building.level + 1
 
         do {
+            // 扣除升级材料
+            if let upgradeResources = template.upgradeResources,
+               upgradeIndex < upgradeResources.count {
+                let cost = upgradeResources[upgradeIndex]
+                for (itemId, amount) in cost {
+                    try await InventoryManager.shared.removeItem(itemId: itemId, quantity: amount)
+                }
+            }
+
             let updateData: [String: AnyJSON] = [
                 "level": .integer(newLevel),
                 "updated_at": .string(now.ISO8601Format())

@@ -323,6 +323,16 @@ final class PurchaseManager: ObservableObject {
 
         _ = try await supabase.rpc("send_mail", params: params).execute()
         logger.log("邮件发送成功", type: .success)
+
+        // 购买邮件保留30天
+        let expiresAt = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        try? await supabase
+            .from("mailbox")
+            .update(["expires_at": formatter.string(from: expiresAt)])
+            .eq("purchase_id", value: purchaseId.uuidString)
+            .execute()
     }
 
     /// 标记订单已发货

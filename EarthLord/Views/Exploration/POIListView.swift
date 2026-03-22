@@ -166,7 +166,7 @@ struct POIListView: View {
                 }
             }
         }
-        .navigationTitle(LocalizedStringKey("附近地点"))
+        .navigationTitle(LocalizedStringKey("废墟列表"))
         .navigationBarTitleDisplayMode(.inline)
     }
 

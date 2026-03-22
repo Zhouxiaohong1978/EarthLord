@@ -198,27 +198,29 @@ final class DailyRewardManager: ObservableObject {
                 throw DailyRewardError.claimFailed("未找到礼包配置")
             }
 
-            // 通过邮箱投递（支持背包已满时安全接收）
-            let mailItems = config.items.map { item in
-                MailItem(itemId: item.itemId, quantity: item.quantity, quality: item.quality?.rawValue)
+            // 先写记录，防止重复发邮件
+            let inserted = try await saveRewardRecord(userId: userId, tier: currentTier, items: config.items)
+
+            if inserted {
+                // 新记录写入成功，再发邮件
+                let mailItems = config.items.map { item in
+                    MailItem(itemId: item.itemId, quantity: item.quantity, quality: item.quality?.rawValue)
+                }
+                let tierName = currentTier.displayName
+                try await MailboxManager.shared.deliverItems(
+                    to: userId,
+                    mailType: .reward,
+                    title: "\(tierName)\(String(localized: "每日礼包"))",
+                    content: String(localized: "您的每日专属礼包已到达，请前往邮箱领取。"),
+                    items: mailItems,
+                    expiresInDays: 30
+                )
+                logger.log("每日礼包已投递至邮箱", type: .success)
+            } else {
+                logger.log("今日礼包已领取（状态同步）", type: .info)
             }
-            let tierName = currentTier.displayName
-            try await MailboxManager.shared.deliverItems(
-                to: userId,
-                mailType: .reward,
-                title: "\(tierName)\(String(localized: "每日礼包"))",
-                content: String(localized: "您的每日专属礼包已到达，请前往邮箱领取。"),
-                items: mailItems,
-                expiresInDays: 3
-            )
 
-            // 记录到数据库
-            try await saveRewardRecord(userId: userId, tier: currentTier, items: config.items)
-
-            // 更新状态
             hasClaimedToday = true
-
-            logger.log("每日礼包已投递至邮箱", type: .success)
 
         } catch {
             logger.logError("领取每日礼包失败", error: error)
@@ -245,12 +247,12 @@ final class DailyRewardManager: ObservableObject {
         todayReward = Self.rewardConfigs[currentTier]
     }
 
-    /// 保存领取记录到数据库
+    /// 保存领取记录到数据库，返回 true 表示新插入，false 表示今日已存在
     private func saveRewardRecord(
         userId: UUID,
         tier: SubscriptionTier,
         items: [DailyRewardConfig.RewardItem]
-    ) async throws {
+    ) async throws -> Bool {
         // 编码物品为 JSON
         let itemsData = items.map { item -> [String: Any] in
             var dict: [String: Any] = [
@@ -268,7 +270,6 @@ final class DailyRewardManager: ObservableObject {
             throw DailyRewardError.claimFailed("物品数据编码失败")
         }
 
-        // 插入记录
         let rewardData: [String: AnyJSON] = [
             "user_id": .string(userId.uuidString),
             "reward_date": .string(ISO8601DateFormatter().string(from: Date())),
@@ -276,11 +277,19 @@ final class DailyRewardManager: ObservableObject {
             "items": .string(jsonString)
         ]
 
-        try await supabase
-            .from("daily_rewards")
-            .insert(rewardData)
-            .execute()
-
-        logger.log("领取记录已保存", type: .success)
+        do {
+            try await supabase
+                .from("daily_rewards")
+                .insert(rewardData)
+                .execute()
+            logger.log("领取记录已保存", type: .success)
+            return true
+        } catch {
+            if error.localizedDescription.contains("duplicate key") {
+                logger.log("今日记录已存在", type: .info)
+                return false
+            }
+            throw error
+        }
     }
 }

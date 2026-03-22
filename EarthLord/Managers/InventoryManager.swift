@@ -113,7 +113,8 @@ final class InventoryManager: ObservableObject {
                     quantity: dbItem.quantity,
                     quality: quality,
                     obtainedAt: obtainedAt,
-                    obtainedFrom: dbItem.obtainedFrom
+                    obtainedFrom: dbItem.obtainedFrom,
+                    customName: dbItem.customName
                 )
             }
 
@@ -166,7 +167,8 @@ final class InventoryManager: ObservableObject {
         quantity: Int,
         quality: ItemQuality? = nil,
         obtainedFrom: String? = nil,
-        sessionId: String? = nil
+        sessionId: String? = nil,
+        customName: String? = nil
     ) async throws {
         guard let userId = AuthManager.shared.currentUser?.id else {
             throw InventoryError.notAuthenticated
@@ -174,15 +176,15 @@ final class InventoryManager: ObservableObject {
 
         logger.log("添加物品: \(itemId) x\(quantity)", type: .info)
 
-        // 检查是否已有相同物品（相同ID和品质）
-        let existingItem = try await findExistingItem(
+        // AI生成物品（有customName）保留独特名称，不与同类物品合并
+        let existingItem: InventoryItemDB? = customName == nil ? try await findExistingItem(
             userId: userId,
             itemId: itemId,
             quality: quality
-        )
+        ) : nil
 
         if let existing = existingItem {
-            // 已有物品，更新数量
+            // 已有同类通用物品，直接叠加数量
             let newQuantity = existing.quantity + quantity
             try await updateItemQuantityInDB(itemId: existing.id!, newQuantity: newQuantity)
             logger.log("物品已存在，数量更新为 \(newQuantity)", type: .success)
@@ -200,7 +202,8 @@ final class InventoryManager: ObservableObject {
                 "quantity": .integer(quantity),
                 "quality": quality != nil ? .string(quality!.rawValue) : .null,
                 "obtained_from": obtainedFrom != nil ? .string(obtainedFrom!) : .null,
-                "exploration_session_id": sessionId != nil ? .string(sessionId!) : .null
+                "exploration_session_id": sessionId != nil ? .string(sessionId!) : .null,
+                "custom_name": customName != nil ? .string(customName!) : .null
             ]
 
             try await supabase
@@ -255,6 +258,27 @@ final class InventoryManager: ObservableObject {
         logger.log("物品已删除", type: .success)
 
         // 刷新本地数据
+        await refreshInventory()
+    }
+
+    /// 从背包移除指定数量的物品（存入仓库时调用）
+    func removeItem(itemId: String, quantity: Int, quality: ItemQuality? = nil) async throws {
+        let matching = items.filter { $0.itemId == itemId && $0.quality == quality }
+        let total = matching.reduce(0) { $0 + $1.quantity }
+        guard total >= quantity else { throw InventoryError.insufficientQuantity }
+
+        var remaining = quantity
+        for item in matching {
+            guard remaining > 0 else { break }
+            let deduct = min(item.quantity, remaining)
+            let newQty = item.quantity - deduct
+            if newQty <= 0 {
+                try await deleteItem(inventoryId: item.id)
+            } else {
+                try await updateItemQuantityInDB(itemId: item.id.uuidString, newQuantity: newQty)
+            }
+            remaining -= deduct
+        }
         await refreshInventory()
     }
 

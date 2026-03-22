@@ -113,11 +113,26 @@ final class ExplorationManager: NSObject, ObservableObject {
         didSet { savePOIsToDisk() }
     }
 
+    /// 当前可见的POI：探索开始即固定显示所有目标废墟
+    var visiblePOIs: [POI] { nearbyPOIs }
+
     /// 当前接近的POI（触发弹窗）
     @Published var currentProximityPOI: POI?
 
     /// 是否显示接近弹窗
     @Published var showProximityPopup: Bool = false
+
+    /// 建筑物内停留提醒（1/3、2/3、3/3），速度恢复后清除
+    @Published var buildingEntryWarning: String?
+
+    /// 自动停止原因（用于显示给用户）
+    @Published var autoStopMessage: String?
+
+    /// 接近POI但步行不足500m时的提示（POI名 + 剩余距离），3秒后自动清除（已废弃，保留兼容）
+    @Published var poiApproachHint: (name: String, remaining: Int)?
+
+    /// 搜刮成功后的下一个POI导引提示（POI名 + 距离），5秒后自动清除
+    @Published var nextPOIHint: (name: String, distance: Int)?
 
     /// POI搜刮时间记录（坐标Key → 最后搜刮时间，跨会话持久化）
     /// Key格式："lat,lon"（小数点后4位，约11米精度）
@@ -179,6 +194,9 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 超速计时器（保留兼容，新逻辑不再使用）
     private var overSpeedTimer: Timer?
+
+    /// 建筑物停留宽限期计时器（3次提醒后1分钟内未恢复则自动停止）
+    private var buildingEntryGraceTimer: Timer?
 
     /// 当前倒计时值
     private var countdownValue: Int = 10
@@ -281,6 +299,8 @@ final class ExplorationManager: NSObject, ObservableObject {
         Task {
             let startCoord = explorationStartLocation?.coordinate ?? locationManager.location?.coordinate
             guard let coord = startCoord else { return }
+            // 先刷新订阅状态，避免 currentTier 在订阅加载完成前读到 .free（竞态条件）
+            await SubscriptionManager.shared.refreshSubscriptionStatus()
             await searchNearbyPOIs(center: coord)
             setupGeofences()
         }
@@ -392,6 +412,12 @@ final class ExplorationManager: NSObject, ObservableObject {
         LocationManager.shared.speedWarning = nil
         LocationManager.shared.isOverSpeed = false
 
+        // 重置建筑物停留状态
+        buildingEntryGraceTimer?.invalidate()
+        buildingEntryGraceTimer = nil
+        buildingEntryWarning = nil
+        autoStopMessage = nil
+
         // 清除旧POI列表和地理围栏，新探索从当前位置重新加载
         nearbyPOIs.removeAll()
         cleanupGeofences()
@@ -467,46 +493,41 @@ final class ExplorationManager: NSObject, ObservableObject {
             logger.log(String(format: "新最高速度记录: %.1f km/h", speedKmh), type: .info)
         }
 
-        // 速度检测（与圈地系统一致：15 km/h 警告，20 km/h 连续3次自动停止）
+        // 速度检测：高速可能是进入建筑物导致GPS漂移，不立即停止，改为分级提醒
         logger.logSpeed(speedKmh, isOverSpeed: speedKmh > explorationSpeedWarningThreshold, countdown: overSpeedCountdown)
 
         if speedKmh < explorationSpeedWarningThreshold {
-            // 速度正常：重置计数，继续记录
-            explorationConsecutiveOverspeedCount = 0
+            // 速度恢复正常：重置计数、取消宽限期、清除提醒，继续记录
+            if explorationConsecutiveOverspeedCount > 0 {
+                explorationConsecutiveOverspeedCount = 0
+                buildingEntryGraceTimer?.invalidate()
+                buildingEntryGraceTimer = nil
+                buildingEntryWarning = nil
+                logger.log("速度已恢复正常，取消建筑物停留计时", type: .info)
+            }
             LocationManager.shared.speedWarning = nil
             LocationManager.shared.isOverSpeed = false
             handleNormalSpeed(location: location)
 
         } else if speedKmh > explorationSpeedPauseThreshold {
-            // 超过暂停阈值：跳过采点，计入连续超速
-            explorationConsecutiveOverspeedCount += 1
+            // 高速（GPS漂移）：分级提醒，不跳点也不停止
             LocationManager.shared.isOverSpeed = true
-            logger.log(String(format: "⚠️ 探索超速: %.1f km/h，连续第 %d 次", speedKmh, explorationConsecutiveOverspeedCount), type: .warning)
-
-            if explorationConsecutiveOverspeedCount >= explorationConsecutiveOverspeedLimit {
-                // 连续超速 3 次，自动停止探索
-                LocationManager.shared.speedWarning = String(localized: "exploration.speed.auto_stopped")
-                logger.log("连续超速 \(explorationConsecutiveOverspeedCount) 次，自动停止探索", type: .error)
-                stopExploration(cancelled: true)
-            } else {
-                LocationManager.shared.speedWarning = String(format: String(localized: "speed.warning.fast"), speedKmh)
+            // 仅在宽限期未激活时才递增计数
+            if buildingEntryGraceTimer == nil {
+                explorationConsecutiveOverspeedCount += 1
             }
-            // 不记录该点
+            logger.log(String(format: "⚠️ GPS漂移/高速: %.1f km/h，连续第 %d 次", speedKmh, explorationConsecutiveOverspeedCount), type: .warning)
+            handleBuildingEntryWarning(count: explorationConsecutiveOverspeedCount)
 
         } else {
-            // 15~20 km/h：计入连续超速，警告；连续 3 次自动停止
-            explorationConsecutiveOverspeedCount += 1
+            // 15~20 km/h：同样视为建筑物停留，分级提醒
             LocationManager.shared.isOverSpeed = true
-            logger.log(String(format: "⚠️ 速度较快: %.1f km/h，连续第 %d 次", speedKmh, explorationConsecutiveOverspeedCount), type: .warning)
-
-            if explorationConsecutiveOverspeedCount >= explorationConsecutiveOverspeedLimit {
-                LocationManager.shared.speedWarning = String(localized: "exploration.speed.auto_stopped")
-                logger.log("连续超速 \(explorationConsecutiveOverspeedCount) 次，自动停止探索", type: .error)
-                stopExploration(cancelled: true)
-            } else {
-                LocationManager.shared.speedWarning = String(format: String(localized: "speed.warning.medium"), speedKmh)
-                handleNormalSpeed(location: location)
+            if buildingEntryGraceTimer == nil {
+                explorationConsecutiveOverspeedCount += 1
             }
+            logger.log(String(format: "⚠️ 速度较快: %.1f km/h，连续第 %d 次", speedKmh, explorationConsecutiveOverspeedCount), type: .warning)
+            handleBuildingEntryWarning(count: explorationConsecutiveOverspeedCount)
+            handleNormalSpeed(location: location)
         }
 
         // 主动检测接近的POI（解决已在范围内不触发的问题）
@@ -761,11 +782,26 @@ final class ExplorationManager: NSObject, ObservableObject {
         // 随机品质
         let quality = generateRandomQuality()
 
+        // 建造材料类给予随机数量，生存消耗品保持1个
+        let quantity = itemDropQuantity(for: selectedItem, tier: tier)
+
         return ObtainedItem(
             itemId: selectedItem,
-            quantity: 1,
+            quantity: quantity,
             quality: quality
         )
+    }
+
+    /// 根据物品类型和探索档位决定掉落数量
+    private func itemDropQuantity(for itemId: String, tier: RewardTier) -> Int {
+        switch itemId {
+        case "wood", "stone":
+            return tier == .bronze ? Int.random(in: 3...6) : Int.random(in: 5...10)
+        case "scrap_metal", "nails", "rope", "cloth":
+            return tier == .bronze ? Int.random(in: 2...4) : Int.random(in: 3...7)
+        default:
+            return 1
+        }
     }
 
     /// 获取指定稀有度的物品池（GDD对齐，所有等级包含建造材料）
@@ -859,28 +895,20 @@ final class ExplorationManager: NSObject, ObservableObject {
         logger.log("✅ 已保存 \(rewards.count) 件物品到离线队列，网络恢复后自动同步", type: .success)
     }
 
-    /// 保存奖励物品到背包（使用 InventoryManager 支持堆叠，背包已满时投递到邮箱）
+    /// 保存奖励物品到背包（使用 InventoryManager 支持堆叠）
+    /// 传入的 items 为玩家已勾选确认收取的物品，不存在溢出情况
     private func saveRewardsToInventory(items: [ObtainedItem], sessionId: String?) async {
         var failedItems: [ObtainedItem] = []
-        var overflowItems: [ObtainedItem] = []
-
-        let capacity = InventoryManager.shared.backpackCapacity
 
         for item in items {
-            // 检查背包是否已满（按物品总数量）
-            let currentTotal = InventoryManager.shared.totalItemCount
-            if currentTotal >= capacity {
-                overflowItems.append(item)
-                continue
-            }
-
             do {
                 try await InventoryManager.shared.addItem(
                     itemId: item.itemId,
                     quantity: item.quantity,
                     quality: item.quality,
                     obtainedFrom: "探索",
-                    sessionId: sessionId?.isEmpty == false ? sessionId : nil
+                    sessionId: sessionId?.isEmpty == false ? sessionId : nil,
+                    customName: item.customName
                 )
                 logger.log("✅ 物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
             } catch {
@@ -889,25 +917,7 @@ final class ExplorationManager: NSObject, ObservableObject {
             }
         }
 
-        // 背包溢出 → 投递到邮箱
-        if !overflowItems.isEmpty, let userId = AuthManager.shared.currentUser?.id {
-            let mailItems = overflowItems.map { MailItem(itemId: $0.itemId, quantity: $0.quantity, quality: $0.quality?.rawValue) }
-            do {
-                try await MailboxManager.shared.deliverItems(
-                    to: userId,
-                    mailType: .reward,
-                    title: String(localized: "探索奖励（背包已满）"),
-                    content: String(format: String(localized: "你的背包已满，%lld 种物品已转入邮箱，请及时领取。"), overflowItems.count),
-                    items: mailItems
-                )
-                logger.log("📬 \(overflowItems.count) 种溢出物品已投递到邮箱", type: .warning)
-            } catch {
-                logger.logError("邮箱投递失败，加入离线队列", error: error)
-                failedItems.append(contentsOf: overflowItems)
-            }
-        }
-
-        // 统一处理失败的物品
+        // 网络失败的物品加入离线队列，待网络恢复后同步
         if !failedItems.isEmpty {
             logger.log("⚠️ 有 \(failedItems.count) 件物品保存失败，加入离线队列", type: .warning)
             for item in failedItems {
@@ -1309,20 +1319,70 @@ extension ExplorationManager {
     /// 处理进入POI范围
     @MainActor
     private func handlePOIProximity(regionId: String) {
-        guard totalDistance >= 500 else {
-            logger.log("本次探索距离不足500m（\(String(format: "%.0f", totalDistance))m），暂不触发POI搜刮", type: .info)
-            return
-        }
         guard let poiId = UUID(uuidString: regionId),
               let poi = nearbyPOIs.first(where: { $0.id == poiId }),
               !isCoolingDown(poi) else {
             return
         }
 
-        logger.log("进入POI范围: \(poi.name)", type: .info)
+        logger.log("进入废墟50m范围: \(poi.name)", type: .info)
 
         currentProximityPOI = poi
         showProximityPopup = true
+    }
+
+    /// 处理建筑物停留提醒（分级：1/3、2/3、3/3，第3次启动1分钟宽限期）
+    @MainActor
+    private func handleBuildingEntryWarning(count: Int) {
+        switch count {
+        case 1:
+            buildingEntryWarning = String(localized: "exploration.building.warning1")
+            logger.log("建筑物停留提醒 1/3", type: .warning)
+        case 2:
+            buildingEntryWarning = String(localized: "exploration.building.warning2")
+            logger.log("建筑物停留提醒 2/3", type: .warning)
+        case 3 where buildingEntryGraceTimer == nil:
+            buildingEntryWarning = String(localized: "exploration.building.warning3")
+            logger.log("建筑物停留提醒 3/3，启动1分钟宽限期", type: .warning)
+            // 启动1分钟倒计时，超时自动停止探索（无距离奖励）
+            buildingEntryGraceTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: false) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self, self.isExploring else { return }
+                    self.logger.log("建筑物停留超过1分钟，自动停止探索", type: .error)
+                    self.buildingEntryWarning = nil
+                    self.buildingEntryGraceTimer = nil
+                    self.autoStopMessage = String(localized: "exploration.building.auto_stopped")
+                    self.stopExploration(cancelled: true)
+                }
+            }
+        default:
+            break
+        }
+    }
+
+    /// 搜刮成功后提示最近的下一个可搜刮POI
+    @MainActor
+    func showNextPOIHintAfterScavenge(scavengedPOI: POI) {
+        guard let userLocation = locationManager?.location else { return }
+        let gcj02 = CoordinateConverter.wgs84ToGcj02(userLocation.coordinate)
+        let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
+
+        // 找出未冷却的其他POI中距离最近的一个
+        let next = nearbyPOIs
+            .filter { $0.id != scavengedPOI.id && !isCoolingDown($0) }
+            .min(by: {
+                let d1 = userLoc.distance(from: CLLocation(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude))
+                let d2 = userLoc.distance(from: CLLocation(latitude: $1.coordinate.latitude, longitude: $1.coordinate.longitude))
+                return d1 < d2
+            })
+
+        guard let nextPOI = next else { return }
+        let distance = Int(userLoc.distance(from: CLLocation(latitude: nextPOI.coordinate.latitude, longitude: nextPOI.coordinate.longitude)))
+        nextPOIHint = (name: nextPOI.name, distance: distance)
+        Task {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            nextPOIHint = nil
+        }
     }
 
     /// 主动检测是否接近POI（解决地理围栏"已在范围内"不触发的问题）
@@ -1512,10 +1572,14 @@ extension ExplorationManager {
         }
 
         // 清除搜刮结果
+        let scavengedPOI = result.poi
         scavengeResult = nil
         showScavengeResult = false
 
         logger.log("物品已保存到背包", type: .success)
+
+        // 提示玩家最近的下一个可搜刮POI
+        showNextPOIHintAfterScavenge(scavengedPOI: scavengedPOI)
     }
 
     /// 放弃搜刮结果（用户不想要这些物品）

@@ -135,6 +135,7 @@ struct BuildingTemplate: Identifiable, Codable {
     let descriptionEn: String?
     let icon: String
     let requiredResources: [String: Int]
+    var upgradeResources: [[String: Int]]? = nil
     let buildTimeSeconds: Int
     let maxPerTerritory: Int
     let maxLevel: Int
@@ -150,6 +151,7 @@ struct BuildingTemplate: Identifiable, Codable {
         case descriptionEn = "description_en"
         case icon
         case requiredResources = "required_resources"
+        case upgradeResources = "upgrade_resources"
         case buildTimeSeconds = "build_time_seconds"
         case maxPerTerritory = "max_per_territory"
         case maxLevel = "max_level"
@@ -184,6 +186,22 @@ struct BuildingTemplate: Identifiable, Codable {
     var resourcesDisplayText: String {
         requiredResources.map { "\($0.key) x\($0.value)" }.joined(separator: ", ")
     }
+
+    /// 仓库容量（仅 storage 类建筑有效，按等级返回）
+    func storageCapacity(at level: Int) -> Int {
+        let clampedLevel = max(1, min(level, maxLevel))
+        switch id {
+        case "storage_small":
+            return [500, 800, 1200][clampedLevel - 1]
+        case "storage_medium":
+            return [1500, 2000, 3000][clampedLevel - 1]
+        default:
+            return 0
+        }
+    }
+
+    /// 是否是仓库建筑
+    var isStorage: Bool { category == .storage }
 }
 
 /// 建筑模板容器（用于 JSON 解码）

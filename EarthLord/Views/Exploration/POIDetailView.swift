@@ -56,10 +56,11 @@ struct POIDetailView: View {
     /// 数据来源
     private let dataSource: String = "MapKit"
 
-    /// 实时距离（米）
+    /// 实时距离（米）- 用户GPS(WGS-84)转GCJ-02后与POI坐标比较
     private var realDistance: Int? {
         guard let userCoord = locationManager.userLocation else { return nil }
-        let userLoc = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
+        let gcj02 = CoordinateConverter.wgs84ToGcj02(userCoord)
+        let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
         let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
         return Int(userLoc.distance(from: poiLoc))
     }
@@ -67,7 +68,7 @@ struct POIDetailView: View {
     /// 距离显示文字
     private var distanceText: String {
         guard let d = realDistance else { return "--" }
-        return d < 1000 ? "\(d) \(String(localized: "unit.meters"))" : String(format: "%.1f \(String(localized: "unit.km"))", Double(d) / 1000)
+        return d < 1000 ? "直线 \(d) \(String(localized: "unit.meters"))" : String(format: "直线 %.1f \(String(localized: "unit.km"))", Double(d) / 1000)
     }
 
     // MARK: - Body

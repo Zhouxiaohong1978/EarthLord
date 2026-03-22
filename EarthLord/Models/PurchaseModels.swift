@@ -416,18 +416,18 @@ enum SubscriptionTier: String, Codable {
     // MARK: 背包容量
     var backpackCapacity: Int {
         switch self {
-        case .free:     return 500
-        case .explorer: return 1500
-        case .lord:     return 3000
+        case .free:     return 100
+        case .explorer: return 500
+        case .lord:     return 1000
         }
     }
 
-    // MARK: 探索POI数量（每次探索显示的兴趣点数）
+    // MARK: 探索废墟数量（每次探索显示的目标废墟数：幸存者1-2，探索者3-4，领主6-8）
     var poiCount: Int {
         switch self {
-        case .free:     return 4
-        case .explorer: return 8
-        case .lord:     return 12
+        case .free:     return 2
+        case .explorer: return 4
+        case .lord:     return 8
         }
     }
 

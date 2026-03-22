@@ -12,11 +12,15 @@ struct RootView: View {
     /// 启动页是否完成
     @State private var splashFinished = false
 
-    /// 是否已看过引导页
-    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    /// 是否已看过引导页（按 userId 存，换账号自动重置）
+    @State private var hasSeenOnboarding = false
 
     /// 认证管理器
     @StateObject private var authManager = AuthManager.shared
+
+    private func onboardingKey(for userId: String) -> String {
+        "hasSeenOnboarding_\(userId)"
+    }
 
     var body: some View {
         ZStack {
@@ -31,6 +35,9 @@ struct RootView: View {
             } else if !hasSeenOnboarding {
                 // 首次登录：显示引导页
                 OnboardingView {
+                    if let userId = authManager.currentUser?.id.uuidString {
+                        UserDefaults.standard.set(true, forKey: onboardingKey(for: userId))
+                    }
                     hasSeenOnboarding = true
                 }
                 .transition(.opacity)
@@ -43,6 +50,13 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.3), value: splashFinished)
         .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
         .animation(.easeInOut(duration: 0.3), value: hasSeenOnboarding)
+        .onChange(of: authManager.currentUser) { user in
+            if let userId = user?.id.uuidString {
+                hasSeenOnboarding = UserDefaults.standard.bool(forKey: onboardingKey(for: userId))
+            } else {
+                hasSeenOnboarding = false
+            }
+        }
     }
 }
 

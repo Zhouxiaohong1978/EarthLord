@@ -12,8 +12,9 @@ import CoreLocation
 // MARK: - 资源页分段类型
 
 enum ResourceSegment: String, CaseIterable {
-    case poi = "POI"
+    case poi = "废墟列表"
     case backpack = "背包"
+    case warehouse = "领地物品"
     case mailbox = "邮箱"
     case trade = "交易"
 }
@@ -114,6 +115,8 @@ struct ExplorationTabView: View {
             POIContentView()
         case .backpack:
             BackpackContentView()
+        case .warehouse:
+            WarehouseContentView()
         case .mailbox:
             MailboxContentView()
         case .trade:
@@ -223,11 +226,11 @@ struct POIContentView: View {
     // MARK: - 计算属性
 
     private var hasAnyPOIs: Bool {
-        !explorationManager.nearbyPOIs.isEmpty
+        !explorationManager.visiblePOIs.isEmpty
     }
 
     private var sortedAndFilteredPOIs: [POI] {
-        var pois = explorationManager.nearbyPOIs
+        var pois = explorationManager.visiblePOIs
         if let type = selectedFilter.poiType {
             pois = pois.filter { $0.type == type }
         }
@@ -255,7 +258,7 @@ struct POIContentView: View {
         return pois
     }
 
-    private var scavengedCount: Int { explorationManager.nearbyPOIs.filter { explorationManager.isCoolingDown($0) }.count }
+    private var scavengedCount: Int { explorationManager.visiblePOIs.filter { explorationManager.isCoolingDown($0) }.count }
 
     private func distanceString(for poi: POI) -> String? {
         guard let userCoord = locationManager.userLocation else { return nil }
@@ -264,9 +267,9 @@ struct POIContentView: View {
         let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
         let meters = userLoc.distance(from: poiLoc)
         if meters < 1000 {
-            return String(format: "%.0fm", meters)
+            return String(format: "直线 %.0fm", meters)
         } else {
-            return String(format: "%.1fkm", meters / 1000)
+            return String(format: "直线 %.1fkm", meters / 1000)
         }
     }
 
@@ -333,7 +336,7 @@ struct POIContentView: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text(LocalizedStringKey("前往地图开始探索，发现附近可搜刮地点"))
+            Text(LocalizedStringKey("前往地图开始探索，搜寻附近的废墟残骸"))
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textMuted)
                 .multilineTextAlignment(.center)
@@ -427,7 +430,7 @@ struct POIContentView: View {
             Spacer()
 
             HStack(spacing: 4) {
-                Text("\(explorationManager.nearbyPOIs.count)")
+                Text("\(explorationManager.visiblePOIs.count)")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
                 Text(LocalizedStringKey("个废墟"))
@@ -749,8 +752,8 @@ struct BackpackContentView: View {
         }
     }
 
-    /// 筛选后的物品列表（合并同名物品）
-    private var groupedFilteredItems: [(itemId: String, totalQuantity: Int)] {
+    /// 筛选后的物品列表（同 itemId+customName 才合并）
+    private var groupedFilteredItems: [(key: String, itemId: String, totalQuantity: Int, customName: String?)] {
         var items = inventoryManager.items
 
         if let category = selectedFilter.category {
@@ -762,22 +765,27 @@ struct BackpackContentView: View {
 
         if !searchText.isEmpty {
             items = items.filter { item in
-                guard let definition = MockExplorationData.getItemDefinition(by: item.itemId) else { return false }
-                return definition.name.localizedCaseInsensitiveContains(searchText)
+                let name = item.customName ?? MockExplorationData.getItemDefinition(by: item.itemId)?.name ?? item.itemId
+                return name.localizedCaseInsensitiveContains(searchText)
             }
         }
 
-        // 按 itemId 分组求和
-        var grouped: [String: Int] = [:]
+        // 按 itemId + customName 分组：相同名字的 AI 物品堆叠，不同名字的独立显示
+        var grouped: [String: (itemId: String, quantity: Int, customName: String?)] = [:]
         for item in items {
-            grouped[item.itemId, default: 0] += item.quantity
+            let groupKey = "\(item.itemId)|\(item.customName ?? "")"
+            if let existing = grouped[groupKey] {
+                grouped[groupKey] = (existing.itemId, existing.quantity + item.quantity, existing.customName)
+            } else {
+                grouped[groupKey] = (item.itemId, item.quantity, item.customName)
+            }
         }
 
-        // 按物品名排序
-        return grouped.map { (itemId: $0.key, totalQuantity: $0.value) }
+        // 按显示名排序
+        return grouped.map { (key: $0.key, itemId: $0.value.itemId, totalQuantity: $0.value.quantity, customName: $0.value.customName) }
             .sorted { a, b in
-                let nameA = MockExplorationData.getItemDefinition(by: a.itemId)?.name ?? a.itemId
-                let nameB = MockExplorationData.getItemDefinition(by: b.itemId)?.name ?? b.itemId
+                let nameA = a.customName ?? MockExplorationData.getItemDefinition(by: a.itemId)?.name ?? a.itemId
+                let nameB = b.customName ?? MockExplorationData.getItemDefinition(by: b.itemId)?.name ?? b.itemId
                 return nameA < nameB
             }
     }
@@ -956,15 +964,18 @@ struct BackpackContentView: View {
     private var itemList: some View {
         ScrollView {
             LazyVStack(spacing: 10) {
-                ForEach(groupedFilteredItems, id: \.itemId) { group in
+                ForEach(groupedFilteredItems, id: \.key) { group in
                     if let definition = MockExplorationData.getItemDefinition(by: group.itemId) {
                         BackpackItemCardNew(
                             itemId: group.itemId,
                             totalQuantity: group.totalQuantity,
                             definition: definition,
+                            customName: group.customName,
                             onUse: {
                                 Task { @MainActor in
-                                    if let backpackItem = inventoryManager.items.first(where: { $0.itemId == group.itemId }) {
+                                    if let backpackItem = inventoryManager.items.first(where: {
+                                        $0.itemId == group.itemId && $0.customName == group.customName
+                                    }) {
                                         try? await PhysiqueManager.shared.useItem(backpackItem)
                                     }
                                 }
@@ -1056,6 +1067,7 @@ struct BackpackItemCardNew: View {
     let itemId: String
     let totalQuantity: Int
     let definition: ItemDefinition
+    var customName: String? = nil
     var onUse: (() -> Void)? = nil
 
     var body: some View {
@@ -1075,26 +1087,21 @@ struct BackpackItemCardNew: View {
             VStack(alignment: .leading, spacing: 6) {
                 // 名称和数量
                 HStack(spacing: 8) {
-                    Text(LanguageManager.shared.localizedString(for: definition.name))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(customName ?? LanguageManager.shared.localizedString(for: definition.name))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                    }
+
+                    Spacer()
 
                     Text("x\(totalQuantity)")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(ApocalypseTheme.primary)
                 }
 
-                // 重量、稀有度
+                // 稀有度
                 HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "scalemass")
-                            .font(.system(size: 10))
-                        Text(String(format: "%.1fkg", definition.weight * Double(totalQuantity)))
-                            .font(.system(size: 12))
-                    }
-                    .foregroundColor(ApocalypseTheme.textSecondary)
-
-                    // 稀有度
                     Text(LanguageManager.shared.localizedString(for: definition.rarity.rawValue))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(definition.rarity.color)

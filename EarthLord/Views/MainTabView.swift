@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @Environment(\.scenePhase) private var scenePhase
 
     /// 全局定位管理器 - 供所有 Tab 共享（使用单例）
     @StateObject private var locationManager = LocationManager.shared
@@ -88,6 +89,12 @@ struct MainTabView: View {
                     selectedTab = 0
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToTerritoryTab)) { _ in
+                // 切换到领地 Tab（index 1）
+                withAnimation {
+                    selectedTab = 1
+                }
+            }
 
             // 订阅过期横幅（仅在横幅可见时响应触摸，否则透传到 TabView）
             VStack {
@@ -101,6 +108,14 @@ struct MainTabView: View {
             Task {
                 try? await Task.sleep(nanoseconds: 10_000_000_000)
                 await subscriptionManager.handleExpiredSubscriptions()
+            }
+        }
+        .onChange(of: scenePhase) { phase in
+            // App 从后台切回前台时刷新订阅状态，确保过期不延迟生效
+            if phase == .active {
+                Task {
+                    await subscriptionManager.refreshSubscriptionStatus()
+                }
             }
         }
     }

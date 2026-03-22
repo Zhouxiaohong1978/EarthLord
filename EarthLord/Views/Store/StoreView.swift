@@ -15,6 +15,8 @@ extension Notification.Name {
     static let navigateToMailbox = Notification.Name("navigateToMailbox")
     /// 跳转到地图Tab的通知
     static let navigateToMapTab = Notification.Name("navigateToMapTab")
+    /// 跳转到领地Tab的通知
+    static let navigateToTerritoryTab = Notification.Name("navigateToTerritoryTab")
 }
 
 struct StoreView: View {

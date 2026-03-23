@@ -248,6 +248,7 @@ final class ExplorationManager: NSObject, ObservableObject {
     private func observeSubscriptionTier() {
         SubscriptionManager.shared.$currentTier
             .dropFirst()
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newTier in
                 guard let self, self.isExploring else { return }

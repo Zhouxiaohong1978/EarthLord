@@ -591,13 +591,19 @@ struct POIFilterChip: View {
 extension POIFilterType {
     var icon: String {
         switch self {
-        case .all:        return "square.grid.2x2.fill"
-        case .restaurant: return "fork.knife"
-        case .supermarket: return "cart.fill"
-        case .hospital:   return "cross.case.fill"
-        case .pharmacy:   return "pills.fill"
-        case .gasStation: return "fuelpump.fill"
-        case .electronics: return "cpu.fill"
+        case .all:           return "square.grid.2x2.fill"
+        case .restaurant:    return "fork.knife"
+        case .supermarket:   return "cart.fill"
+        case .hospital:      return "cross.case.fill"
+        case .pharmacy:      return "pills.fill"
+        case .gasStation:    return "fuelpump.fill"
+        case .electronics:   return "cpu.fill"
+        case .factory:       return "building.2.fill"
+        case .warehouse:     return "shippingbox.fill"
+        case .residential:   return "house.fill"
+        case .police:        return "shield.fill"
+        case .buildingSupply: return "hammer.fill"
+        case .park:          return "leaf.fill"
         }
     }
 }

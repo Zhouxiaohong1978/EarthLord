@@ -35,6 +35,8 @@ enum POIType: String, CaseIterable, Codable {
     case residential = "住宅区"
     case police = "警察局"
     case military = "军事设施"
+    case buildingSupply = "建材市场"
+    case park = "公园"
 }
 
 /// POI 兴趣点模型
@@ -138,6 +140,10 @@ extension POIType {
             return String(localized: "军事设施")
         case .electronics:
             return String(localized: "电子店")
+        case .buildingSupply:
+            return String(localized: "建材市场")
+        case .park:
+            return String(localized: "公园")
         }
     }
 
@@ -166,6 +172,10 @@ extension POIType {
             return .systemYellow
         case .electronics:
             return .systemBlue
+        case .buildingSupply:
+            return UIColor(red: 0.6, green: 0.4, blue: 0.2, alpha: 1.0) // 木材棕色
+        case .park:
+            return UIColor(red: 0.2, green: 0.7, blue: 0.3, alpha: 1.0) // 公园绿
         }
     }
 }

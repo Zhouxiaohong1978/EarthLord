@@ -37,6 +37,10 @@ extension POIType {
             return Color.blue
         case .military:
             return Color.yellow
+        case .buildingSupply:
+            return Color(red: 0.6, green: 0.4, blue: 0.2)
+        case .park:
+            return Color(red: 0.2, green: 0.7, blue: 0.3)
         }
     }
 
@@ -65,6 +69,10 @@ extension POIType {
             return "shield.fill"
         case .military:
             return "target"
+        case .buildingSupply:
+            return "hammer.fill"
+        case .park:
+            return "leaf.fill"
         }
     }
 }
@@ -80,6 +88,12 @@ enum POIFilterType: String, CaseIterable, Identifiable {
     case pharmacy = "药店"
     case gasStation = "加油站"
     case electronics = "电子店"
+    case factory = "工厂"
+    case warehouse = "仓库"
+    case residential = "住宅区"
+    case police = "警察局"
+    case buildingSupply = "建材市场"
+    case park = "公园"
 
     var id: String { rawValue }
 
@@ -96,6 +110,12 @@ enum POIFilterType: String, CaseIterable, Identifiable {
         case .pharmacy: return .pharmacy
         case .gasStation: return .gasStation
         case .electronics: return .electronics
+        case .factory: return .factory
+        case .warehouse: return .warehouse
+        case .residential: return .residential
+        case .police: return .police
+        case .buildingSupply: return .buildingSupply
+        case .park: return .park
         }
     }
 }

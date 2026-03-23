@@ -284,11 +284,17 @@ final class ExplorationManager: NSObject, ObservableObject {
         let searchQueries: [(query: String, type: POIType)] = isEnglish ? [
             ("supermarket", .supermarket), ("convenience store", .supermarket),
             ("hospital", .hospital), ("pharmacy", .pharmacy),
-            ("gas station", .gasStation), ("restaurant", .restaurant)
+            ("gas station", .gasStation), ("restaurant", .restaurant),
+            ("factory", .factory), ("warehouse", .warehouse),
+            ("apartment", .residential), ("police station", .police),
+            ("hardware store", .buildingSupply), ("park", .park)
         ] : [
             ("超市", .supermarket), ("便利店", .supermarket),
             ("医院", .hospital), ("药店", .pharmacy),
-            ("加油站", .gasStation), ("餐厅", .restaurant)
+            ("加油站", .gasStation), ("餐厅", .restaurant),
+            ("工厂", .factory), ("仓库", .warehouse),
+            ("小区", .residential), ("派出所", .police),
+            ("五金店", .buildingSupply), ("公园", .park)
         ]
 
         var candidates: [POI] = []
@@ -885,8 +891,8 @@ final class ExplorationManager: NSObject, ObservableObject {
             rarity = .legendary
         }
 
-        // 从对应稀有度的物品池中随机选择
-        let itemPool = getItemPool(for: rarity)
+        // 从对应稀有度的物品池中随机选择（common池随距离档变化）
+        let itemPool = getItemPool(for: rarity, tier: tier)
         let selectedItem = itemPool.randomElement() ?? "water_bottle"
 
         // 随机品质
@@ -906,29 +912,62 @@ final class ExplorationManager: NSObject, ObservableObject {
     private func itemDropQuantity(for itemId: String, tier: RewardTier) -> Int {
         switch itemId {
         case "wood", "stone":
-            return tier == .bronze ? Int.random(in: 3...6) : Int.random(in: 5...10)
+            switch tier {
+            case .bronze:   return Int.random(in: 2...4)
+            case .silver:   return Int.random(in: 3...6)
+            case .gold:     return Int.random(in: 5...9)
+            case .diamond:  return Int.random(in: 7...12)
+            case .legendary: return Int.random(in: 10...16)
+            default:        return 1
+            }
         case "scrap_metal", "nails", "rope", "cloth":
-            return tier == .bronze ? Int.random(in: 2...4) : Int.random(in: 3...7)
+            switch tier {
+            case .bronze:   return 1
+            case .silver:   return Int.random(in: 1...3)
+            case .gold:     return Int.random(in: 2...5)
+            case .diamond:  return Int.random(in: 4...8)
+            case .legendary: return Int.random(in: 6...12)
+            default:        return 1
+            }
         default:
             return 1
         }
     }
 
-    /// 获取指定稀有度的物品池（GDD对齐，所有等级包含建造材料）
-    private func getItemPool(for rarity: ItemRarity) -> [String] {
+    /// 获取指定稀有度的物品池（common池随距离档变化，体现末日探索的真实感）
+    private func getItemPool(for rarity: ItemRarity, tier: RewardTier = .none) -> [String] {
         switch rarity {
         case .common:
-            // 生存基础 + 核心建造材料（木头/石头）
-            return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone", "cloth"]
+            // common池随距离升级：近距离→生存物资，远距离→建造材料
+            // 逻辑：走近处找到食物水，走远处穿越废墟找到建造材料
+            switch tier {
+            case .bronze:
+                // 200-500m：附近小区，以生存物资为主
+                return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone"]
+            case .silver:
+                // 500m-1km：进入废弃区，生存+材料混合
+                return ["bandage", "wood", "stone", "cloth", "canned_food"]
+            case .gold:
+                // 1-2km：废墟核心区，以建造材料为主
+                return ["wood", "stone", "cloth", "scrap_metal"]
+            case .diamond:
+                // 2-5km：工业废区，以进阶建造材料为主
+                return ["stone", "scrap_metal", "nails", "cloth"]
+            case .legendary:
+                // 5km+：远郊重工业区，高级材料
+                return ["scrap_metal", "nails", "rope", "cloth"]
+            default:
+                return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone"]
+            }
         case .uncommon:
-            // 进阶建造材料 + 基础工具 + 玻璃（废墟窗户/橱柜）
+            // 进阶建造材料 + 工具 + 种子
             return ["scrap_metal", "nails", "rope", "seeds", "medicine", "tool", "glass"]
         case .rare:
-            // Tier2 建造材料 + 工具箱
+            // Tier2 物资 + 工具箱
             return ["first_aid_kit", "toolbox", "fuel", "blueprint_basic", "build_speedup"]
         case .epic:
-            // Tier3 稀有材料 + 医疗品
-            return ["electronic_component", "antibiotics", "scavenge_pass", "equipment_rare"]
+            // 高级材料（移除scavenge_pass，该物品改为IAP专属）
+            return ["electronic_component", "antibiotics", "equipment_rare"]
         case .legendary:
             // 顶级材料 + 蓝图
             return ["satellite_module", "blueprint_epic", "equipment_epic"]
@@ -1153,7 +1192,18 @@ extension ExplorationManager {
             ("coffee", .restaurant),
             ("phone store", .electronics),
             ("electronics store", .electronics),
-            ("mobile shop", .electronics)
+            ("mobile shop", .electronics),
+            ("factory", .factory),
+            ("manufacturing plant", .factory),
+            ("warehouse", .warehouse),
+            ("logistics center", .warehouse),
+            ("apartment", .residential),
+            ("residential complex", .residential),
+            ("police station", .police),
+            ("hardware store", .buildingSupply),
+            ("building supply", .buildingSupply),
+            ("park", .park),
+            ("garden", .park)
         ] : [
             ("超市", .supermarket),
             ("便利店", .supermarket),
@@ -1167,7 +1217,23 @@ extension ExplorationManager {
             ("咖啡厅", .restaurant),
             ("手机店", .electronics),
             ("电器店", .electronics),
-            ("数码店", .electronics)
+            ("数码店", .electronics),
+            ("工厂", .factory),
+            ("制造厂", .factory),
+            ("加工厂", .factory),
+            ("仓库", .warehouse),
+            ("物流中心", .warehouse),
+            ("配送中心", .warehouse),
+            ("小区", .residential),
+            ("住宅楼", .residential),
+            ("派出所", .police),
+            ("警察局", .police),
+            ("五金店", .buildingSupply),
+            ("建材市场", .buildingSupply),
+            ("装修材料", .buildingSupply),
+            ("公园", .park),
+            ("广场", .park),
+            ("花园", .park)
         ]
 
         // 获取探索范围（基于订阅档位：1.0/2.0/3.0 km）
@@ -1343,6 +1409,7 @@ extension ExplorationManager {
         case .gasStation: return .gasStation
         case .police: return .police
         case .bank, .atm: return .warehouse
+        case .park, .nationalPark, .beach: return .park
         default: return .residential
         }
     }
@@ -1618,23 +1685,41 @@ extension ExplorationManager {
         // 根据POI类型选择物品
         let fallbackData: [(name: String, story: String, category: String)] = {
             switch poiType {
-            case .hospital, .pharmacy:
+            case .hospital:
                 return [
                     ("急救医疗包", "从储物柜中找到的完整急救包，上面还贴着护士的名字。", "medical"),
-                    ("过期止痛药", "虽然已经过期，但在末日中仍是珍贵的资源。", "medical"),
-                    ("消毒纱布", "密封完好的医用纱布，包装上写着\"请勿私自取用\"。", "medical")
+                    ("消毒纱布", "密封完好的医用纱布，包装上写着\"请勿私自取用\"。", "medical"),
+                    ("病床床单", "叠放整齐的纯棉床单，经过高温消毒，可用于包扎和制作衣物。", "material")
                 ]
-            case .supermarket, .restaurant:
+            case .pharmacy:
+                return [
+                    ("过期止痛药", "虽然已经过期，但在末日中仍是珍贵的资源。", "medical"),
+                    ("碘伏棉签", "独立包装的消毒棉签，保质期极长。", "medical"),
+                    ("绷带卷", "整卷未拆封的医用绷带，包装完好。", "medical")
+                ]
+            case .supermarket:
                 return [
                     ("罐头午餐肉", "货架深处发现的未开封罐头，生产日期已模糊不清。", "food"),
                     ("瓶装矿泉水", "落满灰尘的矿泉水，瓶身上印着\"清凉一夏\"的广告语。", "water"),
-                    ("压缩饼干", "军用压缩饼干，保质期长达十年。", "food")
+                    ("编织购物袋", "超市收银台旁的布制购物袋，结实耐用，可裁成布料使用。", "material")
                 ]
-            case .factory, .warehouse:
+            case .restaurant:
+                return [
+                    ("压缩饼干", "军用压缩饼干，保质期长达十年。", "food"),
+                    ("食用油", "密封完好的植物油，是难得的热量来源。", "food"),
+                    ("液化气罐残液", "厨房里的液化气罐，里面还剩一些燃料。", "material")
+                ]
+            case .factory:
                 return [
                     ("生锈扳手", "一把沾满油污的扳手，手柄处刻着工人的名字缩写。", "tool"),
-                    ("废旧电线", "从墙壁里扯出的电线，还能派上用场。", "material"),
-                    ("破旧安全帽", "裂了一道缝的安全帽，但总比没有强。", "clothing")
+                    ("钢管截段", "从生产线上截下的钢管，可用于建造支撑结构。", "material"),
+                    ("工业螺栓", "散落在地上的螺栓和螺母，是建造的好材料。", "material")
+                ]
+            case .warehouse:
+                return [
+                    ("木质托盘", "用于堆放货物的木质托盘，拆解后可得到不少木材。", "material"),
+                    ("打包绳", "仓库里用于捆绑货物的粗绳，结实耐用。", "material"),
+                    ("金属货架横梁", "仓储货架的金属横梁，是上好的建造材料。", "material")
                 ]
             case .gasStation:
                 return [
@@ -1648,17 +1733,35 @@ extension ExplorationManager {
                     ("旧手机", "屏碎了但主板完好，能拆出不少有用的零件。", "material"),
                     ("充电宝", "电量不足10%，但电芯还能用。", "tool")
                 ]
-            case .police, .military:
+            case .police:
                 return [
                     ("警用手电", "警察标配的强光手电，电池还有电。", "tool"),
-                    ("防刺手套", "出警时用的防护手套，磨损严重但仍可使用。", "clothing"),
+                    ("警用绳索", "执法用的高强度尼龙绳，结实耐用。", "material"),
+                    ("防刺手套", "出警时用的防护手套，磨损严重但仍可使用。", "clothing")
+                ]
+            case .military:
+                return [
+                    ("军用口粮", "真空密封的军用应急口粮，热量充足。", "food"),
+                    ("战术绳索", "军用高强度绳索，可承受数百公斤拉力。", "material"),
                     ("对讲机", "已经没有信号的对讲机，也许能拆出有用的零件。", "tool")
                 ]
             case .residential:
                 return [
-                    ("家庭相册", "封面已经泛黄的相册，记录着某个家庭曾经的幸福时光。", "misc"),
-                    ("厨房刀具", "一把锋利的菜刀，刀柄上刻着\"妈妈的厨房\"。", "weapon"),
-                    ("毛毯", "柔软的毛毯，带着淡淡的洗衣液香味。", "clothing")
+                    ("家用布料", "从居民家中找到的窗帘和床单，可用于制作衣物和绷带。", "material"),
+                    ("木制家具板材", "将废弃家具拆解后得到的木板，可用于建造。", "material"),
+                    ("罐头食品", "居民储藏室里的应急食品，保质期尚未过期。", "food")
+                ]
+            case .buildingSupply:
+                return [
+                    ("木材板材", "建材市场里规整堆放的木板，是建造的理想材料。", "material"),
+                    ("钉子袋", "一袋未开封的建筑钉，各种规格都有。", "material"),
+                    ("玻璃碎片", "橱窗里遗留的钢化玻璃，小心处理可作为建材使用。", "material")
+                ]
+            case .park:
+                return [
+                    ("枯木枝干", "公园里倒下的大树枝干，经过处理可做建筑用木材。", "material"),
+                    ("景观石块", "公园小径两侧的景观石，可用于建造地基。", "material"),
+                    ("植物种子", "从枯萎的花圃中收集到的种子，末日中的生机所在。", "misc")
                 ]
             }
         }()

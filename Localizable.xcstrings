@@ -16337,6 +16337,38 @@
         }
       }
     },
+    "建材市场" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Building Supply"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建材市场"
+          }
+        }
+      }
+    },
+    "公园" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Park"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "公园"
+          }
+        }
+      }
+    },
     "账号" : {
       "extractionState" : "stale",
       "localizations" : {

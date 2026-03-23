@@ -91,40 +91,42 @@ struct SupplyPackConfig {
 extension SupplyPackConfig {
     static let all: [SupplyPackProduct: SupplyPackConfig] = [
 
-        // ¥6 / $0.99 — 解决Tier1建造卡点
+        // ¥6 / $0.99 — 解决Tier1建造卡点 + 搜刮令×3（可远程搜刮废墟）
         .survivorPack: SupplyPackConfig(
             product: .survivorPack,
             baseItems: [
-                PackItem(itemId: "wood",         quantity: 80,  quality: nil),
-                PackItem(itemId: "stone",        quantity: 80,  quality: nil),
-                PackItem(itemId: "canned_food",  quantity: 15,  quality: nil),
-                PackItem(itemId: "water_bottle", quantity: 20,  quality: nil),
-                PackItem(itemId: "bread",        quantity: 10,  quality: nil),
-                PackItem(itemId: "bandage",      quantity: 8,   quality: nil)
+                PackItem(itemId: "wood",          quantity: 80,  quality: nil),
+                PackItem(itemId: "stone",         quantity: 80,  quality: nil),
+                PackItem(itemId: "canned_food",   quantity: 15,  quality: nil),
+                PackItem(itemId: "water_bottle",  quantity: 20,  quality: nil),
+                PackItem(itemId: "bread",         quantity: 10,  quality: nil),
+                PackItem(itemId: "bandage",       quantity: 8,   quality: nil),
+                PackItem(itemId: "scavenge_pass", quantity: 3,   quality: nil)
             ],
             bonusItems: [
                 BonusItem(item: PackItem(itemId: "cloth", quantity: 20, quality: nil), probability: 25)
             ]
         ),
 
-        // ¥18 / $2.99 — 解决Tier1→2过渡缺金属/布料/工具
+        // ¥18 / $2.99 — 解决Tier1→2过渡缺金属/布料/工具 + 搜刮令×5
         .constructorPack: SupplyPackConfig(
             product: .constructorPack,
             baseItems: [
-                PackItem(itemId: "scrap_metal",    quantity: 100, quality: nil),
-                PackItem(itemId: "wood",           quantity: 60,  quality: nil),
-                PackItem(itemId: "stone",          quantity: 50,  quality: nil),
-                PackItem(itemId: "cloth",          quantity: 40,  quality: nil),
-                PackItem(itemId: "tool",           quantity: 2,   quality: "good"),
-                PackItem(itemId: "medicine",       quantity: 20,  quality: nil),
-                PackItem(itemId: "build_speedup",  quantity: 5,   quality: nil)
+                PackItem(itemId: "scrap_metal",   quantity: 100, quality: nil),
+                PackItem(itemId: "wood",          quantity: 60,  quality: nil),
+                PackItem(itemId: "stone",         quantity: 50,  quality: nil),
+                PackItem(itemId: "cloth",         quantity: 40,  quality: nil),
+                PackItem(itemId: "tool",          quantity: 2,   quality: "good"),
+                PackItem(itemId: "medicine",      quantity: 20,  quality: nil),
+                PackItem(itemId: "build_speedup", quantity: 5,   quality: nil),
+                PackItem(itemId: "scavenge_pass", quantity: 5,   quality: nil)
             ],
             bonusItems: [
                 BonusItem(item: PackItem(itemId: "electronic_component", quantity: 10, quality: nil), probability: 20)
             ]
         ),
 
-        // ¥30 / $4.99 — 解决Tier2→3缺电子元件
+        // ¥30 / $4.99 — 解决Tier2→3缺电子元件 + 搜刮令×8
         .engineerPack: SupplyPackConfig(
             product: .engineerPack,
             baseItems: [
@@ -133,7 +135,8 @@ extension SupplyPackConfig {
                 PackItem(itemId: "wood",                 quantity: 40, quality: nil),
                 PackItem(itemId: "stone",                quantity: 30, quality: nil),
                 PackItem(itemId: "build_speedup",        quantity: 10, quality: nil),
-                PackItem(itemId: "tool",                 quantity: 3,  quality: "good")
+                PackItem(itemId: "tool",                 quantity: 3,  quality: "good"),
+                PackItem(itemId: "scavenge_pass",        quantity: 8,  quality: nil)
             ],
             bonusItems: [
                 BonusItem(item: PackItem(itemId: "antibiotics", quantity: 10, quality: nil), probability: 25),
@@ -141,7 +144,7 @@ extension SupplyPackConfig {
             ]
         ),
 
-        // ¥68 / $9.99 — 解决Tier3高级建筑缺稀有材料
+        // ¥68 / $9.99 — 解决Tier3高级建筑缺稀有材料 + 搜刮令×15
         .rarePack: SupplyPackConfig(
             product: .rarePack,
             baseItems: [
@@ -149,12 +152,13 @@ extension SupplyPackConfig {
                 PackItem(itemId: "satellite_module",     quantity: 3,  quality: nil),
                 PackItem(itemId: "fuel",                 quantity: 15, quality: nil),
                 PackItem(itemId: "antibiotics",          quantity: 15, quality: nil),
-                PackItem(itemId: "build_speedup",        quantity: 15, quality: nil)
+                PackItem(itemId: "build_speedup",        quantity: 15, quality: nil),
+                PackItem(itemId: "scavenge_pass",        quantity: 15, quality: nil)
             ],
             bonusItems: [
-                BonusItem(item: PackItem(itemId: "equipment_rare",  quantity: 1, quality: "rare"),      probability: 30),
-                BonusItem(item: PackItem(itemId: "blueprint_epic",  quantity: 1, quality: nil),          probability: 30),
-                BonusItem(item: PackItem(itemId: "blueprint_basic", quantity: 2, quality: nil),          probability: 55)
+                BonusItem(item: PackItem(itemId: "equipment_rare",  quantity: 1, quality: "rare"),  probability: 30),
+                BonusItem(item: PackItem(itemId: "blueprint_epic",  quantity: 1, quality: nil),      probability: 30),
+                BonusItem(item: PackItem(itemId: "blueprint_basic", quantity: 2, quality: nil),      probability: 55)
             ]
         ),
 

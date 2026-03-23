@@ -156,25 +156,26 @@ enum RewardTier: String, Codable {
     }
 
     /// 获取普通物品概率
+    /// Bronze/Silver：生存物资为主；Gold+：建造材料为主（common池已按距离分层）
     var commonProbability: Double {
         switch self {
-        case .none:     return 0
-        case .bronze:   return 0.75
-        case .silver:   return 0.55
-        case .gold:     return 0.35
-        case .diamond:  return 0.20
-        case .legendary: return 0.10
+        case .none:      return 0
+        case .bronze:    return 0.75  // 生存食物/水为主
+        case .silver:    return 0.55  // 生存+材料混合
+        case .gold:      return 0.50  // 建造材料为主（wood/stone/cloth/scrap_metal）
+        case .diamond:   return 0.42  // 进阶建造材料（stone/scrap_metal/nails/cloth）
+        case .legendary: return 0.35  // 高级材料（scrap_metal/nails/rope/cloth）
         }
     }
 
     /// 获取非普通物品概率
     var uncommonProbability: Double {
         switch self {
-        case .none:     return 0
-        case .bronze:   return 0.20
-        case .silver:   return 0.25
-        case .gold:     return 0.25
-        case .diamond:  return 0.25
+        case .none:      return 0
+        case .bronze:    return 0.20
+        case .silver:    return 0.25
+        case .gold:      return 0.20
+        case .diamond:   return 0.20
         case .legendary: return 0.20
         }
     }
@@ -182,35 +183,35 @@ enum RewardTier: String, Codable {
     /// 获取稀有物品概率
     var rareProbability: Double {
         switch self {
-        case .none:     return 0
-        case .bronze:   return 0.05
-        case .silver:   return 0.15
-        case .gold:     return 0.25
-        case .diamond:  return 0.30
-        case .legendary: return 0.30
+        case .none:      return 0
+        case .bronze:    return 0.05
+        case .silver:    return 0.15
+        case .gold:      return 0.18  // gold: 50+20+18+10+2=100
+        case .diamond:   return 0.20  // diamond: 42+20+20+13+5=100
+        case .legendary: return 0.25  // legendary: 35+20+25+10+10=100
         }
     }
 
     /// 获取史诗物品概率
     var epicProbability: Double {
         switch self {
-        case .none:     return 0
-        case .bronze:   return 0
-        case .silver:   return 0.05
-        case .gold:     return 0.13
-        case .diamond:  return 0.20
-        case .legendary: return 0.30
+        case .none:      return 0
+        case .bronze:    return 0
+        case .silver:    return 0.05
+        case .gold:      return 0.10
+        case .diamond:   return 0.13
+        case .legendary: return 0.10
         }
     }
 
     /// 获取传奇物品概率
     var legendaryProbability: Double {
         switch self {
-        case .none:     return 0
-        case .bronze:   return 0
-        case .silver:   return 0
-        case .gold:     return 0.02
-        case .diamond:  return 0.05
+        case .none:      return 0
+        case .bronze:    return 0
+        case .silver:    return 0
+        case .gold:      return 0.02
+        case .diamond:   return 0.05
         case .legendary: return 0.10
         }
     }

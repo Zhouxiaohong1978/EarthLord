@@ -56,6 +56,13 @@ struct POIDetailView: View {
     /// 数据来源
     private let dataSource: String = "MapKit"
 
+    /// 远程搜刮中
+    @State private var isRemoteScavenging = false
+    /// 远程搜刮确认弹窗
+    @State private var showRemoteConfirm = false
+    /// 错误提示
+    @State private var remoteScavengeError: String? = nil
+
     /// 实时距离（米）- 用户GPS(WGS-84)转GCJ-02后与POI坐标比较
     private var realDistance: Int? {
         guard let userCoord = locationManager.userLocation else { return nil }
@@ -107,6 +114,40 @@ struct POIDetailView: View {
         .overlay(alignment: .topLeading) {
             // 返回按钮
             backButton
+        }
+        // 远程搜刮结果 sheet
+        .sheet(item: $explorationManager.scavengeResult) { result in
+            ScavengeResultSheet(result: result)
+        }
+        // 远程搜刮确认弹窗
+        .confirmationDialog(
+            "使用搜刮令",
+            isPresented: $showRemoteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("确认消耗×1 搜刮 \(poi.name)") {
+                Task {
+                    isRemoteScavenging = true
+                    do {
+                        try await explorationManager.remoteScavenge(poi: poi)
+                    } catch {
+                        remoteScavengeError = error.localizedDescription
+                    }
+                    isRemoteScavenging = false
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("当前持有搜刮令 ×\(explorationManager.scavengePassCount)，消耗1枚即可立即搜刮该废墟，无需前往现场。")
+        }
+        // 错误提示
+        .alert("搜刮失败", isPresented: .init(
+            get: { remoteScavengeError != nil },
+            set: { if !$0 { remoteScavengeError = nil } }
+        )) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text(remoteScavengeError ?? "")
         }
     }
 
@@ -345,6 +386,9 @@ struct POIDetailView: View {
                 .cornerRadius(14)
             }
 
+            // 远程搜刮按钮
+            remoteScavengeButton
+
             // 提示文字
             if explorationManager.isCoolingDown(poi) {
                 let remaining = explorationManager.cooldownRemaining(poi)
@@ -359,6 +403,48 @@ struct POIDetailView: View {
                     .foregroundColor(ApocalypseTheme.textMuted)
             }
         }
+    }
+
+    // MARK: - 远程搜刮按钮
+
+    @ViewBuilder
+    private var remoteScavengeButton: some View {
+        let passCount = explorationManager.scavengePassCount
+        let isCooling = explorationManager.isCoolingDown(poi)
+        let canUse = passCount > 0 && !isCooling && !isRemoteScavenging
+
+        Button {
+            showRemoteConfirm = true
+        } label: {
+            HStack(spacing: 8) {
+                if isRemoteScavenging {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.8)
+                } else {
+                    Image(systemName: "key.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                if passCount > 0 {
+                    Text("远程搜刮  (搜刮令 ×\(passCount))")
+                        .font(.system(size: 15, weight: .semibold))
+                } else {
+                    Text(LocalizedStringKey("搜刮令不足（购买资源包获得）"))
+                        .font(.system(size: 15, weight: .semibold))
+                }
+            }
+            .foregroundColor(canUse ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        canUse ? ApocalypseTheme.primary : ApocalypseTheme.textMuted.opacity(0.4),
+                        lineWidth: 1.5
+                    )
+            )
+        }
+        .disabled(!canUse)
     }
 }
 

@@ -37,6 +37,20 @@ enum ExplorationError: LocalizedError {
     }
 }
 
+// MARK: - RemoteScavengeError
+
+enum RemoteScavengeError: LocalizedError {
+    case noPass
+    case coolingDown
+
+    var errorDescription: String? {
+        switch self {
+        case .noPass:       return String(localized: "搜刮令不足，购买资源包即可获得")
+        case .coolingDown:  return String(localized: "该废墟正在冷却中，暂时无法搜刮")
+        }
+    }
+}
+
 // MARK: - ExplorationManager
 
 /// 探索功能核心管理器
@@ -1597,6 +1611,28 @@ extension ExplorationManager {
                 break
             }
         }
+    }
+
+    /// 背包中搜刮令数量（用于UI显示和判断）
+    var scavengePassCount: Int {
+        InventoryManager.shared.items
+            .filter { $0.itemId == "scavenge_pass" }
+            .reduce(0) { $0 + $1.quantity }
+    }
+
+    /// 使用搜刮令对指定POI进行远程搜刮（无需步行到达）
+    /// - Throws: 搜刮令不足 或 POI冷却中
+    func remoteScavenge(poi: POI) async throws {
+        guard scavengePassCount > 0 else {
+            throw RemoteScavengeError.noPass
+        }
+        guard !isCoolingDown(poi) else {
+            throw RemoteScavengeError.coolingDown
+        }
+        // 先消耗令牌，再执行搜刮
+        try await InventoryManager.shared.removeItem(itemId: "scavenge_pass", quantity: 1)
+        logger.log("🔑 消耗搜刮令×1，远程搜刮: \(poi.name)", type: .info)
+        await scavengePOI(poi)
     }
 
     /// 搜刮POI获得物品（AI生成，等待用户确认）

@@ -127,16 +127,8 @@ final class ExplorationManager: NSObject, ObservableObject {
         didSet { savePOIsToDisk() }
     }
 
-    /// 当前可见的POI：过滤掉与用户当前位置不足500m的废墟（约定：POI必须≥500m才显示）
-    var visiblePOIs: [POI] {
-        guard let userCoord = LocationManager.shared.userLocation else { return nearbyPOIs }
-        let gcj02 = CoordinateConverter.wgs84ToGcj02(userCoord)
-        let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
-        return nearbyPOIs.filter { poi in
-            let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
-            return userLoc.distance(from: poiLoc) >= 500
-        }
-    }
+    /// 当前可见的POI：探索开始即固定显示所有目标废墟
+    var visiblePOIs: [POI] { nearbyPOIs }
 
     /// 当前接近的POI（触发弹窗）
     @Published var currentProximityPOI: POI?
@@ -1316,14 +1308,17 @@ extension ExplorationManager {
         ]
 
         // 用探索起点计算距离（explorationStartLocation 已在 startExploration 中保存）
-        let distanceOrigin = explorationStartLocation ?? userLocation
+        // 注意：explorationStartLocation 来自 CLLocationManager，坐标系为 WGS84
+        // MapKit POI 在中国大陆使用 GCJ02，必须统一坐标系再比较，否则偏差可达 100~300m
+        let rawOrigin = explorationStartLocation ?? userLocation
+        let gcj02Origin = CoordinateConverter.wgs84ToGcj02(rawOrigin.coordinate)
+        let distanceOrigin = CLLocation(latitude: gcj02Origin.latitude, longitude: gcj02Origin.longitude)
 
         for poi in allResults {
             let poiLocation = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
             let distance = distanceOrigin.distance(from: poiLocation)
 
             // 只保留距探索起点 500m ~ explorationRadius 范围内、且未在冷却中的POI
-            // 最小距离 500m：鼓励用户步行前往，同时足够覆盖 WGS84/GCJ02 坐标偏移
             guard distance >= 500 && distance <= explorationRadius && !isCoolingDown(poi) else { continue }
 
             // 计算方位角（0°=正北，顺时针）

@@ -212,6 +212,12 @@ final class ExplorationManager: NSObject, ObservableObject {
         SupabaseManager.shared.client
     }
 
+    /// 探索期间升级后的有效档位（用于距离奖励倍率计算）
+    private var explorationEffectiveTier: SubscriptionTier?
+
+    /// Combine 订阅令牌
+    private var cancellables = Set<AnyCancellable>()
+
     // MARK: - Initialization
 
     private override init() {
@@ -219,6 +225,7 @@ final class ExplorationManager: NSObject, ObservableObject {
         loadPOIsFromDisk()
         loadScavengedTimesFromDisk()
         setupLocationManager()
+        observeSubscriptionTier()
     }
 
     // MARK: - Setup
@@ -233,6 +240,106 @@ final class ExplorationManager: NSObject, ObservableObject {
         // 避免未启动的 CLLocationManager 干扰领地追踪的 GPS 回调
 
         logger.log("位置管理器初始化完成", type: .info)
+    }
+
+    // MARK: - 订阅档位监听
+
+    /// 监听订阅档位升级，探索中自动追加 POI 并锁定奖励倍率
+    private func observeSubscriptionTier() {
+        SubscriptionManager.shared.$currentTier
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newTier in
+                guard let self, self.isExploring else { return }
+                // 锁定新档位用于距离奖励计算
+                self.explorationEffectiveTier = newTier
+                // 追加新档位对应的额外废墟
+                Task { @MainActor [weak self] in
+                    await self?.appendPOIsForUpgrade(newTier: newTier)
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    /// 在探索中订阅升级后，追加额外废墟（不替换已有的）
+    private func appendPOIsForUpgrade(newTier: SubscriptionTier) async {
+        let activeCount = nearbyPOIs.filter { !isCoolingDown($0) }.count
+        let toAdd = newTier.poiCount - activeCount
+        guard toAdd > 0 else { return }
+        guard let startLoc = explorationStartLocation else { return }
+
+        logger.log("🎖️ 订阅升级至 \(newTier.rawValue)，当前 \(activeCount) 个废墟，追加 \(toAdd) 个", type: .info)
+
+        let center = startLoc.coordinate
+        let newRadius = newTier.explorationRadius * 1000
+        let searchDiameter = newRadius * 2 + 500
+
+        // 已有 POI 的坐标 Key，用于去重
+        let existingKeys = Set(nearbyPOIs.map { coordKey(for: $0.coordinate) })
+        var seenCoordinates = existingKeys
+
+        let languageManager = LanguageManager.shared
+        let isEnglish = languageManager.currentLocale == "en"
+        let searchQueries: [(query: String, type: POIType)] = isEnglish ? [
+            ("supermarket", .supermarket), ("convenience store", .supermarket),
+            ("hospital", .hospital), ("pharmacy", .pharmacy),
+            ("gas station", .gasStation), ("restaurant", .restaurant)
+        ] : [
+            ("超市", .supermarket), ("便利店", .supermarket),
+            ("医院", .hospital), ("药店", .pharmacy),
+            ("加油站", .gasStation), ("餐厅", .restaurant)
+        ]
+
+        var candidates: [POI] = []
+
+        for (query, poiType) in searchQueries {
+            guard candidates.count < toAdd * 3 else { break }
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = query
+            request.region = MKCoordinateRegion(
+                center: center,
+                latitudinalMeters: searchDiameter,
+                longitudinalMeters: searchDiameter
+            )
+            do {
+                let response = try await MKLocalSearch(request: request).start()
+                for mapItem in response.mapItems {
+                    let key = String(format: "%.4f,%.4f",
+                                     mapItem.placemark.coordinate.latitude,
+                                     mapItem.placemark.coordinate.longitude)
+                    guard !seenCoordinates.contains(key) else { continue }
+                    let poiLoc = CLLocation(latitude: mapItem.placemark.coordinate.latitude,
+                                            longitude: mapItem.placemark.coordinate.longitude)
+                    let origin = CLLocation(latitude: center.latitude, longitude: center.longitude)
+                    let dist = origin.distance(from: poiLoc)
+                    guard dist >= 500 && dist <= newRadius else { continue }
+                    seenCoordinates.insert(key)
+                    candidates.append(convertMapItemToPOI(mapItem, overrideType: poiType))
+                }
+            } catch {
+                logger.logError("追加POI搜索失败: \(query)", error: error)
+            }
+        }
+
+        let newPOIs = Array(candidates.prefix(toAdd))
+        guard !newPOIs.isEmpty else {
+            logger.log("⚠️ 未找到可追加的废墟", type: .warning)
+            return
+        }
+
+        nearbyPOIs.append(contentsOf: newPOIs)
+
+        // 仅为新 POI 注册地理围栏
+        if let lm = locationManager {
+            for poi in newPOIs {
+                let region = CLCircularRegion(center: poi.coordinate, radius: 50.0, identifier: poi.id.uuidString)
+                region.notifyOnEntry = true
+                region.notifyOnExit = false
+                lm.startMonitoring(for: region)
+            }
+        }
+
+        logger.log("✅ 已追加 \(newPOIs.count) 个废墟，当前共 \(nearbyPOIs.count) 个", type: .success)
     }
 
     // MARK: - Public Methods
@@ -269,6 +376,7 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         // 重置状态
         resetExplorationState()
+        explorationEffectiveTier = nil  // 清除上次会话的档位记录
 
         // 保存探索起点（用于 POI 距离过滤，避免 GPS 漂移影响）
         explorationStartLocation = locationManager.location
@@ -717,7 +825,8 @@ final class ExplorationManager: NSObject, ObservableObject {
             return []
         }
 
-        let subscriptionTier = SubscriptionManager.shared.currentTier
+        // 优先使用探索期间捕获的档位（应对 StoreKit 异步验证延迟）
+        let subscriptionTier = explorationEffectiveTier ?? SubscriptionManager.shared.currentTier
         let itemCount = tier.adjustedItemCount(for: subscriptionTier)
         if subscriptionTier != .free {
             logger.log("订阅加成: \(subscriptionTier.rawValue) × \(subscriptionTier.walkRewardMultiplier) → \(itemCount) 件物品", type: .info)
@@ -1321,8 +1430,21 @@ extension ExplorationManager {
     private func handlePOIProximity(regionId: String) {
         guard let poiId = UUID(uuidString: regionId),
               let poi = nearbyPOIs.first(where: { $0.id == poiId }),
-              !isCoolingDown(poi) else {
+              !isCoolingDown(poi),
+              currentProximityPOI == nil, !showProximityPopup else {
             return
+        }
+
+        // 验证实际距离：地理围栏可能在冷启动时对旧区域误触发，需二次确认
+        if let rawLocation = locationManager?.location {
+            let gcj02 = CoordinateConverter.wgs84ToGcj02(rawLocation.coordinate)
+            let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
+            let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
+            let distance = userLoc.distance(from: poiLoc)
+            guard distance <= 150.0 else {
+                logger.log("⚠️ 地理围栏触发但实际距离 \(String(format: "%.0f", distance))m，跳过: \(poi.name)", type: .warning)
+                return
+            }
         }
 
         logger.log("进入废墟50m范围: \(poi.name)", type: .info)
@@ -1562,19 +1684,20 @@ extension ExplorationManager {
         let selectedItems = result.items.filter { selectedIds.contains($0.id) }
         logger.log("用户确认搜刮结果，保存 \(selectedItems.count)/\(result.items.count) 件物品到背包", type: .info)
 
-        // 将 AIGeneratedItem 转换为 ObtainedItem
-        let obtainedItems = selectedItems.map { $0.toObtainedItem() }
-        await saveRewardsToInventory(items: obtainedItems, sessionId: result.sessionId)
-
-        // 立即将该POI状态更新为已搜空（地图上马上变灰，无需等待重新加载）
+        // 立即将该POI状态更新为已搜空（地图上马上变灰）
         if let index = nearbyPOIs.firstIndex(where: { $0.id == result.poi.id }) {
             nearbyPOIs[index].status = .looted
         }
 
-        // 清除搜刮结果
+        // 先关闭弹窗（避免网络等待期间重复点击）并重置接近状态（允许检测下一个POI）
         let scavengedPOI = result.poi
         scavengeResult = nil
         showScavengeResult = false
+        currentProximityPOI = nil
+
+        // 保存物品（后台进行，视图已关闭）
+        let obtainedItems = selectedItems.map { $0.toObtainedItem() }
+        await saveRewardsToInventory(items: obtainedItems, sessionId: result.sessionId)
 
         logger.log("物品已保存到背包", type: .success)
 
@@ -1587,6 +1710,7 @@ extension ExplorationManager {
         logger.log("用户放弃搜刮结果", type: .info)
         scavengeResult = nil
         showScavengeResult = false
+        currentProximityPOI = nil
     }
 
     /// 确认探索距离奖励，将玩家勾选的物品添加到背包

@@ -113,6 +113,9 @@ struct MapViewRepresentable: UIViewRepresentable {
 
     /// 更新视图
     func updateUIView(_ uiView: MKMapView, context: Context) {
+        // 同步最新数据到 Coordinator（确保 viewForAnnotation 能读到最新的 coolingDownPOIKeys）
+        context.coordinator.parent = self
+
         // 更新圈地轨迹显示
         updateTrackingPath(on: uiView, context: context)
 

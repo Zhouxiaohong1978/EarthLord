@@ -5145,6 +5145,9 @@
         }
       }
     },
+    "使用搜刮令" : {
+
+    },
     "使用设备语言" : {
       "localizations" : {
         "en" : {
@@ -5474,6 +5477,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "公共频道"
+          }
+        }
+      }
+    },
+    "公园" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Park"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "公园"
           }
         }
       }
@@ -8970,6 +8989,22 @@
         }
       }
     },
+    "建材市场" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Building Supply"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建材市场"
+          }
+        }
+      }
+    },
     "建筑" : {
       "localizations" : {
         "en" : {
@@ -9645,6 +9680,9 @@
           }
         }
       }
+    },
+    "当前持有搜刮令 ×%lld，消耗1枚即可立即搜刮该废墟，无需前往现场。" : {
+
     },
     "当前未在探索" : {
       "extractionState" : "stale",
@@ -10951,6 +10989,15 @@
           }
         }
       }
+    },
+    "搜刮令不足，购买资源包即可获得" : {
+
+    },
+    "搜刮令不足（购买资源包获得）" : {
+
+    },
+    "搜刮失败" : {
+
     },
     "搜刮完成!" : {
       "localizations" : {
@@ -14088,6 +14135,9 @@
         }
       }
     },
+    "确认消耗×1 搜刮 %@" : {
+
+    },
     "确认登记领地" : {
       "localizations" : {
         "en" : {
@@ -15967,6 +16017,9 @@
         }
       }
     },
+    "该废墟正在冷却中，暂时无法搜刮" : {
+
+    },
     "该建筑已达到领地上限 (%d)" : {
       "localizations" : {
         "en" : {
@@ -16333,38 +16386,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "警察局"
-          }
-        }
-      }
-    },
-    "建材市场" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Building Supply"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "建材市场"
-          }
-        }
-      }
-    },
-    "公园" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Park"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "公园"
           }
         }
       }
@@ -17128,6 +17149,9 @@
           }
         }
       }
+    },
+    "远程搜刮  (搜刮令 ×%lld)" : {
+
     },
     "退出" : {
       "extractionState" : "stale",

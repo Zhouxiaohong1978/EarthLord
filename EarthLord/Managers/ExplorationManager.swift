@@ -127,8 +127,16 @@ final class ExplorationManager: NSObject, ObservableObject {
         didSet { savePOIsToDisk() }
     }
 
-    /// 当前可见的POI：探索开始即固定显示所有目标废墟
-    var visiblePOIs: [POI] { nearbyPOIs }
+    /// 当前可见的POI：过滤掉与用户当前位置不足500m的废墟（约定：POI必须≥500m才显示）
+    var visiblePOIs: [POI] {
+        guard let userCoord = LocationManager.shared.userLocation else { return nearbyPOIs }
+        let gcj02 = CoordinateConverter.wgs84ToGcj02(userCoord)
+        let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
+        return nearbyPOIs.filter { poi in
+            let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
+            return userLoc.distance(from: poiLoc) >= 500
+        }
+    }
 
     /// 当前接近的POI（触发弹窗）
     @Published var currentProximityPOI: POI?
@@ -1630,7 +1638,12 @@ extension ExplorationManager {
             throw RemoteScavengeError.coolingDown
         }
         // 先消耗令牌，再执行搜刮
-        try await InventoryManager.shared.removeItem(itemId: "scavenge_pass", quantity: 1)
+        // 注意：必须使用 useItem(inventoryId:) 而非 removeItem(itemId:quality:)
+        // 因为 removeItem 默认 quality: nil，只匹配 quality == nil 的记录
+        // IAP 包发放的搜刮令 quality 为非 nil，导致 removeItem 找不到物品抛出 insufficientQuantity
+        let passItems = InventoryManager.shared.items.filter { $0.itemId == "scavenge_pass" }
+        guard let passItem = passItems.first else { throw RemoteScavengeError.noPass }
+        try await InventoryManager.shared.useItem(inventoryId: passItem.id, quantity: 1)
         logger.log("🔑 消耗搜刮令×1，远程搜刮: \(poi.name)", type: .info)
         await scavengePOI(poi)
     }

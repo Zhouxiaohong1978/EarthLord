@@ -143,7 +143,9 @@ final class PhysiqueManager: ObservableObject {
 
             let base = Date()
             let lastUpdate = row.lastVitalsUpdate ?? base
-            let elapsed = base.timeIntervalSince(lastUpdate) / 3600
+            // 最多计算72小时的衰减，防止长时间未登录后体征直接归零
+            // 同时避免切换Tab时load()覆盖掉玩家刚用物品恢复的体征值
+            let elapsed = min(base.timeIntervalSince(lastUpdate) / 3600, 72.0)
             let mult = decayMultiplier
 
             satiety  = min(max((row.satiety  ?? 80) - elapsed * satietyDecayPerHour  * mult, 0), 100)

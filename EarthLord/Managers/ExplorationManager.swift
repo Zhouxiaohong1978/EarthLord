@@ -952,26 +952,27 @@ final class ExplorationManager: NSObject, ObservableObject {
     private func getItemPool(for rarity: ItemRarity, tier: RewardTier = .none) -> [String] {
         switch rarity {
         case .common:
-            // common池随距离升级：近距离→生存物资，远距离→建造材料
-            // 逻辑：走近处找到食物水，走远处穿越废墟找到建造材料
+            // 末日生存核心逻辑：先活下来，再发展壮大
+            // 无论走多远，食物和水始终是最基础的需求，每个档位都必须有
+            // 越远档位建材种类越多、占比越高，但食物水永不消失
             switch tier {
             case .bronze:
-                // 200-500m：附近小区，以生存物资为主
-                return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone"]
+                // <500m：附近街区，生存物资为主
+                return ["water_bottle", "water_bottle", "canned_food", "bread", "wood", "stone"]
             case .silver:
-                // 500m-1km：进入废弃区，生存+材料混合
-                return ["bandage", "wood", "stone", "cloth", "canned_food"]
+                // 500m-1km：废弃街区，生存与材料均衡
+                return ["water_bottle", "canned_food", "wood", "stone", "cloth"]
             case .gold:
-                // 1-2km：废墟核心区，以建造材料为主
-                return ["wood", "stone", "cloth", "scrap_metal"]
+                // 1-2km：废墟核心区，建材为主，食物水仍可找到
+                return ["water_bottle", "canned_food", "wood", "stone", "cloth", "scrap_metal"]
             case .diamond:
-                // 2-5km：工业废区，以进阶建造材料为主
-                return ["stone", "scrap_metal", "nails", "cloth"]
+                // 2-3km：工业废区，进阶建材为主，食物水稀缺但存在
+                return ["water_bottle", "canned_food", "stone", "scrap_metal", "nails", "cloth"]
             case .legendary:
-                // 5km+：远郊重工业区，高级材料
-                return ["scrap_metal", "nails", "rope", "cloth"]
+                // 3km+：远郊重工业区，高级材料为主，食物水仍可找到
+                return ["water_bottle", "canned_food", "scrap_metal", "nails", "rope", "cloth"]
             default:
-                return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone"]
+                return ["water_bottle", "canned_food", "bread", "wood", "stone"]
             }
         case .uncommon:
             // 进阶建造材料 + 工具 + 种子

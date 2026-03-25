@@ -331,7 +331,9 @@ final class ExplorationManager: NSObject, ObservableObject {
                     guard !seenCoordinates.contains(key) else { continue }
                     let poiLoc = CLLocation(latitude: mapItem.placemark.coordinate.latitude,
                                             longitude: mapItem.placemark.coordinate.longitude)
-                    let origin = CLLocation(latitude: center.latitude, longitude: center.longitude)
+                    // 与 searchNearbyPOIs 保持一致：起点转 GCJ02 再与 POI（GCJ02）比距离
+                    let gcj02Center = CoordinateConverter.wgs84ToGcj02(center)
+                    let origin = CLLocation(latitude: gcj02Center.latitude, longitude: gcj02Center.longitude)
                     let dist = origin.distance(from: poiLoc)
                     guard dist >= 500 && dist <= newRadius else { continue }
                     seenCoordinates.insert(key)
@@ -1455,7 +1457,19 @@ extension ExplorationManager {
     private func loadPOIsFromDisk() {
         guard let data = UserDefaults.standard.data(forKey: Self.nearbyPOIsKey),
               let pois = try? JSONDecoder().decode([POI].self, from: data) else { return }
-        nearbyPOIs = pois
+        // 过滤旧缓存中超出当前订阅探索范围的 POI（坐标修复前的旧数据可能存有超范围废墟）
+        let maxRadius = SubscriptionManager.shared.explorationRadius * 1000
+        guard let userCoord = LocationManager.shared.userLocation else {
+            nearbyPOIs = pois
+            return
+        }
+        let gcj02 = CoordinateConverter.wgs84ToGcj02(userCoord)
+        let userLoc = CLLocation(latitude: gcj02.latitude, longitude: gcj02.longitude)
+        nearbyPOIs = pois.filter { poi in
+            let poiLoc = CLLocation(latitude: poi.coordinate.latitude, longitude: poi.coordinate.longitude)
+            let dist = userLoc.distance(from: poiLoc)
+            return dist >= 500 && dist <= maxRadius
+        }
     }
 
     private func saveScavengedTimesToDisk() {

@@ -852,31 +852,19 @@ final class ExplorationManager: NSObject, ObservableObject {
         if subscriptionTier != .free {
             logger.log("订阅加成: \(subscriptionTier.rawValue) × \(subscriptionTier.walkRewardMultiplier) → \(itemCount) 件物品", type: .info)
         }
-        var tempRewards: [ObtainedItem] = []
+        // 每种物品类型只出现一次，数量固定为1，确保奖励多样化
+        var usedItemIds: Set<String> = []
+        var rewards: [ObtainedItem] = []
+        var attempts = 0
+        let maxAttempts = itemCount * 10  // 防止死循环
 
-        // 先生成所有物品
-        for _ in 0..<itemCount {
+        while rewards.count < itemCount && attempts < maxAttempts {
+            attempts += 1
             let item = generateRandomItem(tier: tier)
-            tempRewards.append(item)
+            guard !usedItemIds.contains(item.itemId) else { continue }
+            usedItemIds.insert(item.itemId)
+            rewards.append(ObtainedItem(itemId: item.itemId, quantity: 1, quality: item.quality))
         }
-
-        // 合并相同物品（相同 itemId 和 quality 的物品堆叠）
-        var mergedRewards: [String: ObtainedItem] = [:]
-        for item in tempRewards {
-            let key = "\(item.itemId)_\(item.quality?.rawValue ?? "none")"
-            if let existing = mergedRewards[key] {
-                // 已存在相同物品，增加数量
-                mergedRewards[key] = ObtainedItem(
-                    itemId: existing.itemId,
-                    quantity: existing.quantity + item.quantity,
-                    quality: existing.quality
-                )
-            } else {
-                mergedRewards[key] = item
-            }
-        }
-
-        let rewards = Array(mergedRewards.values)
 
         logger.logReward(tier: tier, itemCount: itemCount, items: rewards)
         return rewards
@@ -958,10 +946,10 @@ final class ExplorationManager: NSObject, ObservableObject {
             switch tier {
             case .bronze:
                 // <500m：附近街区，生存物资为主
-                return ["water_bottle", "water_bottle", "canned_food", "bread", "wood", "stone"]
+                return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone"]
             case .silver:
                 // 500m-1km：废弃街区，生存与材料均衡
-                return ["water_bottle", "canned_food", "wood", "stone", "cloth"]
+                return ["water_bottle", "canned_food", "bandage", "wood", "stone", "cloth"]
             case .gold:
                 // 1-2km：废墟核心区，建材为主，食物水仍可找到
                 return ["water_bottle", "canned_food", "wood", "stone", "cloth", "scrap_metal"]

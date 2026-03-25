@@ -460,6 +460,10 @@ final class ExplorationManager: NSObject, ObservableObject {
         cancelOverSpeedCountdown()
 
         // 清理POI和地理围栏（保留冷却记录，跨会话持久化）
+        // 每次探索是独立过程，结束后立即清除 POI 和围栏：
+        // 1. iOS 最多监听 20 个围栏，不清理会导致下次探索注册失败
+        // 2. 下次探索应重新扫描，而非沿用旧数据
+        nearbyPOIs.removeAll()  // didSet 自动将空数组写入磁盘
         cleanupGeofences()
         currentProximityPOI = nil
         showProximityPopup = false

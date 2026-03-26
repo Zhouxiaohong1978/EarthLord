@@ -95,6 +95,12 @@ struct MainTabView: View {
                     selectedTab = 1
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .switchToCommunicationTab)) { _ in
+                // 切换到通讯 Tab（index 3）
+                withAnimation {
+                    selectedTab = 3
+                }
+            }
 
             // 订阅过期横幅（仅在横幅可见时响应触摸，否则透传到 TabView）
             VStack {

@@ -231,6 +231,22 @@ struct MapTabView: View {
                     }
                 )
             }
+
+            // 领地税收提示（搜刮他人领地后显示）
+            if explorationManager.showTaxInfo,
+               let tax = explorationManager.lastTaxInfo {
+                VStack {
+                    Spacer()
+                    TaxInfoBanner(info: tax) {
+                        withAnimation {
+                            explorationManager.showTaxInfo = false
+                        }
+                    }
+                    .padding(.bottom, 100)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: explorationManager.showTaxInfo)
+            }
         }
         .onAppear {
             // 首次出现时请求定位权限

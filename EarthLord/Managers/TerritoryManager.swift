@@ -201,7 +201,24 @@ final class TerritoryManager {
 
     // MARK: - 领地到期回收
 
+    /// 更新领地最后活跃时间（玩家建造/领取产出时调用，重置90天到期计时器）
+    func updateLastActive(territoryId: String) async {
+        guard let userId = AuthManager.shared.currentUser?.id else { return }
+        do {
+            try await supabase
+                .from("territories")
+                .update(["last_active_at": Date().ISO8601Format()])
+                .eq("id", value: territoryId)
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+            TerritoryLogger.shared.log("领地活跃时间已更新: \(territoryId)", type: .info)
+        } catch {
+            TerritoryLogger.shared.log("更新活跃时间失败: \(error.localizedDescription)", type: .error)
+        }
+    }
+
     /// 检查并回收已到期的领地（客户端懒检查，在加载我的领地时调用）
+    /// 以 last_active_at（若存在）和 completed_at 中较晚者计算90天
     func checkAndReclaimExpiredTerritories() async {
         guard let userId = AuthManager.shared.currentUser?.id else { return }
 
@@ -209,12 +226,14 @@ final class TerritoryManager {
         let ninetyDaysAgo = Date().addingTimeInterval(-90 * 24 * 3600)
 
         do {
+            // 回收条件：completed_at 超过90天 且 last_active_at 也超过90天（或为空）
             try await supabase
                 .from("territories")
                 .update(["is_active": false])
                 .eq("user_id", value: userId.uuidString)
                 .eq("is_active", value: true)
                 .lt("completed_at", value: ninetyDaysAgo.ISO8601Format())
+                .or("last_active_at.is.null,last_active_at.lt.\(ninetyDaysAgo.ISO8601Format())")
                 .execute()
 
             TerritoryLogger.shared.log("到期领地回收检查完成", type: .info)
@@ -443,6 +462,64 @@ final class TerritoryManager {
 
         print("✅ 所有测试领地已删除")
         TerritoryLogger.shared.log("所有测试领地已删除", type: .info)
+    }
+
+    // MARK: - 领地税收与广播
+
+    /// 查找包含指定坐标的他人领地（用于搜刮税收）
+    func findOtherTerritory(containing location: CLLocationCoordinate2D) -> Territory? {
+        guard let userId = AuthManager.shared.currentUser?.id.uuidString.lowercased() else { return nil }
+        let otherTerritories = territories.filter { t in
+            let isOther = t.userId.lowercased() != userId
+            let isTest = t.name?.hasPrefix(Self.testTerritoryPrefix) ?? false
+            return isOther || isTest
+        }
+        for territory in otherTerritories {
+            let coords = territory.toCoordinates()
+            if isPointInPolygon(point: location, polygon: coords) {
+                return territory
+            }
+        }
+        return nil
+    }
+
+    /// 记录一次领地访问并扣税
+    /// - Parameters:
+    ///   - territory: 被访问的领地
+    ///   - itemCount: 本次搜刮获得的物品总件数
+    /// - Returns: 实际被扣税的件数
+    func recordVisitAndTax(territory: Territory, itemCount: Int) async -> Int {
+        guard let visitorId = AuthManager.shared.currentUser?.id else { return 0 }
+        let rate = territory.taxRate ?? 10
+        let taxAmount = max(1, Int(Double(itemCount) * Double(rate) / 100.0))
+
+        do {
+            try await supabase
+                .from("territory_visits")
+                .insert([
+                    "territory_id": territory.id,
+                    "owner_id": territory.userId,
+                    "visitor_id": visitorId.uuidString,
+                    "tax_amount": String(taxAmount)
+                ])
+                .execute()
+            TerritoryLogger.shared.log("领地税收记录: 领地\(territory.id) 税\(taxAmount)件", type: .info)
+        } catch {
+            TerritoryLogger.shared.log("税收记录失败: \(error.localizedDescription)", type: .error)
+        }
+        return taxAmount
+    }
+
+    /// 设置领地广播消息
+    func setBroadcastMessage(_ message: String?, for territoryId: String) async throws {
+        guard let userId = AuthManager.shared.currentUser?.id else { throw TerritoryError.notAuthenticated }
+        try await supabase
+            .from("territories")
+            .update(["broadcast_message": message ?? ""])
+            .eq("id", value: territoryId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+        TerritoryLogger.shared.log("广播消息已更新", type: .info)
     }
 
     // MARK: - 碰撞检测算法
@@ -701,4 +778,6 @@ extension Notification.Name {
     static let territoryUpdated = Notification.Name("territoryUpdated")
     /// 领地删除通知
     static let territoryDeleted = Notification.Name("territoryDeleted")
+    /// 跳转到通讯 Tab
+    static let switchToCommunicationTab = Notification.Name("switchToCommunicationTab")
 }

@@ -23,6 +23,8 @@ struct Territory: Codable, Identifiable {
     let createdAt: String?
     let allowTrading: Bool?       // 是否允许他人发现交易（默认 true）
     let lastActiveAt: String?     // 最后活跃时间（用于90天到期检测）
+    let broadcastMessage: String? // 领主广播消息（访客搜刮时展示）
+    let taxRate: Int?             // 税率（默认10%）
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -37,6 +39,8 @@ struct Territory: Codable, Identifiable {
         case createdAt = "created_at"
         case allowTrading = "allow_trading"
         case lastActiveAt = "last_active_at"
+        case broadcastMessage = "broadcast_message"
+        case taxRate = "tax_rate"
     }
 
     /// 将 path 转换为 CLLocationCoordinate2D 数组
@@ -58,11 +62,18 @@ struct Territory: Codable, Identifiable {
         return formatter.date(from: str)
     }
 
-    /// 圈地完成后的天数
+    /// 圈地完成后的天数（以 lastActiveAt 和 completedAt/createdAt 中较晚者为基准）
     var daysSinceCompleted: Int? {
         let baseStr = completedAt ?? createdAt
-        guard let str = baseStr, let date = parseDate(str) else { return nil }
-        return Calendar.current.dateComponents([.day], from: date, to: Date()).day
+        guard let str = baseStr, let baseDate = parseDate(str) else { return nil }
+        // 若玩家有操作记录（建造、领取产出等），以最后活跃时间重置计时器
+        let effectiveBase: Date
+        if let activeStr = lastActiveAt, let activeDate = parseDate(activeStr), activeDate > baseDate {
+            effectiveBase = activeDate
+        } else {
+            effectiveBase = baseDate
+        }
+        return Calendar.current.dateComponents([.day], from: effectiveBase, to: Date()).day
     }
 
     /// 距离90天到期还剩几天（nil = 无法计算）

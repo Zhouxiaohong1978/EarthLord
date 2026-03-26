@@ -160,6 +160,12 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 是否显示搜刮结果弹窗
     @Published var showScavengeResult: Bool = false
 
+    /// 最近一次税收信息（在他人领地搜刮后显示）
+    @Published var lastTaxInfo: TaxInfo?
+
+    /// 是否显示税收提示
+    @Published var showTaxInfo: Bool = false
+
     /// 今日已探索次数
     @Published var todayExplorationCount: Int = 0
 
@@ -187,6 +193,9 @@ final class ExplorationManager: NSObject, ObservableObject {
 
     /// 探索开始时间
     private var startTime: Date?
+
+    /// 本次会话内搜刮废墟数量
+    private var currentSessionScavengeCount: Int = 0
 
     /// 上一个有效位置
     private var lastValidLocation: CLLocation?
@@ -409,6 +418,7 @@ final class ExplorationManager: NSObject, ObservableObject {
         isExploring = true
         explorationState = .exploring
         startTime = Date()
+        currentSessionScavengeCount = 0
 
         // 启用后台定位（探索时才需要，避免干扰领地追踪）
         locationManager.allowsBackgroundLocationUpdates = true
@@ -858,11 +868,20 @@ final class ExplorationManager: NSObject, ObservableObject {
         if subscriptionTier != .free {
             logger.log("订阅加成: \(subscriptionTier.rawValue) × \(subscriptionTier.walkRewardMultiplier) → \(itemCount) 件物品", type: .info)
         }
-        // 每种物品类型只出现一次，数量固定为1，确保奖励多样化
+        // 每种物品类型只出现一次，确保奖励多样化
         var usedItemIds: Set<String> = []
         var rewards: [ObtainedItem] = []
+
+        // 保底：每次探索必给 1 瓶水 + 1 份食物（末日生存核心需求，新玩家留存关键）
+        for guaranteedId in ["water_bottle", "canned_food"] {
+            rewards.append(ObtainedItem(itemId: guaranteedId, quantity: 1, quality: generateRandomQuality()))
+            usedItemIds.insert(guaranteedId)
+            if rewards.count >= itemCount { break }
+        }
+
+        // 剩余槽位随机填充
         var attempts = 0
-        let maxAttempts = itemCount * 10  // 防止死循环
+        let maxAttempts = max(itemCount, 4) * 10  // 防止死循环
 
         while rewards.count < itemCount && attempts < maxAttempts {
             attempts += 1
@@ -951,22 +970,22 @@ final class ExplorationManager: NSObject, ObservableObject {
             // 越远档位建材种类越多、占比越高，但食物水永不消失
             switch tier {
             case .bronze:
-                // <500m：附近街区，生存物资为主
-                return ["water_bottle", "canned_food", "bread", "bandage", "wood", "stone"]
+                // 200-500m：新玩家初探，食物水+基础建材（篝火/庇护所原料）
+                return ["water_bottle", "canned_food", "bread", "wood", "stone", "cloth"]
             case .silver:
-                // 500m-1km：废弃街区，生存与材料均衡
-                return ["water_bottle", "canned_food", "bandage", "wood", "stone", "cloth"]
+                // 500m-1km：废弃街区，食物水+篝火/庇护所材料为主
+                return ["water_bottle", "canned_food", "bread", "wood", "stone", "cloth"]
             case .gold:
-                // 1-2km：废墟核心区，建材为主，食物水仍可找到
-                return ["water_bottle", "canned_food", "wood", "stone", "cloth", "scrap_metal"]
+                // 1-2km：废墟核心区，食物水+建材均衡（开始出现绳索）
+                return ["water_bottle", "canned_food", "wood", "stone", "cloth", "rope"]
             case .diamond:
                 // 2-3km：工业废区，进阶建材为主，食物水稀缺但存在
-                return ["water_bottle", "canned_food", "stone", "scrap_metal", "nails", "cloth"]
+                return ["water_bottle", "canned_food", "stone", "scrap_metal", "nails", "rope", "cloth"]
             case .legendary:
-                // 3km+：远郊重工业区，高级材料为主，食物水仍可找到
+                // 5km+：远郊重工业区，高级材料为主，食物水仍可找到
                 return ["water_bottle", "canned_food", "scrap_metal", "nails", "rope", "cloth"]
             default:
-                return ["water_bottle", "canned_food", "bread", "wood", "stone"]
+                return ["water_bottle", "canned_food", "bread", "wood", "stone", "cloth"]
             }
         case .uncommon:
             // 进阶建造材料 + 工具 + 种子
@@ -1103,7 +1122,8 @@ final class ExplorationManager: NSObject, ObservableObject {
             "duration_seconds": .integer(result.durationSeconds),
             "status": .string(result.status),
             "reward_tier": .string(result.rewardTier.rawValue),
-            "max_speed": .double(result.maxSpeed)
+            "max_speed": .double(result.maxSpeed),
+            "scavenge_count": .integer(currentSessionScavengeCount)
         ]
 
         let response = try await supabase
@@ -1839,6 +1859,9 @@ extension ExplorationManager {
         let selectedItems = result.items.filter { selectedIds.contains($0.id) }
         logger.log("用户确认搜刮结果，保存 \(selectedItems.count)/\(result.items.count) 件物品到背包", type: .info)
 
+        // 记录本次会话搜刮废墟数
+        currentSessionScavengeCount += 1
+
         // 立即将该POI状态更新为已搜空（地图上马上变灰）
         if let index = nearbyPOIs.firstIndex(where: { $0.id == result.poi.id }) {
             nearbyPOIs[index].status = .looted
@@ -1850,9 +1873,35 @@ extension ExplorationManager {
         showScavengeResult = false
         currentProximityPOI = nil
 
+        // 检查是否在他人领地内，若是则扣税
+        var itemsToSave = selectedItems.map { $0.toObtainedItem() }
+        let poiCoord = scavengedPOI.coordinate
+        if let hostTerritory = TerritoryManager.shared.findOtherTerritory(containing: poiCoord) {
+            let taxCount = await TerritoryManager.shared.recordVisitAndTax(
+                territory: hostTerritory,
+                itemCount: itemsToSave.count
+            )
+            // 从末尾扣除税收件数
+            if taxCount > 0 && taxCount < itemsToSave.count {
+                itemsToSave = Array(itemsToSave.dropLast(taxCount))
+            } else if taxCount >= itemsToSave.count {
+                itemsToSave = []
+            }
+            logger.log("在他人领地搜刮，扣税 \(taxCount) 件，实得 \(itemsToSave.count) 件", type: .info)
+            // 通知 UI 显示税收提示
+            await MainActor.run {
+                lastTaxInfo = TaxInfo(
+                    ownerName: hostTerritory.name ?? String(localized: "未知领地"),
+                    taxRate: hostTerritory.taxRate ?? 10,
+                    taxCount: taxCount,
+                    broadcastMessage: hostTerritory.broadcastMessage
+                )
+                showTaxInfo = true
+            }
+        }
+
         // 保存物品（后台进行，视图已关闭）
-        let obtainedItems = selectedItems.map { $0.toObtainedItem() }
-        await saveRewardsToInventory(items: obtainedItems, sessionId: result.sessionId)
+        await saveRewardsToInventory(items: itemsToSave, sessionId: result.sessionId)
 
         logger.log("物品已保存到背包", type: .success)
 

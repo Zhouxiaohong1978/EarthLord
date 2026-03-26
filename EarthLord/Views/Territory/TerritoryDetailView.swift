@@ -29,6 +29,15 @@ struct TerritoryDetailView: View {
     /// 是否正在更新交易状态
     @State private var isUpdatingTrading = false
 
+    /// 广播消息编辑内容
+    @State private var broadcastMessage: String = ""
+
+    /// 是否显示广播消息编辑弹窗
+    @State private var showBroadcastEditor = false
+
+    /// 是否正在保存广播消息
+    @State private var isSavingBroadcast = false
+
     /// 是否显示建筑浏览器
     @State private var showBuildingBrowser = false
 
@@ -131,6 +140,7 @@ struct TerritoryDetailView: View {
             loadData()
             startTimer()
             allowTrading = territory.allowTrading ?? true
+            broadcastMessage = territory.broadcastMessage ?? ""
         }
         .onDisappear {
             stopTimer()
@@ -236,6 +246,9 @@ struct TerritoryDetailView: View {
 
                     // 允许交易开关
                     tradingToggleCard
+
+                    // 领地广播消息
+                    broadcastMessageCard
 
                     // 建筑列表区域
                     buildingListSection
@@ -489,6 +502,54 @@ struct TerritoryDetailView: View {
         )
     }
 
+    /// 领地广播消息卡片（领主公告，访客搜刮时展示）
+    private var broadcastMessageCard: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 22))
+                    .foregroundColor(ApocalypseTheme.primary)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(String(localized: "领地广播消息"))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Text(broadcastMessage.isEmpty
+                         ? String(localized: "未设置，点击编辑")
+                         : broadcastMessage)
+                        .font(.system(size: 12))
+                        .foregroundColor(broadcastMessage.isEmpty ? ApocalypseTheme.textMuted : ApocalypseTheme.textSecondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                Button {
+                    showBroadcastEditor = true
+                } label: {
+                    Image(systemName: "pencil.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(ApocalypseTheme.primary.opacity(0.8))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(ApocalypseTheme.background)
+        )
+        .alert(String(localized: "编辑广播消息"), isPresented: $showBroadcastEditor) {
+            TextField(String(localized: "输入领地公告（最多50字）"), text: $broadcastMessage)
+            Button(String(localized: "保存")) {
+                Task { await saveBroadcastMessage() }
+            }
+            Button(String(localized: "取消"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "访客在你的领地搜刮时会看到此消息"))
+        }
+    }
+
     /// 危险操作区域
     private var dangerZone: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -571,7 +632,9 @@ struct TerritoryDetailView: View {
                     completedAt: territory.completedAt,
                     createdAt: territory.createdAt,
                     allowTrading: territory.allowTrading,
-                    lastActiveAt: territory.lastActiveAt
+                    lastActiveAt: territory.lastActiveAt,
+                    broadcastMessage: territory.broadcastMessage,
+                    taxRate: territory.taxRate
                 )
 
                 newTerritoryName = ""
@@ -620,7 +683,6 @@ struct TerritoryDetailView: View {
         do {
             try await TerritoryManager.shared.updateTradingStatus(id: territory.id, allowTrading: newValue)
         } catch {
-            // 失败时回滚 Toggle
             await MainActor.run {
                 allowTrading = !newValue
                 errorMessage = error.localizedDescription
@@ -628,6 +690,17 @@ struct TerritoryDetailView: View {
             }
         }
         isUpdatingTrading = false
+    }
+
+    private func saveBroadcastMessage() async {
+        let trimmed = String(broadcastMessage.prefix(50))
+        broadcastMessage = trimmed
+        do {
+            try await TerritoryManager.shared.setBroadcastMessage(trimmed.isEmpty ? nil : trimmed, for: territory.id)
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
     }
 }
 
@@ -652,7 +725,9 @@ struct TerritoryDetailView: View {
             completedAt: "2025-01-08T10:15:00Z",
             createdAt: "2025-01-08T10:15:30Z",
             allowTrading: true,
-            lastActiveAt: nil
+            lastActiveAt: nil,
+            broadcastMessage: nil,
+            taxRate: 10
         )
     )
 }

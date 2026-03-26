@@ -343,6 +343,16 @@ struct ScavengeResult: Identifiable {
     }
 }
 
+// MARK: - 领地税收信息
+
+/// 在他人领地搜刮后的税收提示数据
+struct TaxInfo {
+    let ownerName: String       // 领地名称
+    let taxRate: Int            // 税率（%）
+    let taxCount: Int           // 本次扣税件数
+    let broadcastMessage: String? // 领主广播消息
+}
+
 // MARK: - AI生成物品
 
 /// AI生成的物品（包含独特名称和背景故事）

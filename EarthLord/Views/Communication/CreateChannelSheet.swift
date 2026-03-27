@@ -19,8 +19,42 @@ struct CreateChannelSheet: View {
     @State private var isCreating = false
     @State private var errorMessage: String?
 
+    @ObservedObject private var commManager = CommunicationManager.shared
+
     private var isValidName: Bool {
         channelName.count >= 2 && channelName.count <= 50
+    }
+
+    /// 当前选中频道类型所需的设备是否已解锁
+    private var isRequiredDeviceUnlocked: Bool {
+        let required = requiredDevice(for: selectedType)
+        guard let required else { return true }
+        return commManager.devices.first(where: { $0.deviceType == required })?.isUnlocked ?? false
+    }
+
+    /// 未解锁时的提示文字
+    private var deviceUnlockHint: String? {
+        guard !isRequiredDeviceUnlocked else { return nil }
+        switch selectedType {
+        case .public, .walkie:
+            return String(localized: "需要先建造「瞭望台」解锁对讲机")
+        case .camp:
+            return String(localized: "需要先建造「营地电台」解锁营地电台设备")
+        case .satellite:
+            return String(localized: "需要先建造「领主指挥所」解锁卫星电话")
+        default:
+            return nil
+        }
+    }
+
+    /// 频道类型对应的必需设备
+    private func requiredDevice(for type: ChannelType) -> DeviceType? {
+        switch type {
+        case .public, .walkie: return .walkieTalkie
+        case .camp:            return .campRadio
+        case .satellite:       return .satellite
+        default:               return nil
+        }
     }
 
     var body: some View {
@@ -81,7 +115,10 @@ struct CreateChannelSheet: View {
     }
 
     private func channelTypeCard(_ type: ChannelType) -> some View {
-        Button(action: { selectedType = type }) {
+        let required = requiredDevice(for: type)
+        let unlocked = required == nil || (commManager.devices.first(where: { $0.deviceType == required })?.isUnlocked ?? false)
+
+        return Button(action: { selectedType = type }) {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
@@ -90,13 +127,20 @@ struct CreateChannelSheet: View {
 
                     Image(systemName: type.icon)
                         .font(.title2)
-                        .foregroundColor(type.color)
+                        .foregroundColor(unlocked ? type.color : ApocalypseTheme.textMuted)
+
+                    if !unlocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white)
+                            .offset(x: 16, y: 16)
+                    }
                 }
 
                 Text(type.displayName)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
+                    .foregroundColor(unlocked ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
 
                 Text(type.description)
                     .font(.caption2)
@@ -118,6 +162,7 @@ struct CreateChannelSheet: View {
                             )
                     )
             )
+            .opacity(unlocked ? 1.0 : 0.5)
         }
     }
 
@@ -209,42 +254,60 @@ struct CreateChannelSheet: View {
     // MARK: - Create Button
 
     private var createButton: some View {
-        Button(action: createChannel) {
-            HStack {
-                if isCreating {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.textPrimary))
-                        .scaleEffect(0.8)
-                } else {
-                    Image(systemName: "plus.circle.fill")
+        VStack(spacing: 8) {
+            if let hint = deviceUnlockHint {
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 12))
+                    Text(hint)
+                        .font(.subheadline)
                 }
-                Text(isCreating ? "创建中..." : "创建频道")
+                .foregroundColor(ApocalypseTheme.warning)
+                .padding(.horizontal, 4)
             }
-            .font(.headline)
-            .foregroundColor(ApocalypseTheme.textPrimary)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-                isValidName && !isCreating ?
-                ApocalypseTheme.primary :
-                ApocalypseTheme.primary.opacity(0.5)
-            )
-            .cornerRadius(12)
+
+            Button(action: createChannel) {
+                HStack {
+                    if isCreating {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.textPrimary))
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: isRequiredDeviceUnlocked ? "plus.circle.fill" : "lock.fill")
+                    }
+                    Text(isCreating ? String(localized: "创建中...") : String(localized: "创建频道"))
+                }
+                .font(.headline)
+                .foregroundColor(ApocalypseTheme.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(
+                    isValidName && !isCreating && isRequiredDeviceUnlocked ?
+                    ApocalypseTheme.primary :
+                    ApocalypseTheme.primary.opacity(0.3)
+                )
+                .cornerRadius(12)
+            }
+            .disabled(!isValidName || isCreating || !isRequiredDeviceUnlocked)
+            .padding(.top, 4)
         }
-        .disabled(!isValidName || isCreating)
-        .padding(.top, 8)
     }
 
     // MARK: - Methods
 
     private func createChannel() {
         guard let userId = authManager.currentUser?.id else {
-            errorMessage = "用户未登录"
+            errorMessage = String(localized: "用户未登录")
             return
         }
 
         guard isValidName else {
-            errorMessage = "请输入有效的频道名称"
+            errorMessage = String(localized: "请输入有效的频道名称")
+            return
+        }
+
+        guard isRequiredDeviceUnlocked else {
+            errorMessage = deviceUnlockHint
             return
         }
 

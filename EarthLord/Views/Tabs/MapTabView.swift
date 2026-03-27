@@ -73,6 +73,9 @@ struct MapTabView: View {
     /// 探索管理器（单例，使用 ObservedObject 观察）
     @ObservedObject private var explorationManager = ExplorationManager.shared
 
+    /// 体征管理器（用于濒死状态检测）
+    @ObservedObject private var physiqueManager = PhysiqueManager.shared
+
     /// 是否显示探索结果弹窗
     @State private var showExplorationResult = false
 
@@ -131,6 +134,11 @@ struct MapTabView: View {
             VStack {
                 // 顶部状态栏
                 topStatusBar
+
+                // 濒死警告横幅（探索时持续显示）
+                if PhysiqueManager.shared.status == .dying {
+                    dyingWarningBanner
+                }
 
                 // 速度警告横幅（圈地）
                 if locationManager.speedWarning != nil {
@@ -460,6 +468,41 @@ struct MapTabView: View {
     // MARK: - 速度警告横幅
 
     /// 速度警告横幅
+    private var dyingWarningBanner: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "heart.slash.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                Text(LocalizedStringKey("体征警告：你正处于濒死状态！"))
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            HStack(spacing: 6) {
+                Image(systemName: "figure.walk")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.85))
+                Text(LocalizedStringKey("立即出去探索，搜刮食物和水并使用补给体征"))
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.85))
+            }
+            HStack(spacing: 6) {
+                Image(systemName: "xmark.octagon.fill")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.85))
+                Text(LocalizedStringKey("濒死状态下无法开始圈地"))
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.85))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(ApocalypseTheme.danger.opacity(0.92))
+        .cornerRadius(12)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
     private var speedWarningBanner: some View {
         HStack(spacing: 12) {
             // 警告图标
@@ -728,6 +771,19 @@ struct MapTabView: View {
 
     /// Day 19: 带碰撞检测的开始圈地
     private func startClaimingWithCollisionCheck() {
+        // 濒死状态禁止圈地
+        if PhysiqueManager.shared.status == .dying {
+            collisionWarning = String(localized: "体征濒死，无法圈地！先出去搜刮食物和水补充体力")
+            collisionWarningLevel = .violation
+            withAnimation { showCollisionWarning = true }
+            let g = UINotificationFeedbackGenerator()
+            g.prepare(); g.notificationOccurred(.error)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                withAnimation { showCollisionWarning = false; collisionWarning = nil; collisionWarningLevel = .safe }
+            }
+            return
+        }
+
         // 开始圈地前，先停止探索（如果正在进行）
         if explorationManager.isExploring {
             print("🔘 [MapTabView] 检测到探索进行中，先停止探索")

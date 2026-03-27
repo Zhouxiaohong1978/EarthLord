@@ -879,6 +879,19 @@ final class ExplorationManager: NSObject, ObservableObject {
             if rewards.count >= itemCount { break }
         }
 
+        // 金级保底：建造材料三选1~2（木材×3 / 布料×2 / 石头×2，新玩家建造篝火和庇护所核心材料）
+        if tier == .gold && rewards.count < itemCount {
+            let buildingMaterials: [(id: String, qty: Int)] = [
+                ("wood", 3), ("cloth", 2), ("stone", 2)
+            ].shuffled()
+            let pickCount = Int.random(in: 1...2)
+            for mat in buildingMaterials.prefix(pickCount) {
+                guard !usedItemIds.contains(mat.id), rewards.count < itemCount else { break }
+                rewards.append(ObtainedItem(itemId: mat.id, quantity: mat.qty, quality: generateRandomQuality()))
+                usedItemIds.insert(mat.id)
+            }
+        }
+
         // 剩余槽位随机填充
         var attempts = 0
         let maxAttempts = max(itemCount, 4) * 10  // 防止死循环

@@ -1004,35 +1004,69 @@ struct BackpackContentView: View {
 
     // MARK: - 物品列表
 
+    private var standardGroups: [(key: String, itemId: String, totalQuantity: Int, customName: String?)] {
+        groupedFilteredItems.filter { $0.customName == nil }
+    }
+    private var aiGroups: [(key: String, itemId: String, totalQuantity: Int, customName: String?)] {
+        groupedFilteredItems.filter { $0.customName != nil }
+    }
+
+    private func itemCard(for group: (key: String, itemId: String, totalQuantity: Int, customName: String?)) -> some View {
+        Group {
+            if let definition = MockExplorationData.getItemDefinition(by: group.itemId) {
+                BackpackItemCardNew(
+                    itemId: group.itemId,
+                    totalQuantity: group.totalQuantity,
+                    definition: definition,
+                    customName: group.customName,
+                    onUse: {
+                        Task { @MainActor in
+                            if let backpackItem = inventoryManager.items.first(where: {
+                                $0.itemId == group.itemId && $0.customName == group.customName
+                            }) {
+                                try? await PhysiqueManager.shared.useItem(backpackItem)
+                            }
+                        }
+                    },
+                    onDisassemble: {
+                        Task { @MainActor in
+                            if let backpackItem = inventoryManager.items.first(where: {
+                                $0.itemId == group.itemId && $0.customName == group.customName
+                            }) {
+                                try? await InventoryManager.shared.disassembleItem(backpackItem)
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
     private var itemList: some View {
         ScrollView {
             LazyVStack(spacing: 10) {
-                ForEach(groupedFilteredItems, id: \.key) { group in
-                    if let definition = MockExplorationData.getItemDefinition(by: group.itemId) {
-                        BackpackItemCardNew(
-                            itemId: group.itemId,
-                            totalQuantity: group.totalQuantity,
-                            definition: definition,
-                            customName: group.customName,
-                            onUse: {
-                                Task { @MainActor in
-                                    if let backpackItem = inventoryManager.items.first(where: {
-                                        $0.itemId == group.itemId && $0.customName == group.customName
-                                    }) {
-                                        try? await PhysiqueManager.shared.useItem(backpackItem)
-                                    }
-                                }
-                            },
-                            onDisassemble: {
-                                Task { @MainActor in
-                                    if let backpackItem = inventoryManager.items.first(where: {
-                                        $0.itemId == group.itemId && $0.customName == group.customName
-                                    }) {
-                                        try? await InventoryManager.shared.disassembleItem(backpackItem)
-                                    }
-                                }
-                            }
-                        )
+                // 标准物品
+                ForEach(standardGroups, id: \.key) { group in
+                    itemCard(for: group)
+                }
+
+                // AI 命名物品分区
+                if !aiGroups.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 12))
+                            .foregroundColor(ApocalypseTheme.warning)
+                        Text("特殊物品")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.warning)
+                        Rectangle()
+                            .fill(ApocalypseTheme.warning.opacity(0.3))
+                            .frame(height: 1)
+                    }
+                    .padding(.top, 6)
+
+                    ForEach(aiGroups, id: \.key) { group in
+                        itemCard(for: group)
                     }
                 }
             }

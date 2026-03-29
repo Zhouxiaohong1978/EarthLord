@@ -567,6 +567,12 @@ struct BackpackItemCard: View {
     private var isAIItem: Bool { item.customName != nil }
     private var displayName: String { item.customName ?? definition.name }
     private var disassembleReturn: Int { max(1, Int(Double(item.quantity) * 0.6)) }
+    private var disassembleReturnItemId: String {
+        InventoryManager.classifyDisassembleMaterial(from: item.customName ?? "", fallback: item.itemId)
+    }
+    private var disassembleReturnName: String {
+        MockExplorationData.getItemDefinition(by: disassembleReturnItemId)?.name ?? disassembleReturnItemId
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -595,12 +601,12 @@ struct BackpackItemCard: View {
             isPresented: $showDisassembleConfirm,
             titleVisibility: .visible
         ) {
-            Button("确认拆解（返还 \(definition.name)×\(disassembleReturn)）", role: .destructive) {
+            Button("确认拆解（返还 \(disassembleReturnName)×\(disassembleReturn)）", role: .destructive) {
                 onDisassemble?()
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("AI 命名物品将被分解，返还 60% 的 \(definition.name)")
+            Text("将被分解为 \(disassembleReturnName)，回收率 60%")
         }
     }
 

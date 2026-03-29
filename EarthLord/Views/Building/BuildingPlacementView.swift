@@ -25,6 +25,8 @@ struct BuildingPlacementView: View {
     @ObservedObject private var buildingManager = BuildingManager.shared
     /// 背包管理器
     @ObservedObject private var inventoryManager = InventoryManager.shared
+    /// 仓库管理器
+    @ObservedObject private var warehouseManager = WarehouseManager.shared
 
     /// 选中的建造位置
     @State private var selectedLocation: CLLocationCoordinate2D?
@@ -47,10 +49,13 @@ struct BuildingPlacementView: View {
         canBuildResult.canBuild && selectedLocation != nil
     }
 
-    /// 玩家资源（按 itemId 分组）
+    /// 玩家资源（背包 + 仓库合并，AI命名物品不计入建造材料）
     private var playerResources: [String: Int] {
         var resources: [String: Int] = [:]
-        for item in inventoryManager.items {
+        for item in inventoryManager.items where item.customName == nil {
+            resources[item.itemId, default: 0] += item.quantity
+        }
+        for item in warehouseManager.items where item.customName == nil {
             resources[item.itemId, default: 0] += item.quantity
         }
         return resources

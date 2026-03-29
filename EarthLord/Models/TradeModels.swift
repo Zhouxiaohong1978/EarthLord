@@ -70,22 +70,25 @@ struct TradeItem: Codable, Identifiable, Equatable {
     let itemId: String           // 关联 BackpackItem.itemId
     let quantity: Int            // 数量
     let quality: ItemQuality?    // 品质（可选）
+    let customName: String?      // AI 命名物品的自定义名称
 
     init(
         id: UUID = UUID(),
         itemId: String,
         quantity: Int,
-        quality: ItemQuality? = nil
+        quality: ItemQuality? = nil,
+        customName: String? = nil
     ) {
         self.id = id
         self.itemId = itemId
         self.quantity = quantity
         self.quality = quality
+        self.customName = customName
     }
 
-    /// 获取物品名称（从物品定义表）
+    /// 显示名称：AI 物品用 customName，标准物品用定义表名称
     var itemName: String {
-        MockExplorationData.getItemDefinition(by: itemId)?.name ?? itemId
+        customName ?? MockExplorationData.getItemDefinition(by: itemId)?.name ?? itemId
     }
 
     /// 显示文本

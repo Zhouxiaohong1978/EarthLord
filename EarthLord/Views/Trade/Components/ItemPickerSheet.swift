@@ -20,6 +20,18 @@ struct SelectableItem: Identifiable {
     let definition: ItemDefinition
     let availableQuantity: Int?  // 库存数量（仅库存模式）
     let quality: ItemQuality?
+    let customName: String?      // AI 命名物品
+
+    init(id: String, definition: ItemDefinition, availableQuantity: Int?, quality: ItemQuality?, customName: String? = nil) {
+        self.id = id
+        self.definition = definition
+        self.availableQuantity = availableQuantity
+        self.quality = quality
+        self.customName = customName
+    }
+
+    /// UI 展示名称
+    var displayName: String { customName ?? definition.name }
 }
 
 struct ItemPickerSheet: View {
@@ -40,20 +52,29 @@ struct ItemPickerSheet: View {
     private var selectableItems: [SelectableItem] {
         switch mode {
         case .fromInventory:
-            // 按 itemId 分组，数量加总
+            // 标准物品：按 itemId 分组，数量加总
             var grouped: [String: Int] = [:]
-            for item in inventoryManager.items {
+            for item in inventoryManager.items where item.customName == nil {
                 grouped[item.itemId, default: 0] += item.quantity
             }
-            return grouped.compactMap { itemId, totalQty in
+            var result: [SelectableItem] = grouped.compactMap { itemId, totalQty in
                 guard let definition = MockExplorationData.getItemDefinition(by: itemId) else { return nil }
+                return SelectableItem(id: itemId, definition: definition, availableQuantity: totalQty, quality: nil)
+            }
+            // AI 命名物品：每条记录单独展示
+            let aiItems: [SelectableItem] = inventoryManager.items.compactMap { item in
+                guard item.customName != nil,
+                      let definition = MockExplorationData.getItemDefinition(by: item.itemId) else { return nil }
                 return SelectableItem(
-                    id: itemId,
+                    id: item.id.uuidString,
                     definition: definition,
-                    availableQuantity: totalQty,
-                    quality: nil
+                    availableQuantity: item.quantity,
+                    quality: item.quality,
+                    customName: item.customName
                 )
-            }.sorted { $0.definition.name < $1.definition.name }
+            }
+            result.append(contentsOf: aiItems)
+            return result.sorted { $0.displayName < $1.displayName }
 
         case .fromAllItems:
             return MockExplorationData.itemDefinitions.map { definition in
@@ -241,7 +262,7 @@ struct ItemPickerSheet: View {
 
                 // 物品信息
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.definition.name)
+                    Text(item.displayName)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -380,7 +401,7 @@ struct ItemPickerSheet: View {
                                     .foregroundColor(item.definition.category.color)
                             }
 
-                            Text(item.definition.name)
+                            Text(item.displayName)
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -411,7 +432,8 @@ struct ItemPickerSheet: View {
                             let tradeItem = TradeItem(
                                 itemId: item.definition.id,
                                 quantity: pendingQuantity,
-                                quality: item.quality
+                                quality: item.quality,
+                                customName: item.customName
                             )
                             selectedItems.append(tradeItem)
                             showQuantityPicker = false

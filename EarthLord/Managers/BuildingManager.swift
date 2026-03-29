@@ -222,13 +222,13 @@ final class BuildingManager: ObservableObject {
         template: BuildingTemplate,
         territoryId: String
     ) -> CanBuildResult {
-        // 背包资源
+        // 背包资源（AI生成的命名物品不作为建造材料）
         var playerResources: [String: Int] = [:]
-        for item in InventoryManager.shared.items {
+        for item in InventoryManager.shared.items where item.customName == nil {
             playerResources[item.itemId, default: 0] += item.quantity
         }
         // 仓库资源（补充背包不足的部分）
-        for item in WarehouseManager.shared.items {
+        for item in WarehouseManager.shared.items where item.customName == nil {
             playerResources[item.itemId, default: 0] += item.quantity
         }
         return canBuild(template: template, territoryId: territoryId, playerResources: playerResources)
@@ -276,9 +276,9 @@ final class BuildingManager: ObservableObject {
         for (resourceId, requiredAmount) in template.requiredResources {
             var remaining = requiredAmount
 
-            // 1. 先扣背包（按数量降序）
+            // 1. 先扣背包（按数量降序，AI命名物品不用于建造）
             let backpackItems = InventoryManager.shared.items
-                .filter { $0.itemId == resourceId }
+                .filter { $0.itemId == resourceId && $0.customName == nil }
                 .sorted { $0.quantity > $1.quantity }
 
             for inventoryItem in backpackItems {

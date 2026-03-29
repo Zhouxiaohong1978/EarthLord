@@ -99,7 +99,7 @@ final class TradeManager: ObservableObject {
         var lockedItems: [TradeItem] = []
         do {
             for item in offeringItems {
-                try await deductItemFromInventory(itemId: item.itemId, quantity: item.quantity, quality: item.quality)
+                try await deductItemFromInventory(itemId: item.itemId, quantity: item.quantity, quality: item.quality, customName: item.customName)
                 lockedItems.append(item)
                 logger.log("锁定物品: \(item.itemId) x\(item.quantity)", type: .info)
             }
@@ -221,7 +221,7 @@ final class TradeManager: ObservableObject {
         var deductedItems: [TradeItem] = []
         do {
             for item in offer.requestingItems {
-                try await deductItemFromInventory(itemId: item.itemId, quantity: item.quantity, quality: item.quality)
+                try await deductItemFromInventory(itemId: item.itemId, quantity: item.quantity, quality: item.quality, customName: item.customName)
                 deductedItems.append(item)
                 logger.log("扣除买家物品: \(item.itemId) x\(item.quantity)", type: .info)
             }
@@ -626,7 +626,7 @@ final class TradeManager: ObservableObject {
         var missingItems: [String: Int] = [:]
 
         for item in items {
-            let available = getAvailableQuantity(itemId: item.itemId, quality: item.quality)
+            let available = getAvailableQuantity(itemId: item.itemId, quality: item.quality, customName: item.customName)
             if available < item.quantity {
                 let itemName = MockExplorationData.getItemDefinition(by: item.itemId)?.name ?? item.itemId
                 missingItems[itemName] = item.quantity - available
@@ -640,40 +640,38 @@ final class TradeManager: ObservableObject {
         }
     }
 
-    /// 获取指定物品的可用数量
-    /// - Parameters:
-    ///   - itemId: 物品ID
-    ///   - quality: 品质（可选）
-    /// - Returns: 可用数量
-    private func getAvailableQuantity(itemId: String, quality: ItemQuality?) -> Int {
+    /// 获取指定物品的可用数量（支持 AI 命名物品精确匹配）
+    private func getAvailableQuantity(itemId: String, quality: ItemQuality?, customName: String? = nil) -> Int {
         return inventoryManager.items
-            .filter { $0.itemId == itemId && (quality == nil || $0.quality == quality) }
+            .filter {
+                $0.itemId == itemId &&
+                (quality == nil || $0.quality == quality) &&
+                (customName == nil || $0.customName == customName)
+            }
             .reduce(0) { $0 + $1.quantity }
     }
 
     /// 查找背包中的物品
-    /// - Parameters:
-    ///   - itemId: 物品ID
-    ///   - quality: 品质（可选）
-    /// - Returns: 背包物品
-    private func findInventoryItem(itemId: String, quality: ItemQuality?) -> BackpackItem? {
-        return inventoryManager.items.first { $0.itemId == itemId && (quality == nil || $0.quality == quality) }
+    private func findInventoryItem(itemId: String, quality: ItemQuality?, customName: String? = nil) -> BackpackItem? {
+        return inventoryManager.items.first {
+            $0.itemId == itemId &&
+            (quality == nil || $0.quality == quality) &&
+            (customName == nil || $0.customName == customName)
+        }
     }
 
-    /// 从库存中扣除物品（支持跨多条记录扣除）
-    /// - Parameters:
-    ///   - itemId: 物品ID
-    ///   - quantity: 需要扣除的数量
-    ///   - quality: 品质（可选）
-    private func deductItemFromInventory(itemId: String, quantity: Int, quality: ItemQuality?) async throws {
+    /// 从库存中扣除物品（支持跨多条记录扣除，AI 命名物品精确匹配）
+    private func deductItemFromInventory(itemId: String, quantity: Int, quality: ItemQuality?, customName: String? = nil) async throws {
         var remainingQuantity = quantity
 
-        // 获取所有匹配的库存记录
-        let matchingItems = inventoryManager.items.filter { $0.itemId == itemId && (quality == nil || $0.quality == quality) }
+        let matchingItems = inventoryManager.items.filter {
+            $0.itemId == itemId &&
+            (quality == nil || $0.quality == quality) &&
+            (customName == nil || $0.customName == customName)
+        }
 
         for item in matchingItems {
             if remainingQuantity <= 0 { break }
-
             let deductAmount = min(item.quantity, remainingQuantity)
             try await inventoryManager.useItem(inventoryId: item.id, quantity: deductAmount)
             remainingQuantity -= deductAmount

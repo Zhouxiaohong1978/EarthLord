@@ -262,8 +262,8 @@ final class InventoryManager: ObservableObject {
     }
 
     /// 从背包移除指定数量的物品（存入仓库时调用）
-    func removeItem(itemId: String, quantity: Int, quality: ItemQuality? = nil) async throws {
-        let matching = items.filter { $0.itemId == itemId && $0.quality == quality }
+    func removeItem(itemId: String, quantity: Int, quality: ItemQuality? = nil, ignoreQuality: Bool = false) async throws {
+        let matching = items.filter { $0.itemId == itemId && (ignoreQuality || $0.quality == quality) }
         let total = matching.reduce(0) { $0 + $1.quantity }
         guard total >= quantity else { throw InventoryError.insufficientQuantity }
 
@@ -351,6 +351,21 @@ final class InventoryManager: ObservableObject {
     /// 获取剩余背包容量（按物品总数量）
     var remainingCapacity: Int {
         max(0, backpackCapacity - totalItemCount)
+    }
+
+    // MARK: - 拆解
+
+    /// 拆解 AI 命名物品，返回对应标准材料（回收率 60%，最少 1 个）
+    /// - Parameter item: 要拆解的物品（必须有 customName）
+    /// - Returns: 返还的标准材料 itemId 和数量
+    @discardableResult
+    func disassembleItem(_ item: BackpackItem) async throws -> (itemId: String, quantity: Int) {
+        guard item.customName != nil else { return (item.itemId, 0) }
+        let returnQty = max(1, Int(Double(item.quantity) * 0.6))
+        try await deleteItem(inventoryId: item.id)
+        try await addItem(itemId: item.itemId, quantity: returnQty, obtainedFrom: "拆解")
+        logger.log("拆解: \(item.customName!) → \(item.itemId) x\(returnQty)", type: .success)
+        return (item.itemId, returnQty)
     }
 
     // MARK: - Private Methods

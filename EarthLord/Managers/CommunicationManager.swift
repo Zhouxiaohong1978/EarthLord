@@ -782,6 +782,10 @@ final class CommunicationManager: ObservableObject {
             }
 
             logger.log("成功发送消息: \(messageId)", type: .success)
+
+            // 通知每日任务系统刷新通讯进度
+            Task { await DailyTaskManager.shared.refresh() }
+
             return messageId
 
         } catch {

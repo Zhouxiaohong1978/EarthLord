@@ -50,12 +50,19 @@ struct EarthLordApp: App {
             NSLog("✅ [App] LocationReporter 已初始化")
             print("✅ [App] LocationReporter 已初始化")
 
-            // 用户已登录时启动位置上报
+            // 用户已登录时启动位置上报 + 加载仓库状态
             if AuthManager.shared.isAuthenticated {
                 LocationReporter.shared.startReporting()
                 NSLog("✅ [App] 位置上报已启动")
                 print("✅ [App] 位置上报已启动")
+
+                await WarehouseManager.shared.refreshItems()
+                NSLog("✅ [App] WarehouseManager 已初始化")
             }
+
+            // 初始化通知管理器 + 请求权限
+            await NotificationManager.shared.requestPermission()
+            NSLog("✅ [App] NotificationManager 已初始化")
 
             NSLog("🚀 [App] 所有管理器初始化完成")
             print("🚀 [App] 所有管理器初始化完成")

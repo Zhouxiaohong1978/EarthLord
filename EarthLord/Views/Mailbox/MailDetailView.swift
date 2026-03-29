@@ -11,6 +11,8 @@ struct MailDetailView: View {
     let mail: Mail
 
     @StateObject private var mailboxManager = MailboxManager.shared
+    @StateObject private var warehouseManager = WarehouseManager.shared
+    @StateObject private var inventoryManager = InventoryManager.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var isClaiming = false
@@ -115,10 +117,11 @@ struct MailDetailView: View {
             }
         }
         .onAppear {
-            if !mail.isRead {
-                Task {
+            Task {
+                if !mail.isRead {
                     await mailboxManager.markAsRead(mail)
                 }
+                await warehouseManager.refreshItems()
             }
         }
     }
@@ -209,26 +212,26 @@ struct MailDetailView: View {
     // MARK: - 容量状态总览
     private var capacityStatusView: some View {
         let mailTotal = mail.items.reduce(0) { $0 + $1.quantity }
-        let backpackRemaining = InventoryManager.shared.remainingCapacity
-        let warehouseRemaining = WarehouseManager.shared.remainingCapacity
+        let backpackRemaining = inventoryManager.remainingCapacity
+        let warehouseRemaining = warehouseManager.remainingCapacity
 
         return HStack(spacing: 12) {
             // 背包状态
             capacityCell(
                 icon: "backpack.fill",
                 label: LocalizedStringKey("mailbox.dest.backpack"),
-                used: InventoryManager.shared.totalItemCount,
-                total: InventoryManager.shared.backpackCapacity,
+                used: inventoryManager.totalItemCount,
+                total: inventoryManager.backpackCapacity,
                 canFit: backpackRemaining >= mailTotal
             )
 
             // 仓库状态
-            if WarehouseManager.shared.hasWarehouse {
+            if warehouseManager.hasWarehouse {
                 capacityCell(
                     icon: "archivebox.fill",
                     label: LocalizedStringKey("mailbox.dest.warehouse"),
-                    used: WarehouseManager.shared.usedCapacity,
-                    total: WarehouseManager.shared.totalCapacity,
+                    used: warehouseManager.usedCapacity,
+                    total: warehouseManager.totalCapacity,
                     canFit: warehouseRemaining >= mailTotal
                 )
             } else {
@@ -279,8 +282,8 @@ struct MailDetailView: View {
     // MARK: - 领取选择按钮组
     private var claimOptionsView: some View {
         let mailTotal = mail.items.reduce(0) { $0 + $1.quantity }
-        let backpackCanFit = InventoryManager.shared.remainingCapacity >= mailTotal
-        let warehouseCanFit = WarehouseManager.shared.hasWarehouse && WarehouseManager.shared.remainingCapacity >= mailTotal
+        let backpackCanFit = inventoryManager.remainingCapacity >= mailTotal
+        let warehouseCanFit = warehouseManager.hasWarehouse && warehouseManager.remainingCapacity >= mailTotal
 
         return HStack(spacing: 12) {
             // 存入背包
@@ -329,8 +332,8 @@ struct MailDetailView: View {
 
     // MARK: - 背包容量提示（保留兼容）
     private var backpackCapacityHint: some View {
-        let currentCount = InventoryManager.shared.totalItemCount  // 当前物品总数量
-        let maxSlots = InventoryManager.shared.backpackCapacity  // 基于订阅档位动态获取
+        let currentCount = inventoryManager.totalItemCount  // 当前物品总数量
+        let maxSlots = inventoryManager.backpackCapacity  // 基于订阅档位动态获取
         let remainingSlots = max(0, maxSlots - currentCount)
 
         // 计算邮件中物品总数量

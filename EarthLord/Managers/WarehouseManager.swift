@@ -65,6 +65,7 @@ final class WarehouseManager: ObservableObject {
     static let shared = WarehouseManager()
 
     @Published var items: [WarehouseItem] = []
+    @Published var totalCapacity: Int = 0
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -75,22 +76,28 @@ final class WarehouseManager: ObservableObject {
 
     // MARK: - 容量
 
-    /// 所有 active 仓库建筑的总容量
-    var totalCapacity: Int {
-        let templates = BuildingManager.shared.buildingTemplates
-        return BuildingManager.shared.playerBuildings
-            .filter { $0.status == .active }
-            .compactMap { building -> Int? in
-                guard let template = templates.first(where: { $0.id == building.templateId }),
-                      template.isStorage else { return nil }
-                return template.storageCapacity(at: building.level)
-            }
-            .reduce(0, +)
-    }
-
     var usedCapacity: Int { items.reduce(0) { $0 + $1.quantity } }
     var remainingCapacity: Int { max(0, totalCapacity - usedCapacity) }
     var hasWarehouse: Bool { totalCapacity > 0 }
+
+    /// 按 itemId 合并后的展示列表（UI 用）
+    var groupedItems: [WarehouseItem] {
+        var totals: [(itemId: String, quantity: Int)] = []
+        var seen: [String: Int] = [:]   // itemId → index in totals
+        for item in items {
+            if let idx = seen[item.itemId] {
+                totals[idx].quantity += item.quantity
+            } else {
+                seen[item.itemId] = totals.count
+                totals.append((itemId: item.itemId, quantity: item.quantity))
+            }
+        }
+        return totals.map { entry in
+            // 用第一条真实记录的 id，仅作 Identifiable 用途
+            let firstId = items.first { $0.itemId == entry.itemId }?.id ?? UUID()
+            return WarehouseItem(id: firstId, itemId: entry.itemId, quantity: entry.quantity, quality: nil, customName: nil)
+        }
+    }
 
     // MARK: - 加载
 
@@ -100,6 +107,7 @@ final class WarehouseManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        // 独立加载物品，失败不影响容量计算
         do {
             let response: [WarehouseItemDB] = try await supabase
                 .from("warehouse_items")
@@ -118,9 +126,53 @@ final class WarehouseManager: ObservableObject {
                     customName: db.customName
                 )
             }
-            logger.log("仓库加载完成：\(items.count) 种物品", type: .success)
         } catch {
-            logger.logError("仓库加载失败", error: error)
+            logger.logError("仓库物品加载失败", error: error)
+        }
+
+        // 独立计算容量，失败不影响物品列表
+        do {
+            totalCapacity = try await fetchStorageCapacity()
+            logger.log("仓库加载完成：\(items.count) 种物品，总容量 \(totalCapacity)", type: .success)
+        } catch {
+            logger.logError("仓库容量计算失败", error: error)
+        }
+    }
+
+    /// 查询当前用户所有领地中 active 仓库建筑的总容量
+    /// 不依赖 BuildingManager 内存状态，直接查询数据库
+    private func fetchStorageCapacity() async throws -> Int {
+        guard let userId = AuthManager.shared.currentUser?.id else { return 0 }
+
+        struct BuildingRow: Codable {
+            let templateId: String
+            let level: Int
+            enum CodingKeys: String, CodingKey {
+                case templateId = "template_id"
+                case level
+            }
+        }
+
+        let buildings: [BuildingRow] = try await supabase
+            .from("player_buildings")
+            .select("template_id, level")
+            .eq("user_id", value: userId.uuidString)
+            .eq("status", value: "active")
+            .execute()
+            .value
+
+        // 容量表硬编码，不依赖模板是否已加载
+        return buildings.reduce(0) { total, row in
+            switch row.templateId {
+            case "storage_small":
+                let capacities = [500, 800, 1200]
+                return total + capacities[max(0, min(row.level - 1, capacities.count - 1))]
+            case "storage_medium":
+                let capacities = [1500, 2000, 3000]
+                return total + capacities[max(0, min(row.level - 1, capacities.count - 1))]
+            default:
+                return total
+            }
         }
     }
 
@@ -131,7 +183,9 @@ final class WarehouseManager: ObservableObject {
         guard hasWarehouse else { throw WarehouseError.noWarehouseBuilt }
         guard remainingCapacity >= quantity else { throw WarehouseError.warehouseFull }
 
-        try await InventoryManager.shared.removeItem(itemId: itemId, quantity: quantity, quality: quality)
+        // quality == nil 时不限品质，合并扣除背包中所有同类物品
+        let ignoreQuality = (quality == nil)
+        try await InventoryManager.shared.removeItem(itemId: itemId, quantity: quantity, quality: quality, ignoreQuality: ignoreQuality)
 
         do {
             try await upsertItem(itemId: itemId, delta: +quantity, quality: quality, customName: customName)
@@ -146,6 +200,29 @@ final class WarehouseManager: ObservableObject {
     }
 
     // MARK: - 取出（仓库 → 背包）
+
+    /// 按 itemId 取出（合并展示后使用，自动跨多条记录扣除）
+    func withdrawByItemId(itemId: String, quantity: Int) async throws {
+        guard AuthManager.shared.currentUser != nil else { throw WarehouseError.notAuthenticated }
+        let totalInWarehouse = items.filter { $0.itemId == itemId }.reduce(0) { $0 + $1.quantity }
+        guard totalInWarehouse >= quantity else { throw WarehouseError.insufficientItems }
+        guard InventoryManager.shared.remainingCapacity >= quantity else { throw InventoryError.backpackFull }
+
+        // 跨多条记录扣除
+        let matching = items.filter { $0.itemId == itemId }.sorted { $0.quantity > $1.quantity }
+        var remaining = quantity
+        for warehouseItem in matching {
+            guard remaining > 0 else { break }
+            let deduct = min(warehouseItem.quantity, remaining)
+            try await deductItem(id: warehouseItem.id, quantity: deduct, current: warehouseItem.quantity)
+            remaining -= deduct
+        }
+
+        try await InventoryManager.shared.addItem(itemId: itemId, quantity: quantity, obtainedFrom: "warehouse")
+        await InventoryManager.shared.refreshInventory()
+        await refreshItems()
+        logger.log("仓库 → 背包：\(itemId) x\(quantity)", type: .success)
+    }
 
     func withdraw(item: WarehouseItem, quantity: Int) async throws {
         guard AuthManager.shared.currentUser != nil else { throw WarehouseError.notAuthenticated }
@@ -201,6 +278,24 @@ final class WarehouseManager: ObservableObject {
         } catch {
             logger.logError("产出入仓失败", error: error)
         }
+    }
+
+    // MARK: - 建造扣除（仓库直接减，不经过背包）
+
+    /// 建造时从仓库扣除材料（背包不足时补充）
+    func deductForConstruction(itemId: String, quantity: Int) async throws {
+        let matching = items.filter { $0.itemId == itemId }.sorted { $0.quantity > $1.quantity }
+        var remaining = quantity
+        for warehouseItem in matching {
+            guard remaining > 0 else { break }
+            let deduct = min(warehouseItem.quantity, remaining)
+            try await deductItem(id: warehouseItem.id, quantity: deduct, current: warehouseItem.quantity)
+            remaining -= deduct
+        }
+        if remaining > 0 {
+            throw WarehouseError.insufficientItems
+        }
+        await refreshItems()
     }
 
     // MARK: - Private

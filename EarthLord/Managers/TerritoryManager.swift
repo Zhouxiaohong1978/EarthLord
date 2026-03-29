@@ -168,6 +168,10 @@ final class TerritoryManager {
 
             print("✅ 领地上传成功，ID: \(newTerritory.id)")
             TerritoryLogger.shared.log("领地上传成功！面积: \(Int(area))m², ID: \(newTerritory.id)", type: .success)
+
+            // 通知每日任务系统刷新圈地进度
+            Task { await DailyTaskManager.shared.refresh() }
+
             return newTerritory.id
         } catch {
             TerritoryLogger.shared.log("领地上传失败: \(error.localizedDescription)", type: .error)
@@ -274,6 +278,18 @@ final class TerritoryManager {
 
     /// 加载当前用户的领地（包括关联账号的领地）
     /// - Returns: Territory 数组
+    /// 按 ID 拉取单个领地（用于刷新详情页）
+    func fetchTerritory(id: String) async throws -> Territory? {
+        let result: [Territory] = try await supabase
+            .from("territories")
+            .select()
+            .eq("id", value: id)
+            .limit(1)
+            .execute()
+            .value
+        return result.first
+    }
+
     func loadMyTerritories() async throws -> [Territory] {
         guard let userId = AuthManager.shared.currentUser?.id else {
             throw TerritoryError.notAuthenticated
@@ -468,18 +484,25 @@ final class TerritoryManager {
 
     /// 查找包含指定坐标的他人领地（用于搜刮税收）
     func findOtherTerritory(containing location: CLLocationCoordinate2D) -> Territory? {
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString.lowercased() else { return nil }
+        guard let userId = AuthManager.shared.currentUser?.id.uuidString.lowercased() else {
+            TerritoryLogger.shared.log("[税收] currentUser 为 nil，跳过领地检测", type: .warning)
+            return nil
+        }
+        TerritoryLogger.shared.log("[税收] 检测坐标(\(String(format: "%.5f", location.latitude)),\(String(format: "%.5f", location.longitude)))，缓存领地数量=\(territories.count)", type: .info)
         let otherTerritories = territories.filter { t in
             let isOther = t.userId.lowercased() != userId
             let isTest = t.name?.hasPrefix(Self.testTerritoryPrefix) ?? false
             return isOther || isTest
         }
+        TerritoryLogger.shared.log("[税收] 他人领地数量=\(otherTerritories.count)", type: .info)
         for territory in otherTerritories {
             let coords = territory.toCoordinates()
             if isPointInPolygon(point: location, polygon: coords) {
+                TerritoryLogger.shared.log("[税收] 命中领地: \(territory.name ?? territory.id)", type: .success)
                 return territory
             }
         }
+        TerritoryLogger.shared.log("[税收] 未命中任何他人领地", type: .info)
         return nil
     }
 
@@ -494,14 +517,15 @@ final class TerritoryManager {
         let taxAmount = max(1, Int(Double(itemCount) * Double(rate) / 100.0))
 
         do {
+            let visitData: [String: AnyJSON] = [
+                "territory_id": .string(territory.id),
+                "owner_id": .string(territory.userId),
+                "visitor_id": .string(visitorId.uuidString),
+                "tax_amount": .integer(taxAmount)
+            ]
             try await supabase
                 .from("territory_visits")
-                .insert([
-                    "territory_id": territory.id,
-                    "owner_id": territory.userId,
-                    "visitor_id": visitorId.uuidString,
-                    "tax_amount": String(taxAmount)
-                ])
+                .insert(visitData)
                 .execute()
             TerritoryLogger.shared.log("领地税收记录: 领地\(territory.id) 税\(taxAmount)件", type: .info)
         } catch {

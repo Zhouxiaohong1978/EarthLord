@@ -36,21 +36,25 @@ struct ItemPickerSheet: View {
     @State private var pendingItem: SelectableItem?
     @State private var pendingQuantity = 1
 
-    /// 可选物品列表
+    /// 可选物品列表（按 itemId 合并，避免同种物品因品质不同显示多行）
     private var selectableItems: [SelectableItem] {
         switch mode {
         case .fromInventory:
-            return inventoryManager.items.compactMap { backpackItem in
-                guard let definition = MockExplorationData.getItemDefinition(by: backpackItem.itemId) else {
-                    return nil
-                }
-                return SelectableItem(
-                    id: backpackItem.id.uuidString,
-                    definition: definition,
-                    availableQuantity: backpackItem.quantity,
-                    quality: backpackItem.quality
-                )
+            // 按 itemId 分组，数量加总
+            var grouped: [String: Int] = [:]
+            for item in inventoryManager.items {
+                grouped[item.itemId, default: 0] += item.quantity
             }
+            return grouped.compactMap { itemId, totalQty in
+                guard let definition = MockExplorationData.getItemDefinition(by: itemId) else { return nil }
+                return SelectableItem(
+                    id: itemId,
+                    definition: definition,
+                    availableQuantity: totalQty,
+                    quality: nil
+                )
+            }.sorted { $0.definition.name < $1.definition.name }
+
         case .fromAllItems:
             return MockExplorationData.itemDefinitions.map { definition in
                 SelectableItem(
@@ -242,30 +246,21 @@ struct ItemPickerSheet: View {
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
                     HStack(spacing: 6) {
-                        // 稀有度
-                        Text(item.definition.rarity.rawValue)
-                            .font(.system(size: 11))
-                            .foregroundColor(item.definition.rarity.color)
-
-                        // 库存数量
                         if let quantity = item.availableQuantity {
                             Text("库存: \(quantity)")
                                 .font(.system(size: 11))
                                 .foregroundColor(ApocalypseTheme.textSecondary)
                         }
 
-                        // 品质
-                        if let quality = item.quality {
-                            Text(quality.rawValue)
-                                .font(.system(size: 10))
-                                .foregroundColor(quality.color)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(
-                                    Capsule()
-                                        .fill(quality.color.opacity(0.15))
-                                )
-                        }
+                        Text(item.definition.rarity.rawValue)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(item.definition.rarity.color)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(item.definition.rarity.color.opacity(0.15))
+                            )
                     }
                 }
 

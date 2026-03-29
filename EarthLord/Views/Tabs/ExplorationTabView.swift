@@ -142,6 +142,7 @@ struct MailboxContentView: View {
         }
         .task {
             await mailboxManager.loadMails()
+            await WarehouseManager.shared.refreshItems()
         }
     }
 
@@ -194,9 +195,45 @@ struct MailboxContentView: View {
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text(LocalizedStringKey("购买物品后奖励将发送到这里"))
-                .font(.system(size: 14))
-                .foregroundColor(ApocalypseTheme.textMuted)
+            // 提示卡片
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    Image(systemName: "bag.fill")
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Text(LocalizedStringKey("购买的物资包物品将发放到此处"))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Spacer()
+                }
+                HStack(spacing: 10) {
+                    Image(systemName: "gift.fill")
+                        .foregroundColor(.orange)
+                    Text(LocalizedStringKey("订阅所获得的每日礼包将发放到此处"))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Spacer()
+                }
+                Divider().background(ApocalypseTheme.primary.opacity(0.3))
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.to.line")
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Text(LocalizedStringKey("收到物品后可领取进背包或直接存入仓库"))
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Spacer()
+                }
+            }
+            .padding(14)
+            .background(ApocalypseTheme.primary.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(ApocalypseTheme.primary.opacity(0.4), lineWidth: 1)
+            )
+            .cornerRadius(10)
+            .padding(.horizontal, 24)
 
             Spacer()
         }

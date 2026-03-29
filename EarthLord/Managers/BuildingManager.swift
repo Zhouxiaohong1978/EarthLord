@@ -213,7 +213,7 @@ final class BuildingManager: ObservableObject {
         logger.log("建造加速：使用\(count)个加速令，缩短\(count * 30)分钟", type: .success)
     }
 
-    /// 使用 InventoryManager 的背包数据检查是否可以建造
+    /// 使用背包 + 仓库合并资源检查是否可以建造
     /// - Parameters:
     ///   - template: 建筑模板
     ///   - territoryId: 领地 ID
@@ -222,14 +222,15 @@ final class BuildingManager: ObservableObject {
         template: BuildingTemplate,
         territoryId: String
     ) -> CanBuildResult {
-        // 从 InventoryManager 获取玩家资源
-        let inventory = InventoryManager.shared.items
+        // 背包资源
         var playerResources: [String: Int] = [:]
-
-        for item in inventory {
+        for item in InventoryManager.shared.items {
             playerResources[item.itemId, default: 0] += item.quantity
         }
-
+        // 仓库资源（补充背包不足的部分）
+        for item in WarehouseManager.shared.items {
+            playerResources[item.itemId, default: 0] += item.quantity
+        }
         return canBuild(template: template, territoryId: territoryId, playerResources: playerResources)
     }
 
@@ -271,20 +272,27 @@ final class BuildingManager: ObservableObject {
             throw BuildingError.insufficientResources(checkResult.missingResources)
         }
 
-        // 扣除资源（同种物品可能分散在多个品质条目中，需逐条扣除）
+        // 扣除资源：先从背包扣，不足部分从仓库补
         for (resourceId, requiredAmount) in template.requiredResources {
             var remaining = requiredAmount
-            // 按数量降序排列，优先从数量多的条目扣除
-            let matchingItems = InventoryManager.shared.items
+
+            // 1. 先扣背包（按数量降序）
+            let backpackItems = InventoryManager.shared.items
                 .filter { $0.itemId == resourceId }
                 .sorted { $0.quantity > $1.quantity }
 
-            for inventoryItem in matchingItems {
+            for inventoryItem in backpackItems {
                 guard remaining > 0 else { break }
                 let deductAmount = min(inventoryItem.quantity, remaining)
                 try await InventoryManager.shared.useItem(inventoryId: inventoryItem.id, quantity: deductAmount)
                 remaining -= deductAmount
-                logger.log("扣除资源: \(resourceId) x\(deductAmount) (剩余需扣: \(remaining))", type: .info)
+                logger.log("背包扣除: \(resourceId) x\(deductAmount) (剩余需扣: \(remaining))", type: .info)
+            }
+
+            // 2. 背包不足，从仓库补充剩余部分
+            if remaining > 0 {
+                try await WarehouseManager.shared.deductForConstruction(itemId: resourceId, quantity: remaining)
+                logger.log("仓库补扣: \(resourceId) x\(remaining)", type: .info)
             }
         }
 
@@ -325,6 +333,9 @@ final class BuildingManager: ObservableObject {
 
             // 更新本地数据
             playerBuildings.append(building)
+
+            // 重置领地90天到期计时器
+            await TerritoryManager.shared.updateLastActive(territoryId: territoryId)
 
             logger.log("建筑 \(template.name) 开始建造，预计 \(template.formattedBuildTime) 完成", type: .success)
 
@@ -379,6 +390,11 @@ final class BuildingManager: ObservableObject {
             playerBuildings[index].updatedAt = now
 
             logger.log("建筑 \(building.buildingName) 建造完成", type: .success)
+
+            // 仓库建筑完成后刷新容量
+            if ["storage_small", "storage_medium"].contains(building.templateId) {
+                Task { await WarehouseManager.shared.refreshItems() }
+            }
 
             // 触发建筑效果
             await applyBuildingEffects(templateId: building.templateId)
@@ -665,5 +681,72 @@ final class BuildingManager: ObservableObject {
     /// 计算发电机棚对通讯范围的加成倍率
     var generatorRangeBonus: Double {
         hasActiveBuilding(templateId: "generator_shed") ? 1.2 : 1.0
+    }
+
+    // MARK: - Building Production
+
+    /// 建筑产出配置（templateId → (itemId, quantity, intervalHours)）
+    func productionConfig(for templateId: String) -> (itemId: String, quantity: Int, intervalHours: Double)? {
+        switch templateId {
+        case "water_barrel": return ("water_bottle", 1, 24)
+        default: return nil
+        }
+    }
+
+    /// 该建筑是否有产出功能
+    func hasProduction(_ building: PlayerBuilding) -> Bool {
+        productionConfig(for: building.templateId) != nil
+    }
+
+    /// 是否可以领取产出
+    func canCollect(_ building: PlayerBuilding) -> Bool {
+        guard building.status == .active,
+              let config = productionConfig(for: building.templateId) else { return false }
+        guard let last = building.lastProducedAt else { return true }
+        return Date().timeIntervalSince(last) >= config.intervalHours * 3600
+    }
+
+    /// 距离下次产出的剩余秒数（nil 表示可立即领取）
+    func secondsUntilNextProduction(_ building: PlayerBuilding) -> Double? {
+        guard let config = productionConfig(for: building.templateId),
+              let last = building.lastProducedAt else { return nil }
+        let remaining = config.intervalHours * 3600 - Date().timeIntervalSince(last)
+        return remaining > 0 ? remaining : nil
+    }
+
+    /// 领取建筑产出
+    /// - Parameters:
+    ///   - buildingId: 建筑 ID
+    ///   - toWarehouse: true = 存入仓库，false = 存入背包
+    func collectProduction(buildingId: UUID, toWarehouse: Bool = false) async throws {
+        guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }) else { return }
+        let building = playerBuildings[index]
+        guard let config = productionConfig(for: building.templateId),
+              canCollect(building) else { return }
+
+        if toWarehouse {
+            // 直接入仓（不经过背包，产出是新生成物品）
+            guard WarehouseManager.shared.hasWarehouse else { throw WarehouseError.noWarehouseBuilt }
+            guard WarehouseManager.shared.remainingCapacity >= config.quantity else { throw WarehouseError.warehouseFull }
+            await WarehouseManager.shared.receiveOutput(itemId: config.itemId, quantity: config.quantity)
+        } else {
+            // 存入背包
+            try await InventoryManager.shared.addItem(
+                itemId: config.itemId,
+                quantity: config.quantity,
+                obtainedFrom: "building_\(building.templateId)"
+            )
+        }
+
+        // 更新 last_produced_at
+        let now = Date()
+        try await supabase
+            .from("player_buildings")
+            .update(["last_produced_at": now.ISO8601Format()])
+            .eq("id", value: buildingId.uuidString)
+            .execute()
+
+        playerBuildings[index].lastProducedAt = now
+        logger.log("领取产出: \(building.buildingName) → \(config.itemId) x\(config.quantity) (\(toWarehouse ? "仓库" : "背包"))", type: .success)
     }
 }

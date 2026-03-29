@@ -864,48 +864,71 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         // 优先使用探索期间捕获的档位（应对 StoreKit 异步验证延迟）
         let subscriptionTier = explorationEffectiveTier ?? SubscriptionManager.shared.currentTier
-        let itemCount = tier.adjustedItemCount(for: subscriptionTier)
-        if subscriptionTier != .free {
-            logger.log("订阅加成: \(subscriptionTier.rawValue) × \(subscriptionTier.walkRewardMultiplier) → \(itemCount) 件物品", type: .info)
-        }
-        // 每种物品类型只出现一次，确保奖励多样化
-        var usedItemIds: Set<String> = []
-        var rewards: [ObtainedItem] = []
 
-        // 保底：每次探索必给 1 瓶水 + 1 份食物（末日生存核心需求，新玩家留存关键）
-        for guaranteedId in ["water_bottle", "canned_food"] {
-            rewards.append(ObtainedItem(itemId: guaranteedId, quantity: 1, quality: generateRandomQuality()))
-            usedItemIds.insert(guaranteedId)
-            if rewards.count >= itemCount { break }
-        }
+        switch tier {
+        case .bronze:
+            // 铜级 (200-500m)：仅生存必需品，帮助新玩家活下去
+            let rewards = [
+                ObtainedItem(itemId: "water_bottle", quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "canned_food",  quantity: 1, quality: generateRandomQuality())
+            ]
+            logger.logReward(tier: tier, itemCount: rewards.count, items: rewards)
+            return rewards
 
-        // 金级保底：建造材料三选1~2（木材×3 / 布料×2 / 石头×2，新玩家建造篝火和庇护所核心材料）
-        if tier == .gold && rewards.count < itemCount {
-            let buildingMaterials: [(id: String, qty: Int)] = [
-                ("wood", 3), ("cloth", 2), ("stone", 2)
-            ].shuffled()
-            let pickCount = Int.random(in: 1...2)
-            for mat in buildingMaterials.prefix(pickCount) {
-                guard !usedItemIds.contains(mat.id), rewards.count < itemCount else { break }
-                rewards.append(ObtainedItem(itemId: mat.id, quantity: mat.qty, quality: generateRandomQuality()))
-                usedItemIds.insert(mat.id)
+        case .silver:
+            // 银级 (500m-1km)：食物×1 + 水×1 + 木材×3，开始积累篝火材料
+            let rewards = [
+                ObtainedItem(itemId: "water_bottle", quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "canned_food",  quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "wood",         quantity: 3, quality: generateRandomQuality())
+            ]
+            logger.logReward(tier: tier, itemCount: rewards.count, items: rewards)
+            return rewards
+
+        case .gold:
+            // 金级 (1km-2km)：食物×1 + 水×1 + 木材×3 + 布料×2 + 石头×2
+            // 木材+石头凑够篝火（15+10），木材+布料积累帐篷（50+30）
+            let rewards = [
+                ObtainedItem(itemId: "water_bottle", quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "canned_food",  quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "wood",         quantity: 3, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "cloth",        quantity: 2, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "stone",        quantity: 2, quality: generateRandomQuality())
+            ]
+            logger.logReward(tier: tier, itemCount: rewards.count, items: rewards)
+            return rewards
+
+        default:
+            // 钻石/传奇：保持原有随机系统 + 订阅加成
+            let itemCount = tier.adjustedItemCount(for: subscriptionTier)
+            if subscriptionTier != .free {
+                logger.log("订阅加成: \(subscriptionTier.rawValue) × \(subscriptionTier.walkRewardMultiplier) → \(itemCount) 件物品", type: .info)
             }
+
+            var usedItemIds: Set<String> = []
+            var rewards: [ObtainedItem] = []
+
+            // 保底：水 + 食物
+            for guaranteedId in ["water_bottle", "canned_food"] {
+                rewards.append(ObtainedItem(itemId: guaranteedId, quantity: 1, quality: generateRandomQuality()))
+                usedItemIds.insert(guaranteedId)
+                if rewards.count >= itemCount { break }
+            }
+
+            // 剩余槽位随机填充
+            var attempts = 0
+            let maxAttempts = max(itemCount, 4) * 10
+            while rewards.count < itemCount && attempts < maxAttempts {
+                attempts += 1
+                let item = generateRandomItem(tier: tier)
+                guard !usedItemIds.contains(item.itemId) else { continue }
+                usedItemIds.insert(item.itemId)
+                rewards.append(ObtainedItem(itemId: item.itemId, quantity: item.quantity, quality: item.quality))
+            }
+
+            logger.logReward(tier: tier, itemCount: itemCount, items: rewards)
+            return rewards
         }
-
-        // 剩余槽位随机填充
-        var attempts = 0
-        let maxAttempts = max(itemCount, 4) * 10  // 防止死循环
-
-        while rewards.count < itemCount && attempts < maxAttempts {
-            attempts += 1
-            let item = generateRandomItem(tier: tier)
-            guard !usedItemIds.contains(item.itemId) else { continue }
-            usedItemIds.insert(item.itemId)
-            rewards.append(ObtainedItem(itemId: item.itemId, quantity: 1, quality: item.quality))
-        }
-
-        logger.logReward(tier: tier, itemCount: itemCount, items: rewards)
-        return rewards
     }
 
     /// 生成随机物品
@@ -953,11 +976,11 @@ final class ExplorationManager: NSObject, ObservableObject {
         switch itemId {
         case "wood", "stone":
             switch tier {
-            case .bronze:   return Int.random(in: 2...4)
-            case .silver:   return Int.random(in: 3...6)
-            case .gold:     return Int.random(in: 5...9)
-            case .diamond:  return Int.random(in: 7...12)
-            case .legendary: return Int.random(in: 10...16)
+            case .bronze:   return Int.random(in: 8...15)   // 新玩家捡到就是一捆，3~5次探索够篝火
+            case .silver:   return Int.random(in: 12...20)
+            case .gold:     return Int.random(in: 15...25)
+            case .diamond:  return Int.random(in: 20...35)
+            case .legendary: return Int.random(in: 30...50)
             default:        return 1
             }
         case "scrap_metal", "nails", "rope", "cloth":
@@ -1051,6 +1074,16 @@ final class ExplorationManager: NSObject, ObservableObject {
                 await saveRewardsToInventory(items: rewards, sessionId: sessionId)
                 logger.log("✅ 已保存 \(rewards.count) 件物品到背包", type: .success)
             }
+
+            // 探索完成通知（仅有奖励档位时）
+            if result.rewardTier != .none {
+                NotificationManager.shared.sendExplorationCompleteNotification(
+                    tierName: result.rewardTier.displayName
+                )
+            }
+
+            // 通知每日任务系统刷新探索进度
+            Task { await DailyTaskManager.shared.refresh() }
         } catch {
             logger.logError("⚠️ 离线同步检测失败，保存到待同步包", error: error)
             // 保存失败（可能是网络问题），加入离线队列
@@ -1887,9 +1920,11 @@ extension ExplorationManager {
         currentProximityPOI = nil
 
         // 检查是否在他人领地内，若是则扣税
+        // 优先用玩家当前实际位置（更准确），无定位时回退到 POI 坐标
         var itemsToSave = selectedItems.map { $0.toObtainedItem() }
-        let poiCoord = scavengedPOI.coordinate
-        if let hostTerritory = TerritoryManager.shared.findOtherTerritory(containing: poiCoord) {
+        let checkCoord = LocationManager.shared.userLocation ?? scavengedPOI.coordinate
+        logger.log("[税收] 开始领地检测，使用坐标=\(LocationManager.shared.userLocation != nil ? "玩家位置" : "POI坐标")", type: .info)
+        if let hostTerritory = TerritoryManager.shared.findOtherTerritory(containing: checkCoord) {
             let taxCount = await TerritoryManager.shared.recordVisitAndTax(
                 territory: hostTerritory,
                 itemCount: itemsToSave.count

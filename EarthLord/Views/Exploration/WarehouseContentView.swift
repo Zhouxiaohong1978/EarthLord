@@ -13,14 +13,17 @@ struct WarehouseContentView: View {
     @ObservedObject private var inventoryManager = InventoryManager.shared
     @State private var showDepositSheet = false
     @State private var selectedItem: WarehouseItem?
-    @State private var withdrawQuantity: Int = 1
-    @State private var showWithdrawSheet = false
     @State private var errorMessage: String?
     @State private var isProcessing = false
 
     var body: some View {
         Group {
-            if !warehouseManager.hasWarehouse {
+            if warehouseManager.isLoading && warehouseManager.totalCapacity == 0 {
+                // 首次加载中，避免误显示"暂无仓库"
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !warehouseManager.hasWarehouse {
                 noWarehouseView
             } else {
                 warehouseView
@@ -30,10 +33,8 @@ struct WarehouseContentView: View {
         .sheet(isPresented: $showDepositSheet) {
             DepositSheet()
         }
-        .sheet(isPresented: $showWithdrawSheet) {
-            if let item = selectedItem {
-                WithdrawSheet(item: item)
-            }
+        .sheet(item: $selectedItem) { item in
+            WithdrawSheet(item: item)
         }
         .alert("操作失败", isPresented: .constant(errorMessage != nil)) {
             Button("确定") { errorMessage = nil }
@@ -231,11 +232,10 @@ struct WarehouseContentView: View {
     private var itemList: some View {
         ScrollView {
             LazyVStack(spacing: 10) {
-                ForEach(warehouseManager.items) { item in
+                ForEach(warehouseManager.groupedItems) { item in
                     if let definition = MockExplorationData.getItemDefinition(by: item.itemId) {
                         WarehouseItemCard(item: item, definition: definition) {
                             selectedItem = item
-                            showWithdrawSheet = true
                         }
                     }
                 }
@@ -327,10 +327,11 @@ struct DepositSheet: View {
     private var depositableItems: [(itemId: String, quantity: Int, item: BackpackItem)] {
         var seen = Set<String>()
         return inventoryManager.items.compactMap { item in
-            let key = item.itemId + (item.quality?.rawValue ?? "")
-            guard !seen.contains(key) else { return nil }
-            seen.insert(key)
-            let total = inventoryManager.items.filter { $0.itemId == item.itemId && $0.quality == item.quality }.reduce(0) { $0 + $1.quantity }
+            guard !seen.contains(item.itemId) else { return nil }
+            seen.insert(item.itemId)
+            let total = inventoryManager.items
+                .filter { $0.itemId == item.itemId }
+                .reduce(0) { $0 + $1.quantity }
             return (itemId: item.itemId, quantity: total, item: item)
         }
     }
@@ -396,11 +397,12 @@ struct DepositSheet: View {
         isProcessing = true
         defer { isProcessing = false }
         do {
+            // quality 传 nil：同种物品不区分品质合并存入
             try await warehouseManager.deposit(
                 itemId: item.itemId,
                 quantity: quantity,
-                quality: item.quality,
-                customName: item.customName
+                quality: nil,
+                customName: nil
             )
         } catch {
             errorMessage = error.localizedDescription

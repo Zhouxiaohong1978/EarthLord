@@ -105,40 +105,52 @@ enum BackpackFilterType: CaseIterable, Identifiable {
     case material
     case tool
     case medical
+    case weapon
+    case clothing
+    case misc
 
     var id: String { title }
 
     var title: String {
         switch self {
-        case .all: return "全部"
-        case .food: return "食物"
-        case .water: return "水"
-        case .material: return "材料"
-        case .tool: return "工具"
-        case .medical: return "医疗"
+        case .all:      return "全部"
+        case .food:     return ItemCategory.food.rawValue
+        case .water:    return ItemCategory.water.rawValue
+        case .material: return ItemCategory.material.rawValue
+        case .tool:     return ItemCategory.tool.rawValue
+        case .medical:  return ItemCategory.medical.rawValue
+        case .weapon:   return ItemCategory.weapon.rawValue
+        case .clothing: return ItemCategory.clothing.rawValue
+        case .misc:     return ItemCategory.misc.rawValue
         }
     }
 
     var icon: String {
         switch self {
-        case .all: return "square.grid.2x2.fill"
-        case .food: return "fork.knife"
-        case .water: return "drop.fill"
-        case .material: return "cube.fill"
-        case .tool: return "wrench.and.screwdriver.fill"
-        case .medical: return "cross.case.fill"
+        case .all:      return "square.grid.2x2.fill"
+        case .food:     return ItemCategory.food.icon
+        case .water:    return ItemCategory.water.icon
+        case .material: return ItemCategory.material.icon
+        case .tool:     return ItemCategory.tool.icon
+        case .medical:  return ItemCategory.medical.icon
+        case .weapon:   return ItemCategory.weapon.icon
+        case .clothing: return ItemCategory.clothing.icon
+        case .misc:     return ItemCategory.misc.icon
         }
     }
 
     /// 转换为 ItemCategory
     var category: ItemCategory? {
         switch self {
-        case .all: return nil
-        case .food: return .food
-        case .water: return .water
+        case .all:      return nil
+        case .food:     return .food
+        case .water:    return .water
         case .material: return .material
-        case .tool: return .tool
-        case .medical: return .medical
+        case .tool:     return .tool
+        case .medical:  return .medical
+        case .weapon:   return .weapon
+        case .clothing: return .clothing
+        case .misc:     return .misc
         }
     }
 }
@@ -164,7 +176,7 @@ struct BackpackView: View {
     @State private var listAnimationID = UUID()
 
     /// 是否首次加载
-    @State private var isFirstLoad = true
+    @State private var isFirstLoad = false
 
     // MARK: - 容量配置
 
@@ -239,8 +251,8 @@ struct BackpackView: View {
                     .padding(.top, 16)
 
                 // 物品列表或空状态
-                if inventoryManager.isLoading && isFirstLoad {
-                    // 首次加载中
+                if inventoryManager.isLoading && inventoryManager.items.isEmpty {
+                    // 加载中且列表为空时显示骨架
                     loadingState
                 } else if inventoryManager.items.isEmpty {
                     // 背包完全为空
@@ -275,12 +287,9 @@ struct BackpackView: View {
             }
         }
         .onAppear {
-            // 首次加载背包数据
-            if isFirstLoad {
-                Task {
-                    await inventoryManager.refreshInventory()
-                    isFirstLoad = false
-                }
+            Task {
+                await inventoryManager.refreshInventory()
+                isFirstLoad = false
             }
             // 进度条动画
             withAnimation(.easeOut(duration: 0.8).delay(0.2)) {

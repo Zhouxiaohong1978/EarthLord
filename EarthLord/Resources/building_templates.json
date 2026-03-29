@@ -11,8 +11,8 @@
       "description_en": "A basic fire source providing light and warmth. Reduces vitals decay by 5% when built.",
       "icon": "flame.fill",
       "required_resources": {
-        "wood": 30,
-        "stone": 20
+        "wood": 15,
+        "stone": 10
       },
       "upgrade_resources": [
         {"wood": 20, "stone": 10},

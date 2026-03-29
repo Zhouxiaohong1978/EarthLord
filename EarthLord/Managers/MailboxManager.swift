@@ -181,6 +181,13 @@ final class MailboxManager: ObservableObject {
             logger.log("RPC 返回结果: 已领 \(result.claimedCount) 件，剩余 \(result.remainingCount) 件", type: .info)
             logger.log("已领取物品: \(result.claimedItems.map { "\($0.itemId) x\($0.quantity)" })", type: .info)
 
+            // 购买/奖励类邮件全部领完后自动删除
+            let autoDeleteTypes: [MailType] = [.purchase, .reward]
+            if result.remainingCount == 0, autoDeleteTypes.contains(mail.mailType) {
+                try? await deleteMail(mail)
+                logger.log("邮件已自动删除（全部领取）: \(mail.title)", type: .info)
+            }
+
             // 刷新邮件列表
             await loadMails()
 
@@ -238,6 +245,13 @@ final class MailboxManager: ObservableObject {
                 quantity: item.quantity,
                 quality: quality
             )
+        }
+
+        // 购买/奖励类邮件存入仓库后自动删除
+        let autoDeleteTypes: [MailType] = [.purchase, .reward]
+        if autoDeleteTypes.contains(mail.mailType) {
+            try? await deleteMail(mail)
+            logger.log("邮件已自动删除（存入仓库）: \(mail.title)", type: .info)
         }
 
         await loadMails()
@@ -316,6 +330,9 @@ final class MailboxManager: ObservableObject {
 
         _ = try await supabase.rpc("send_mail", params: params).execute()
         logger.log("自动投递邮件: \(title)，\(items.count) 种物品", type: .success)
+
+        // 触发本地通知
+        NotificationManager.shared.sendNewMailNotification(title: title)
     }
 
     // MARK: - 测试方法（开发用）

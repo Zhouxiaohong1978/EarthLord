@@ -647,7 +647,7 @@ final class TradeManager: ObservableObject {
     /// - Returns: 可用数量
     private func getAvailableQuantity(itemId: String, quality: ItemQuality?) -> Int {
         return inventoryManager.items
-            .filter { $0.itemId == itemId && $0.quality == quality }
+            .filter { $0.itemId == itemId && (quality == nil || $0.quality == quality) }
             .reduce(0) { $0 + $1.quantity }
     }
 
@@ -657,7 +657,7 @@ final class TradeManager: ObservableObject {
     ///   - quality: 品质（可选）
     /// - Returns: 背包物品
     private func findInventoryItem(itemId: String, quality: ItemQuality?) -> BackpackItem? {
-        return inventoryManager.items.first { $0.itemId == itemId && $0.quality == quality }
+        return inventoryManager.items.first { $0.itemId == itemId && (quality == nil || $0.quality == quality) }
     }
 
     /// 从库存中扣除物品（支持跨多条记录扣除）
@@ -669,7 +669,7 @@ final class TradeManager: ObservableObject {
         var remainingQuantity = quantity
 
         // 获取所有匹配的库存记录
-        let matchingItems = inventoryManager.items.filter { $0.itemId == itemId && $0.quality == quality }
+        let matchingItems = inventoryManager.items.filter { $0.itemId == itemId && (quality == nil || $0.quality == quality) }
 
         for item in matchingItems {
             if remainingQuantity <= 0 { break }
@@ -755,7 +755,7 @@ final class TradeManager: ObservableObject {
         let offerCount = try await supabase
             .from("trade_offers")
             .select("id", head: false, count: .exact)
-            .eq("seller_id", value: userId.uuidString)
+            .eq("owner_id", value: userId.uuidString)
             .gte("created_at", value: today.ISO8601Format())
             .lt("created_at", value: tomorrow.ISO8601Format())
             .execute()

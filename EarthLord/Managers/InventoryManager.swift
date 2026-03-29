@@ -359,9 +359,9 @@ final class InventoryManager: ObservableObject {
     /// 按关键词匹配，无命中则使用 fallback（原 item_id）
     static func classifyDisassembleMaterial(from name: String, fallback: String) -> String {
         // 电子/科技类 → 电子元件
-        let electronic = ["电池", "显卡", "芯片", "电路", "电子", "模块", "充电", "信号", "天线", "雷达",
+        let electronic = ["电池", "显卡", "芯片", "电路", "电子", "模块", "充电", "充电宝", "信号", "天线", "雷达",
                           "传感器", "处理器", "内存", "硬盘", "路由", "摄像", "屏幕", "面板", "主板",
-                          "控制器", "变压器", "线圈", "继电器"]
+                          "控制器", "变压器", "线圈", "继电器", "电源", "适配器", "数据线", "电容", "电阻"]
         if electronic.contains(where: { name.contains($0) }) { return "electronic_component" }
 
         // 金属类 → 废金属

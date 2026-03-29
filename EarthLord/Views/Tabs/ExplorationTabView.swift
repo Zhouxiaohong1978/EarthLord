@@ -768,6 +768,10 @@ struct BackpackContentView: View {
     @State private var selectedFilter: BackpackFilterType = .all
     @State private var animatedCapacity: Double = 0
 
+    // 拆解确认（提升到父层，避免 LazyVStack 内 confirmationDialog 失效）
+    @State private var showDisassembleConfirm = false
+    @State private var pendingDisassemble: (itemId: String, customName: String, quantity: Int)?
+
     /// 当前容量（物品总数量）
     private var currentCapacity: Double {
         Double(inventoryManager.totalItemCount)
@@ -845,6 +849,15 @@ struct BackpackContentView: View {
 
     // MARK: - Body
 
+    private var disassembleReturnName: String {
+        guard let p = pendingDisassemble else { return "" }
+        let returnId = InventoryManager.classifyDisassembleMaterial(from: p.customName, fallback: p.itemId)
+        return MockExplorationData.getItemDefinition(by: returnId)?.name ?? returnId
+    }
+    private var disassembleReturnQty: Int {
+        max(1, Int(Double(pendingDisassemble?.quantity ?? 1) * 0.6))
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // 容量状态卡
@@ -875,6 +888,26 @@ struct BackpackContentView: View {
                 itemList
                     .padding(.top, 8)
             }
+        }
+        .confirmationDialog(
+            "拆解 \(pendingDisassemble?.customName ?? "")",
+            isPresented: $showDisassembleConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("确认拆解（返还 \(disassembleReturnName)×\(disassembleReturnQty)）", role: .destructive) {
+                guard let p = pendingDisassemble else { return }
+                Task { @MainActor in
+                    if let item = inventoryManager.items.first(where: {
+                        $0.itemId == p.itemId && $0.customName == p.customName
+                    }) {
+                        try? await InventoryManager.shared.disassembleItem(item)
+                    }
+                    pendingDisassemble = nil
+                }
+            }
+            Button("取消", role: .cancel) { pendingDisassemble = nil }
+        } message: {
+            Text("将被分解为 \(disassembleReturnName)，回收率 60%")
         }
         .onAppear {
             // 首次加载背包数据
@@ -1029,13 +1062,8 @@ struct BackpackContentView: View {
                         }
                     },
                     onDisassemble: {
-                        Task { @MainActor in
-                            if let backpackItem = inventoryManager.items.first(where: {
-                                $0.itemId == group.itemId && $0.customName == group.customName
-                            }) {
-                                try? await InventoryManager.shared.disassembleItem(backpackItem)
-                            }
-                        }
+                        pendingDisassemble = (group.itemId, group.customName ?? "", group.totalQuantity)
+                        showDisassembleConfirm = true
                     }
                 )
             }
@@ -1157,17 +1185,8 @@ struct BackpackItemCardNew: View {
     var onUse: (() -> Void)? = nil
     var onDisassemble: (() -> Void)? = nil
 
-    @State private var showDisassembleConfirm = false
-
     private var isAIItem: Bool { customName != nil }
     private var displayName: String { customName ?? LanguageManager.shared.localizedString(for: definition.name) }
-    private var disassembleReturn: Int { max(1, Int(Double(totalQuantity) * 0.6)) }
-    private var disassembleReturnItemId: String {
-        InventoryManager.classifyDisassembleMaterial(from: customName ?? "", fallback: itemId)
-    }
-    private var disassembleReturnName: String {
-        MockExplorationData.getItemDefinition(by: disassembleReturnItemId)?.name ?? disassembleReturnItemId
-    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1226,7 +1245,7 @@ struct BackpackItemCardNew: View {
             // 操作按钮
             if isAIItem {
                 Button {
-                    showDisassembleConfirm = true
+                    onDisassemble?()
                 } label: {
                     Text("拆解")
                         .font(.system(size: 12, weight: .medium))
@@ -1261,18 +1280,6 @@ struct BackpackItemCardNew: View {
                         .strokeBorder(isAIItem ? ApocalypseTheme.warning.opacity(0.4) : Color.clear, lineWidth: 1)
                 )
         )
-        .confirmationDialog(
-            "拆解 \(displayName)",
-            isPresented: $showDisassembleConfirm,
-            titleVisibility: .visible
-        ) {
-            Button("确认拆解（返还 \(disassembleReturnName)×\(disassembleReturn)）", role: .destructive) {
-                onDisassemble?()
-            }
-            Button("取消", role: .cancel) {}
-        } message: {
-            Text("将被分解为 \(disassembleReturnName)，回收率 60%")
-        }
     }
 }
 

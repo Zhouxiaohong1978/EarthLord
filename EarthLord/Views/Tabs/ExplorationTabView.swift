@@ -1022,6 +1022,15 @@ struct BackpackContentView: View {
                                         try? await PhysiqueManager.shared.useItem(backpackItem)
                                     }
                                 }
+                            },
+                            onDisassemble: {
+                                Task { @MainActor in
+                                    if let backpackItem = inventoryManager.items.first(where: {
+                                        $0.itemId == group.itemId && $0.customName == group.customName
+                                    }) {
+                                        try? await InventoryManager.shared.disassembleItem(backpackItem)
+                                    }
+                                }
                             }
                         )
                     }
@@ -1112,29 +1121,47 @@ struct BackpackItemCardNew: View {
     let definition: ItemDefinition
     var customName: String? = nil
     var onUse: (() -> Void)? = nil
+    var onDisassemble: (() -> Void)? = nil
+
+    @State private var showDisassembleConfirm = false
+
+    private var isAIItem: Bool { customName != nil }
+    private var displayName: String { customName ?? LanguageManager.shared.localizedString(for: definition.name) }
+    private var disassembleReturn: Int { max(1, Int(Double(totalQuantity) * 0.6)) }
+    private var disassembleReturnItemId: String {
+        InventoryManager.classifyDisassembleMaterial(from: customName ?? "", fallback: itemId)
+    }
+    private var disassembleReturnName: String {
+        MockExplorationData.getItemDefinition(by: disassembleReturnItemId)?.name ?? disassembleReturnItemId
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             // 物品图标
             ZStack {
                 Circle()
-                    .fill(definition.category.color.opacity(0.2))
+                    .fill(definition.category.color.opacity(isAIItem ? 0.3 : 0.2))
                     .frame(width: 52, height: 52)
 
                 Image(systemName: definition.category.icon)
                     .font(.system(size: 22))
                     .foregroundColor(definition.category.color)
+
+                if isAIItem {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10))
+                        .foregroundColor(ApocalypseTheme.warning)
+                        .offset(x: 18, y: -18)
+                }
             }
 
             // 物品信息
             VStack(alignment: .leading, spacing: 6) {
                 // 名称和数量
                 HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(customName ?? LanguageManager.shared.localizedString(for: definition.name))
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(ApocalypseTheme.textPrimary)
-                    }
+                    Text(displayName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
 
                     Spacer()
 
@@ -1143,24 +1170,40 @@ struct BackpackItemCardNew: View {
                         .foregroundColor(ApocalypseTheme.primary)
                 }
 
-                // 稀有度
+                // 稀有度 / AI物品基底材料
                 HStack(spacing: 8) {
-                    Text(LanguageManager.shared.localizedString(for: definition.rarity.rawValue))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(definition.rarity.color)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(definition.rarity.color.opacity(0.15))
-                        )
+                    if isAIItem {
+                        Text("基底：\(definition.name)")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    } else {
+                        Text(LanguageManager.shared.localizedString(for: definition.rarity.rawValue))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(definition.rarity.color)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(definition.rarity.color.opacity(0.15)))
+                    }
                 }
             }
 
             Spacer()
 
-            // 使用按钮（仅食物/水/药品）
-            if definition.category == .food || definition.category == .water || definition.category == .medical {
+            // 操作按钮
+            if isAIItem {
+                Button {
+                    showDisassembleConfirm = true
+                } label: {
+                    Text("拆解")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 48, height: 26)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(ApocalypseTheme.warning)
+                        )
+                }
+            } else if definition.category == .food || definition.category == .water || definition.category == .medical {
                 Button {
                     onUse?()
                 } label: {
@@ -1178,8 +1221,24 @@ struct BackpackItemCardNew: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(ApocalypseTheme.cardBackground)
+                .fill(isAIItem ? ApocalypseTheme.cardBackground.opacity(0.8) : ApocalypseTheme.cardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(isAIItem ? ApocalypseTheme.warning.opacity(0.4) : Color.clear, lineWidth: 1)
+                )
         )
+        .confirmationDialog(
+            "拆解 \(displayName)",
+            isPresented: $showDisassembleConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("确认拆解（返还 \(disassembleReturnName)×\(disassembleReturn)）", role: .destructive) {
+                onDisassemble?()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("将被分解为 \(disassembleReturnName)，回收率 60%")
+        }
     }
 }
 

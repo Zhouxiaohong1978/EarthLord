@@ -2,7 +2,7 @@
 //  LeaderboardManager.swift
 //  EarthLord
 //
-//  排行榜数据管理器 - 探索距离 / 领地面积 / 建筑数量
+//  排行榜数据管理器 - 搜刮次数 / 领地面积 / 建筑数量
 //
 
 import Foundation
@@ -27,13 +27,13 @@ final class LeaderboardManager: ObservableObject {
     static let shared = LeaderboardManager()
 
     enum Category: String, CaseIterable {
-        case distance  = "探索距离"
+        case scavenges = "搜刮次数"
         case territory = "领地面积"
         case buildings = "建筑数量"
 
         var icon: String {
             switch self {
-            case .distance:  return "figure.walk"
+            case .scavenges: return "magnifyingglass.circle.fill"
             case .territory: return "map.fill"
             case .buildings: return "building.2.fill"
             }
@@ -41,7 +41,7 @@ final class LeaderboardManager: ObservableObject {
 
         var iconColor: Color {
             switch self {
-            case .distance:  return ApocalypseTheme.info
+            case .scavenges: return ApocalypseTheme.info
             case .territory: return ApocalypseTheme.success
             case .buildings: return ApocalypseTheme.primary
             }
@@ -49,9 +49,8 @@ final class LeaderboardManager: ObservableObject {
 
         func formattedValue(_ value: Double) -> String {
             switch self {
-            case .distance:
-                if value >= 1000 { return String(format: "%.1f km", value / 1000) }
-                return String(format: "%.0f m", value)
+            case .scavenges:
+                return "\(Int(value)) 次"
             case .territory:
                 if value >= 1_000_000 { return String(format: "%.2f km²", value / 1_000_000) }
                 return String(format: "%.0f m²", value)
@@ -101,8 +100,8 @@ final class LeaderboardManager: ObservableObject {
             let aggregated: [(userId: String, value: Double)]
 
             switch category {
-            case .distance:
-                aggregated = try await fetchDistanceRanking(timeFilter: timeFilter)
+            case .scavenges:
+                aggregated = try await fetchScavengesRanking(timeFilter: timeFilter)
             case .territory:
                 aggregated = try await fetchTerritoryRanking(timeFilter: timeFilter)
             case .buildings:
@@ -172,14 +171,14 @@ final class LeaderboardManager: ObservableObject {
         return result
     }
 
-    private func fetchDistanceRanking(timeFilter: TimeFilter) async throws -> [(userId: String, value: Double)] {
+    private func fetchScavengesRanking(timeFilter: TimeFilter) async throws -> [(userId: String, value: Double)] {
         struct Record: Codable {
             let userId: String
-            let distanceWalked: Double
+            let scavengeCount: Int
             let startedAt: String?
             enum CodingKeys: String, CodingKey {
                 case userId = "user_id"
-                case distanceWalked = "distance_walked"
+                case scavengeCount = "scavenge_count"
                 case startedAt = "started_at"
             }
         }
@@ -188,17 +187,17 @@ final class LeaderboardManager: ObservableObject {
 
         var query = supabase
             .from("exploration_sessions")
-            .select("user_id, distance_walked, started_at")
+            .select("user_id, scavenge_count, started_at")
             .eq("status", value: "completed")
+            .gt("scavenge_count", value: 0)
         if let start = timeFilter.startDate {
             query = query.gte("started_at", value: ISO8601DateFormatter().string(from: start))
         }
         let records: [Record] = try await query.execute().value
 
         var totals: [String: Double] = [:]
-        for r in records { totals[r.userId, default: 0] += r.distanceWalked }
+        for r in records { totals[r.userId, default: 0] += Double(r.scavengeCount) }
 
-        // 合并全部用户，无记录默认 0
         let allProfiles = try await allProfilesTask
         for uid in allProfiles.keys where totals[uid] == nil {
             totals[uid] = 0

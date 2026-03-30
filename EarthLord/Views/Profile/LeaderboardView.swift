@@ -2,7 +2,7 @@
 //  LeaderboardView.swift
 //  EarthLord
 //
-//  排行榜视图 - 探索距离 / 领地面积 / 建筑数量
+//  排行榜视图 - 搜刮次数 / 领地面积 / 建筑数量
 //
 
 import SwiftUI
@@ -10,7 +10,7 @@ import SwiftUI
 struct LeaderboardView: View {
 
     @StateObject private var manager = LeaderboardManager.shared
-    @State private var selectedCategory: LeaderboardManager.Category = .distance
+    @State private var selectedCategory: LeaderboardManager.Category = .scavenges
     @State private var selectedTime: LeaderboardManager.TimeFilter = .all
 
     var body: some View {

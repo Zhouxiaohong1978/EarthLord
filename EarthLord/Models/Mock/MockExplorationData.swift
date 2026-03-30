@@ -184,7 +184,7 @@ extension POIType {
 
 /// 物品分类枚举
 enum ItemCategory: String, CaseIterable {
-    case water = "水类"
+    case water = "饮料"
     case food = "食物"
     case medical = "医疗"
     case material = "材料"
@@ -273,6 +273,7 @@ struct BackpackItem: Identifiable, Equatable, Codable {
     let obtainedAt: Date            // 获得时间
     let obtainedFrom: String?       // 获得来源（如：废弃超市）
     let customName: String?         // AI 生成的物品名（可选）
+    let customDescription: String?  // AI 生成的背景故事（可选）
 
     init(
         id: UUID = UUID(),
@@ -281,7 +282,8 @@ struct BackpackItem: Identifiable, Equatable, Codable {
         quality: ItemQuality? = nil,
         obtainedAt: Date = Date(),
         obtainedFrom: String? = nil,
-        customName: String? = nil
+        customName: String? = nil,
+        customDescription: String? = nil
     ) {
         self.id = id
         self.itemId = itemId
@@ -290,6 +292,7 @@ struct BackpackItem: Identifiable, Equatable, Codable {
         self.obtainedAt = obtainedAt
         self.obtainedFrom = obtainedFrom
         self.customName = customName
+        self.customDescription = customDescription
     }
 
     /// 计算该物品的总重量

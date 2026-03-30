@@ -48,27 +48,27 @@ struct PTTCallView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header with device info
-            headerView
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header with device info
+                headerView
 
-            Spacer()
+                // Status display
+                statusDisplay
+                    .padding(.vertical, 24)
 
-            // Status display
-            statusDisplay
+                // PTT button area
+                pttButtonArea
 
-            Spacer()
+                // Quick messages
+                quickMessageBar
 
-            // PTT button area
-            pttButtonArea
-
-            // Quick messages
-            quickMessageBar
-
-            // Emergency toggle
-            emergencyToggle
+                // Emergency toggle
+                emergencyToggle
+                    .padding(.bottom, 16)
+            }
         }
-        .padding(.bottom, 20)
+        .scrollBounceBehavior(.basedOnSize)
         .background(ApocalypseTheme.background)
         .overlay {
             // Sent feedback overlay
@@ -118,7 +118,8 @@ struct PTTCallView: View {
             // 目标频道选择
             targetChannelSelector
         }
-        .padding(.top, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Target Channel Selector

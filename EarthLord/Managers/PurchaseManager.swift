@@ -44,6 +44,9 @@ final class PurchaseManager: ObservableObject {
     /// 交易监听任务
     private var transactionListener: Task<Void, Never>?
 
+    /// 正在由 purchase() 主流程处理的交易 ID（防止 Transaction.updates 重复发货）
+    private var activeTransactionIds = Set<UInt64>()
+
     /// 日志器
     private let logger = ExplorationLogger.shared
 
@@ -121,6 +124,10 @@ final class PurchaseManager: ObservableObject {
             switch result {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
+
+                // 标记此交易正在处理，防止 Transaction.updates 监听器重复发货
+                activeTransactionIds.insert(transaction.id)
+                defer { activeTransactionIds.remove(transaction.id) }
 
                 // 发货
                 try await deliverPurchase(transaction)
@@ -328,7 +335,7 @@ final class PurchaseManager: ObservableObject {
         let expiresAt = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        try? await supabase
+        _ = try? await supabase
             .from("mailbox")
             .update(["expires_at": formatter.string(from: expiresAt)])
             .eq("purchase_id", value: purchaseId.uuidString)
@@ -381,8 +388,14 @@ final class PurchaseManager: ObservableObject {
             return
         }
 
+        // purchase() 正在处理此交易，跳过以防重复发货
+        if activeTransactionIds.contains(transaction.id) {
+            logger.log("跳过重复处理: transaction \(transaction.id) 正由 purchase() 处理", type: .info)
+            return
+        }
+
         do {
-            // 检查是否已发货
+            // 检查数据库是否已有发货记录
             let existing: [PurchaseDB] = try await supabase
                 .from("purchases")
                 .select()

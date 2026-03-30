@@ -94,6 +94,13 @@ struct ProfileTabView: View {
                 if let uid = authManager.currentUser?.id.uuidString {
                     localAvatar = AvatarStore.load(for: uid)
                 }
+
+                // 每次 tab 出现都刷新探索统计（探索结束返回时数据最新）
+                Task {
+                    await explorationStatsManager.refreshStats()
+                    _ = try? await explorationStatsManager.getExplorationHistory(limit: 200)
+                }
+
                 guard !hasPreloaded else { return }
 
                 hasPreloaded = true
@@ -108,9 +115,6 @@ struct ProfileTabView: View {
                     if let list = try? await TerritoryManager.shared.loadMyTerritories() {
                         myTerritories = list
                     }
-                    try? await Task.sleep(nanoseconds: 300_000_000)
-                    await explorationStatsManager.refreshStats()
-                    _ = try? await explorationStatsManager.getExplorationHistory(limit: 200)
                     try? await Task.sleep(nanoseconds: 500_000_000)
                     await buildingManager.refreshBuildings()
                     try? await Task.sleep(nanoseconds: 500_000_000)
@@ -408,8 +412,8 @@ struct ProfileTabView: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 bigMetricCard(icon: "figure.walk",    iconColor: ApocalypseTheme.info,    value: filteredDistance,                      label: "距离")
                 bigMetricCard(icon: "map.fill",       iconColor: ApocalypseTheme.success, value: filteredArea,                          label: "面积")
-                bigMetricCard(icon: "binoculars.fill", iconColor: ApocalypseTheme.primary, value: "\(filteredExplorationCount) \(LanguageManager.shared.localizedString(for: "次"))", label: "探索废墟")
-                achievementCard
+                bigMetricCard(icon: "binoculars.fill", iconColor: ApocalypseTheme.primary, value: "\(filteredScavengeCount) \(LanguageManager.shared.localizedString(for: "个"))", label: "搜刮废墟")
+                bigMetricCard(icon: "flame.fill", iconColor: Color(red: 1.0, green: 0.45, blue: 0.1), value: "\(filteredCalories) kcal", label: "消耗卡路里")
             }
 
             // 每日礼包（订阅用户）
@@ -517,51 +521,30 @@ struct ProfileTabView: View {
         return String(format: "%.0f m²", total)
     }
 
-    /// 时间筛选后的探索次数
-    private var filteredExplorationCount: Int {
+    /// 时间筛选后的搜刮废墟总数
+    private var filteredScavengeCount: Int {
         let history = explorationStatsManager.history
-        guard let start = statsTimeFilter.startDate else { return history.count }
-        return history.filter { $0.startTime >= start }.count
+        guard let start = statsTimeFilter.startDate else {
+            return history.reduce(0) { $0 + $1.scavengeCount }
+        }
+        return history.filter { $0.startTime >= start }.reduce(0) { $0 + $1.scavengeCount }
     }
 
-    private var achievementCard: some View {
-        let unlocked = AchievementManager.shared.totalUnlocked
-        let total    = AchievementManager.shared.totalCount
-        let progress = total > 0 ? Double(unlocked) / Double(total) : 0
-        let gold     = Color(red: 1.0, green: 0.85, blue: 0.0)
-
-        return VStack(alignment: .leading, spacing: 8) {
-            // 圆形进度环
-            ZStack {
-                Circle()
-                    .stroke(gold.opacity(0.2), lineWidth: 4)
-                Circle()
-                    .trim(from: 0, to: progress)
-                    .stroke(gold, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.6), value: progress)
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(gold)
-            }
-            .frame(width: 36, height: 36)
-
-            // 数字
-            Text(verbatim: "\(unlocked)/\(total) \(LanguageManager.shared.localizedString(for: "项"))")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-
-            Text(LocalizedStringKey("解锁成就"))
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textSecondary)
+    /// 时间筛选后消耗卡路里（步行 60 kcal/km）
+    private var filteredCalories: String {
+        let history = explorationStatsManager.history
+        let filtered: [ExplorationHistoryItem]
+        if let start = statsTimeFilter.startDate {
+            filtered = history.filter { $0.startTime >= start }
+        } else {
+            filtered = history
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(ApocalypseTheme.cardBackground)
-        .cornerRadius(14)
+        let totalMeters = filtered.reduce(0.0) { $0 + $1.distance }
+        let kcal = totalMeters / 1000.0 * 60.0
+        if kcal >= 1000 {
+            return String(format: "%.1f k", kcal / 1000)
+        }
+        return String(format: "%.0f", kcal)
     }
 
     private func bigMetricCard(icon: String, iconColor: Color, value: String, label: String) -> some View {

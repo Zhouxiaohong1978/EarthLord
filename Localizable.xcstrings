@@ -159,6 +159,9 @@
     "「%@」附近" : {
 
     },
+    "【%@】奖励已发送到邮箱" : {
+
+    },
     "/" : {
       "localizations" : {
         "en" : {
@@ -349,6 +352,9 @@
           }
         }
       }
+    },
+    "%d / 3 已完成" : {
+
     },
     "%d 个" : {
       "localizations" : {
@@ -633,6 +639,9 @@
         }
       }
     },
+    "%lld/3" : {
+
+    },
     "%lld/50" : {
       "localizations" : {
         "en" : {
@@ -675,6 +684,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld%%"
+          }
+        }
+      }
+    },
+    "%lldh %lldm" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lldh %2$lldm"
           }
         }
       }
@@ -2276,22 +2295,24 @@
       }
     },
     "mailbox.usage.daily.desc" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daily exclusive gift delivered to your mailbox"
+            "value" : "Subscription daily gifts are delivered here — claim to backpack or warehouse"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每天首次登录专属礼包发放到邮箱"
+            "value" : "订阅所获得的每日礼包发放到此处，可领取进背包或仓库"
           }
         }
       }
     },
     "mailbox.usage.daily.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2308,6 +2329,7 @@
       }
     },
     "mailbox.usage.expiry_note" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2324,6 +2346,7 @@
       }
     },
     "mailbox.usage.exploration.desc" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2340,6 +2363,7 @@
       }
     },
     "mailbox.usage.exploration.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2356,22 +2380,24 @@
       }
     },
     "mailbox.usage.purchase.desc" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Items from IAP purchases are delivered here"
+            "value" : "Purchased supply packs are delivered here — claim to backpack or warehouse"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "购买的物资包物品通过邮箱发放"
+            "value" : "购买的物资包物品发放到此处，可领取进背包或仓库"
           }
         }
       }
     },
     "mailbox.usage.purchase.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2388,6 +2414,7 @@
       }
     },
     "mailbox.usage.trade.desc" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2404,6 +2431,7 @@
       }
     },
     "mailbox.usage.trade.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3247,6 +3275,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "技术支持"
+          }
+        }
+      }
+    },
+    "settings.terms" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms of Service"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用户协议"
           }
         }
       }
@@ -4697,6 +4741,9 @@
         }
       }
     },
+    "今日圈地" : {
+
+    },
     "今日已领取" : {
       "localizations" : {
         "en" : {
@@ -4738,6 +4785,12 @@
           }
         }
       }
+    },
+    "今日进度" : {
+
+    },
+    "今日通讯" : {
+
     },
     "介绍一下自己吧…" : {
       "localizations" : {
@@ -4873,6 +4926,12 @@
           }
         }
       }
+    },
+    "任务奖励已发放" : {
+
+    },
+    "任务尚未完成" : {
+
     },
     "优先客服支持" : {
       "extractionState" : "stale",
@@ -5066,6 +5125,12 @@
           }
         }
       }
+    },
+    "体征濒死，无法圈地！先出去搜刮食物和水补充体力" : {
+
+    },
+    "体征警告：你正处于濒死状态！" : {
+
     },
     "你从废墟中醒来" : {
       "extractionState" : "stale",
@@ -5497,6 +5562,9 @@
         }
       }
     },
+    "共 %d 条消息" : {
+
+    },
     "关于" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5914,9 +5982,6 @@
         }
       }
     },
-    "删除所有已领取的邮件？此操作不可撤销" : {
-
-    },
     "删除账户" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6086,6 +6151,9 @@
           }
         }
       }
+    },
+    "前往通讯频道" : {
+
     },
     "前往邮箱" : {
       "extractionState" : "stale",
@@ -7158,6 +7226,9 @@
         }
       }
     },
+    "可领取" : {
+
+    },
     "史诗" : {
       "localizations" : {
         "en" : {
@@ -7292,6 +7363,15 @@
         }
       }
     },
+    "圈地 ≥ 1 块（当前%lld块）" : {
+
+    },
+    "圈地 ≥ 10 块（当前%lld块）" : {
+
+    },
+    "圈地 ≥ 20 块（当前%lld块）" : {
+
+    },
     "圈地功能测试" : {
       "localizations" : {
         "en" : {
@@ -7410,6 +7490,9 @@
         }
       }
     },
+    "在任意频道发送 1 条消息" : {
+
+    },
     "在地图中查看" : {
       "localizations" : {
         "en" : {
@@ -7520,6 +7603,9 @@
           }
         }
       }
+    },
+    "基底：%@" : {
+
     },
     "基本信息" : {
       "extractionState" : "stale",
@@ -7640,6 +7726,9 @@
         }
       }
     },
+    "奖励已领取" : {
+
+    },
     "奖励等级" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7715,6 +7804,9 @@
     "存入失败" : {
 
     },
+    "存入背包" : {
+
+    },
     "存活" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7748,6 +7840,19 @@
           }
         }
       }
+    },
+    "完成【%@】，获得：%@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "完成【%1$@】，获得：%2$@"
+          }
+        }
+      }
+    },
+    "完成一次探索（行走 ≥ 200 米）" : {
+
     },
     "完成的交易会显示在这里" : {
       "localizations" : {
@@ -7939,6 +8044,9 @@
           }
         }
       }
+    },
+    "将被分解为 %@，回收率 60%%" : {
+
     },
     "小时" : {
       "localizations" : {
@@ -8413,6 +8521,9 @@
         }
       }
     },
+    "已解锁对讲频道" : {
+
+    },
     "已解锁成就" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8445,6 +8556,9 @@
           }
         }
       }
+    },
+    "已解锁营地频道" : {
+
     },
     "已订阅" : {
       "localizations" : {
@@ -8536,6 +8650,9 @@
           }
         }
       }
+    },
+    "已进入「%@」" : {
+
     },
     "已选 %d 件超出剩余容量 %d 格，请取消勾选" : {
       "localizations" : {
@@ -9298,6 +9415,15 @@
         }
       }
     },
+    "建造「瞭望台」解锁对讲机" : {
+
+    },
+    "建造「营地电台」解锁营地电台" : {
+
+    },
+    "建造「领主指挥所」解锁卫星电话" : {
+
+    },
     "建造与交易" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9388,6 +9514,9 @@
           }
         }
       }
+    },
+    "建造小仓库后可使用此选项" : {
+
     },
     "建造所需" : {
       "localizations" : {
@@ -10111,6 +10240,9 @@
         }
       }
     },
+    "成功圈占 1 块新领地" : {
+
+    },
     "成功领取 %lld 件物品！" : {
       "localizations" : {
         "en" : {
@@ -10387,6 +10519,12 @@
           }
         }
       }
+    },
+    "拆解" : {
+
+    },
+    "拆解 %@" : {
+
     },
     "拆除" : {
       "localizations" : {
@@ -10689,6 +10827,9 @@
           }
         }
       }
+    },
+    "探索完成" : {
+
     },
     "探索完成！" : {
       "localizations" : {
@@ -11267,6 +11408,9 @@
         }
       }
     },
+    "收到物品后可领取进背包或直接存入仓库" : {
+
+    },
     "收起" : {
       "localizations" : {
         "en" : {
@@ -11447,6 +11591,9 @@
         }
       }
     },
+    "新的每日任务等你完成，完成后可领取建造材料奖励！" : {
+
+    },
     "新芽" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11480,6 +11627,12 @@
           }
         }
       }
+    },
+    "新邮件" : {
+
+    },
+    "无前置频道要求" : {
+
     },
     "无效的坐标数据" : {
       "localizations" : {
@@ -11667,6 +11820,9 @@
         }
       }
     },
+    "暂无内容" : {
+
+    },
     "暂无可用频道" : {
       "localizations" : {
         "en" : {
@@ -11700,10 +11856,8 @@
         }
       }
     },
-    "暂无已领取的邮件可清理" : {
-
-    },
     "暂无广播" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11810,6 +11964,7 @@
       }
     },
     "暂无邮件" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12051,6 +12206,9 @@
         }
       }
     },
+    "未知领地" : {
+
+    },
     "未订阅" : {
       "localizations" : {
         "en" : {
@@ -12082,6 +12240,9 @@
           }
         }
       }
+    },
+    "未设置，点击编辑" : {
+
     },
     "未设置呼号" : {
       "localizations" : {
@@ -12180,6 +12341,9 @@
           }
         }
       }
+    },
+    "本周主题：%@" : {
+
     },
     "本月" : {
       "extractionState" : "stale",
@@ -12620,6 +12784,9 @@
         }
       }
     },
+    "每日 00:00 自动刷新" : {
+
+    },
     "每日专属礼包" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12653,6 +12820,12 @@
           }
         }
       }
+    },
+    "每日任务奖励：%@" : {
+
+    },
+    "每日任务已刷新" : {
+
     },
     "每日礼包" : {
       "localizations" : {
@@ -13160,9 +13333,6 @@
         }
       }
     },
-    "清理已领取邮件" : {
-
-    },
     "清空" : {
       "localizations" : {
         "en" : {
@@ -13258,6 +13428,9 @@
           }
         }
       }
+    },
+    "濒死状态下无法开始圈地" : {
+
     },
     "点击「使用」即可恢复体征并激活增益" : {
       "extractionState" : "stale",
@@ -13459,6 +13632,9 @@
           }
         }
       }
+    },
+    "特殊物品" : {
+
     },
     "独行者" : {
       "extractionState" : "stale",
@@ -14069,6 +14245,16 @@
         }
       }
     },
+    "确认拆解（返还 %@×%lld）" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "确认拆解（返还 %1$@×%2$lld）"
+          }
+        }
+      }
+    },
     "确认接受交易" : {
       "localizations" : {
         "en" : {
@@ -14384,6 +14570,9 @@
           }
         }
       }
+    },
+    "立即出去探索，搜刮食物和水并使用补给体征" : {
+
     },
     "立即搜刮" : {
       "localizations" : {
@@ -15096,6 +15285,9 @@
         }
       }
     },
+    "编辑广播消息" : {
+
+    },
     "编辑资料" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -15554,6 +15746,9 @@
         }
       }
     },
+    "获得 %@ 级奖励，已发送到邮箱！" : {
+
+    },
     "获得物品" : {
       "localizations" : {
         "en" : {
@@ -15716,6 +15911,7 @@
       }
     },
     "解锁成就" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -15789,6 +15985,9 @@
           }
         }
       }
+    },
+    "订阅所获得的每日礼包将发放到此处" : {
+
     },
     "订阅探索者或领主，每日领取专属礼包" : {
       "localizations" : {
@@ -15984,6 +16183,9 @@
           }
         }
       }
+    },
+    "访客在你的领地搜刮时会看到此消息" : {
+
     },
     "评价 %@" : {
       "localizations" : {
@@ -16331,6 +16533,9 @@
         }
       }
     },
+    "请输入有效的频道名称" : {
+
+    },
     "请选择目标频道" : {
       "localizations" : {
         "en" : {
@@ -16492,6 +16697,7 @@
       }
     },
     "购买物品后奖励将发送到这里" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -16540,6 +16746,9 @@
           }
         }
       }
+    },
+    "购买的物资包物品将发放到此处" : {
+
     },
     "购买确认弹窗预览" : {
       "extractionState" : "stale",
@@ -16937,6 +17146,9 @@
         }
       }
     },
+    "输入领地公告（最多50字）" : {
+
+    },
     "输入领地名称（可跳过）" : {
       "localizations" : {
         "en" : {
@@ -17220,6 +17432,9 @@
         }
       }
     },
+    "选择存放位置" : {
+
+    },
     "选择建造位置" : {
       "localizations" : {
         "en" : {
@@ -17479,6 +17694,7 @@
       }
     },
     "邮箱" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -17509,9 +17725,6 @@
           }
         }
       }
-    },
-    "邮箱用途" : {
-
     },
     "邮箱验证" : {
       "localizations" : {
@@ -17859,6 +18072,31 @@
         }
       }
     },
+    "需要先解锁对讲频道" : {
+
+    },
+    "需要先解锁营地频道" : {
+
+    },
+    "需要圈地 %d 块（当前 %d 块）" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "需要圈地 %1$d 块（当前 %2$d 块）"
+          }
+        }
+      }
+    },
+    "需要建造「瞭望台」解锁对讲机" : {
+
+    },
+    "需要建造「营地电台」解锁营地电台设备" : {
+
+    },
+    "需要建造「领主指挥所」解锁卫星电话" : {
+
+    },
     "需要支援" : {
       "localizations" : {
         "en" : {
@@ -18015,6 +18253,9 @@
           }
         }
       }
+    },
+    "领取产出" : {
+
     },
     "领取失败" : {
       "localizations" : {
@@ -18194,6 +18435,9 @@
         }
       }
     },
+    "领地广播消息" : {
+
+    },
     "领地总面积 10,000 m²" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -18290,6 +18534,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "领地登记成功！"
+          }
+        }
+      }
+    },
+    "领地税收 %d%% · 扣除 %d 件物品" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "领地税收 %1$d%% · 扣除 %2$d 件物品"
           }
         }
       }

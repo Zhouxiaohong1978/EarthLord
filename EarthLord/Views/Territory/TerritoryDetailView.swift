@@ -586,9 +586,13 @@ struct TerritoryDetailView: View {
             buildingManager.loadTemplates()
         }
 
-        // 加载建筑列表
         Task {
-            try? await buildingManager.fetchPlayerBuildings(territoryId: territory.id)
+            // 从数据库刷新领地数据（获取最新 last_active_at，确保到期计算正确）
+            if let fresh = try? await TerritoryManager.shared.fetchTerritory(id: territory.id) {
+                territory = fresh
+            }
+            // 加载建筑列表
+            try await buildingManager.fetchPlayerBuildings(territoryId: territory.id)
         }
     }
 
@@ -634,7 +638,8 @@ struct TerritoryDetailView: View {
                     allowTrading: territory.allowTrading,
                     lastActiveAt: territory.lastActiveAt,
                     broadcastMessage: territory.broadcastMessage,
-                    taxRate: territory.taxRate
+                    taxRate: territory.taxRate,
+                    buildingCount: territory.buildingCount
                 )
 
                 newTerritoryName = ""
@@ -727,7 +732,8 @@ struct TerritoryDetailView: View {
             allowTrading: true,
             lastActiveAt: nil,
             broadcastMessage: nil,
-            taxRate: 10
+            taxRate: 10,
+            buildingCount: nil
         )
     )
 }

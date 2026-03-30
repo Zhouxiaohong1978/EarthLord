@@ -1131,7 +1131,8 @@ final class ExplorationManager: NSObject, ObservableObject {
                     quality: item.quality,
                     obtainedFrom: "探索",
                     sessionId: sessionId?.isEmpty == false ? sessionId : nil,
-                    customName: item.customName
+                    customName: item.customName,
+                    customDescription: item.story
                 )
                 logger.log("✅ 物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
             } catch {

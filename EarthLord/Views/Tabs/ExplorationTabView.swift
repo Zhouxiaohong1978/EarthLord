@@ -851,7 +851,8 @@ struct BackpackContentView: View {
 
     private var disassembleReturnName: String {
         guard let p = pendingDisassemble else { return "" }
-        let returnId = InventoryManager.classifyDisassembleMaterial(from: p.customName, fallback: p.itemId)
+        let desc = inventoryManager.items.first(where: { $0.itemId == p.itemId && $0.customName == p.customName })?.customDescription
+        let returnId = InventoryManager.classifyDisassembleMaterial(from: p.customName, description: desc, fallback: p.itemId)
         return MockExplorationData.getItemDefinition(by: returnId)?.name ?? returnId
     }
     private var disassembleReturnQty: Int {

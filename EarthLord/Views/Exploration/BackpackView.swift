@@ -568,7 +568,7 @@ struct BackpackItemCard: View {
     private var displayName: String { item.customName ?? definition.name }
     private var disassembleReturn: Int { max(1, Int(Double(item.quantity) * 0.6)) }
     private var disassembleReturnItemId: String {
-        InventoryManager.classifyDisassembleMaterial(from: item.customName ?? "", fallback: item.itemId)
+        InventoryManager.classifyDisassembleMaterial(from: item.customName ?? "", description: item.customDescription, fallback: item.itemId)
     }
     private var disassembleReturnName: String {
         MockExplorationData.getItemDefinition(by: disassembleReturnItemId)?.name ?? disassembleReturnItemId

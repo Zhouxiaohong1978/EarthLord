@@ -226,6 +226,7 @@ struct PlayerBuilding: Identifiable, Codable {
     var buildCompletedAt: Date?
     let createdAt: Date
     var updatedAt: Date
+    var lastProducedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -241,6 +242,7 @@ struct PlayerBuilding: Identifiable, Codable {
         case buildCompletedAt = "build_completed_at"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case lastProducedAt = "last_produced_at"
     }
 
     /// 检查建造是否已完成（根据时间）
@@ -322,6 +324,7 @@ struct PlayerBuildingDB: Codable {
     let buildCompletedAt: String?
     let createdAt: String?
     let updatedAt: String?
+    let lastProducedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -337,6 +340,7 @@ struct PlayerBuildingDB: Codable {
         case buildCompletedAt = "build_completed_at"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case lastProducedAt = "last_produced_at"
     }
 
     /// 转换为 PlayerBuilding
@@ -348,13 +352,20 @@ struct PlayerBuildingDB: Codable {
             return nil
         }
 
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let fmtFull = ISO8601DateFormatter()
+        fmtFull.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let fmtBasic = ISO8601DateFormatter()
+        fmtBasic.formatOptions = [.withInternetDateTime]
 
-        let buildStarted = dateFormatter.date(from: buildStartedAt) ?? Date()
-        let buildCompleted = buildCompletedAt.flatMap { dateFormatter.date(from: $0) }
-        let created = createdAt.flatMap { dateFormatter.date(from: $0) } ?? Date()
-        let updated = updatedAt.flatMap { dateFormatter.date(from: $0) } ?? Date()
+        func parseDate(_ s: String) -> Date? {
+            fmtFull.date(from: s) ?? fmtBasic.date(from: s)
+        }
+
+        let buildStarted = parseDate(buildStartedAt) ?? Date()
+        let buildCompleted = buildCompletedAt.flatMap { parseDate($0) }
+        let created = createdAt.flatMap { parseDate($0) } ?? Date()
+        let updated = updatedAt.flatMap { parseDate($0) } ?? Date()
+        let lastProduced = lastProducedAt.flatMap { parseDate($0) }
 
         return PlayerBuilding(
             id: id,
@@ -369,7 +380,8 @@ struct PlayerBuildingDB: Codable {
             buildStartedAt: buildStarted,
             buildCompletedAt: buildCompleted,
             createdAt: created,
-            updatedAt: updated
+            updatedAt: updated,
+            lastProducedAt: lastProduced
         )
     }
 }

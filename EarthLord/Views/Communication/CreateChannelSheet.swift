@@ -20,41 +20,121 @@ struct CreateChannelSheet: View {
     @State private var errorMessage: String?
 
     @ObservedObject private var commManager = CommunicationManager.shared
-
     private var isValidName: Bool {
         channelName.count >= 2 && channelName.count <= 50
     }
 
-    /// 当前选中频道类型所需的设备是否已解锁
-    private var isRequiredDeviceUnlocked: Bool {
-        let required = requiredDevice(for: selectedType)
-        guard let required else { return true }
-        return commManager.devices.first(where: { $0.deviceType == required })?.isUnlocked ?? false
+    /// 玩家当前有效领地数量
+    private var territoryCount: Int {
+        guard let userId = authManager.currentUser?.id.uuidString.lowercased() else { return 0 }
+        return TerritoryManager.shared.territories.filter {
+            $0.isActive == true && $0.userId.lowercased() == userId
+        }.count
     }
 
-    /// 未解锁时的提示文字
-    private var deviceUnlockHint: String? {
-        guard !isRequiredDeviceUnlocked else { return nil }
-        switch selectedType {
-        case .public, .walkie:
-            return String(localized: "需要先建造「瞭望台」解锁对讲机")
-        case .camp:
-            return String(localized: "需要先建造「营地电台」解锁营地电台设备")
-        case .satellite:
-            return String(localized: "需要先建造「领主指挥所」解锁卫星电话")
-        default:
-            return nil
+    /// 频道类型所需最少领地数
+    private func requiredTerritoryCount(for type: ChannelType) -> Int {
+        switch type {
+        case .walkie:    return 1
+        case .camp:      return 10
+        case .satellite: return 20
+        default:         return 0
         }
     }
 
     /// 频道类型对应的必需设备
     private func requiredDevice(for type: ChannelType) -> DeviceType? {
         switch type {
-        case .public, .walkie: return .walkieTalkie
-        case .camp:            return .campRadio
-        case .satellite:       return .satellite
-        default:               return nil
+        case .public:    return nil
+        case .walkie:    return .walkieTalkie
+        case .camp:      return .campRadio
+        case .satellite: return .satellite
+        default:         return nil
         }
+    }
+
+    /// 单项设备条件是否满足
+    private func isDeviceUnlocked(for type: ChannelType) -> Bool {
+        let required = requiredDevice(for: type)
+        guard let required else { return true }
+        return commManager.devices.first(where: { $0.deviceType == required })?.isUnlocked ?? false
+    }
+
+    /// 单项领地条件是否满足
+    private func isTerritoryMet(for type: ChannelType) -> Bool {
+        territoryCount >= requiredTerritoryCount(for: type)
+    }
+
+    /// 级联检查：该频道及其前置频道的所有条件是否全部满足
+    private func isFullyUnlocked(for type: ChannelType) -> Bool {
+        switch type {
+        case .public:
+            return true
+        case .walkie:
+            return isTerritoryMet(for: .walkie) && isDeviceUnlocked(for: .walkie)
+        case .camp:
+            return isFullyUnlocked(for: .walkie)
+                && isTerritoryMet(for: .camp) && isDeviceUnlocked(for: .camp)
+        case .satellite:
+            return isFullyUnlocked(for: .camp)
+                && isTerritoryMet(for: .satellite) && isDeviceUnlocked(for: .satellite)
+        default:
+            return true
+        }
+    }
+
+    /// 当前选中频道类型的所有解锁条件是否满足
+    private var isRequiredDeviceUnlocked: Bool {
+        isFullyUnlocked(for: selectedType)
+    }
+
+    /// 未满足条件时的提示文字（按优先级显示最前置的未满足条件）
+    private var deviceUnlockHint: String? {
+        var hints: [String] = []
+
+        // 对讲频道前置条件
+        if selectedType == .camp || selectedType == .satellite {
+            if !isFullyUnlocked(for: .walkie) {
+                hints.append(String(localized: "需要先解锁对讲频道"))
+            }
+        }
+
+        // 营地频道前置条件
+        if selectedType == .satellite {
+            if isFullyUnlocked(for: .walkie) && !isFullyUnlocked(for: .camp) {
+                hints.append(String(localized: "需要先解锁营地频道"))
+            }
+        }
+
+        // 当前频道自身条件（仅在前置已满足时显示）
+        let prerequisiteMet: Bool = {
+            switch selectedType {
+            case .camp:      return isFullyUnlocked(for: .walkie)
+            case .satellite: return isFullyUnlocked(for: .camp)
+            default:         return true
+            }
+        }()
+
+        if prerequisiteMet {
+            if !isTerritoryMet(for: selectedType) {
+                let needed = requiredTerritoryCount(for: selectedType)
+                hints.append(String(format: String(localized: "需要圈地 %d 块（当前 %d 块）"), needed, territoryCount))
+            }
+            if !isDeviceUnlocked(for: selectedType) {
+                switch selectedType {
+                case .walkie:
+                    hints.append(String(localized: "需要建造「瞭望台」解锁对讲机"))
+                case .camp:
+                    hints.append(String(localized: "需要建造「营地电台」解锁营地电台设备"))
+                case .satellite:
+                    hints.append(String(localized: "需要建造「领主指挥所」解锁卫星电话"))
+                default:
+                    break
+                }
+            }
+        }
+
+        return hints.isEmpty ? nil : hints.joined(separator: "\n")
     }
 
     var body: some View {
@@ -115,11 +195,11 @@ struct CreateChannelSheet: View {
     }
 
     private func channelTypeCard(_ type: ChannelType) -> some View {
-        let required = requiredDevice(for: type)
-        let unlocked = required == nil || (commManager.devices.first(where: { $0.deviceType == required })?.isUnlocked ?? false)
+        let unlocked = isFullyUnlocked(for: type)
 
         return Button(action: { selectedType = type }) {
             VStack(spacing: 8) {
+                // 图标
                 ZStack {
                     Circle()
                         .fill(type.color.opacity(selectedType == type ? 0.3 : 0.15))
@@ -142,15 +222,32 @@ struct CreateChannelSheet: View {
                     .fontWeight(.medium)
                     .foregroundColor(unlocked ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
 
-                Text(type.description)
-                    .font(.caption2)
-                    .foregroundColor(ApocalypseTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
+                // 解锁需求列表（公共频道不显示）
+                if type != .public {
+                    Divider()
+                        .background(ApocalypseTheme.textSecondary.opacity(0.2))
+                        .padding(.vertical, 2)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(requirementItems(for: type), id: \.label) { item in
+                            HStack(spacing: 5) {
+                                Image(systemName: item.met ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(item.met ? .green : ApocalypseTheme.textMuted)
+                                Text(item.label)
+                                    .font(.system(size: 10))
+                                    .foregroundColor(item.met ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .padding(.horizontal, 8)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(ApocalypseTheme.cardBackground)
@@ -162,7 +259,41 @@ struct CreateChannelSheet: View {
                             )
                     )
             )
-            .opacity(unlocked ? 1.0 : 0.5)
+            .opacity(unlocked ? 1.0 : 0.6)
+        }
+    }
+
+    /// 每个频道类型的三条解锁需求
+    private func requirementItems(for type: ChannelType) -> [(label: String, met: Bool)] {
+        switch type {
+        case .walkie:
+            return [
+                (String(localized: "圈地 ≥ 1 块（当前\(territoryCount)块）"),
+                 isTerritoryMet(for: .walkie)),
+                (String(localized: "建造「瞭望台」解锁对讲机"),
+                 isDeviceUnlocked(for: .walkie)),
+                (String(localized: "无前置频道要求"), true)
+            ]
+        case .camp:
+            return [
+                (String(localized: "已解锁对讲频道"),
+                 isFullyUnlocked(for: .walkie)),
+                (String(localized: "圈地 ≥ 10 块（当前\(territoryCount)块）"),
+                 isTerritoryMet(for: .camp)),
+                (String(localized: "建造「营地电台」解锁营地电台"),
+                 isDeviceUnlocked(for: .camp))
+            ]
+        case .satellite:
+            return [
+                (String(localized: "已解锁营地频道"),
+                 isFullyUnlocked(for: .camp)),
+                (String(localized: "圈地 ≥ 20 块（当前\(territoryCount)块）"),
+                 isTerritoryMet(for: .satellite)),
+                (String(localized: "建造「领主指挥所」解锁卫星电话"),
+                 isDeviceUnlocked(for: .satellite))
+            ]
+        default:
+            return []
         }
     }
 

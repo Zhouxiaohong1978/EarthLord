@@ -405,7 +405,7 @@ private struct TerritoryCard: View {
         if let days = territory.daysUntilExpiry, days <= 14 {
             return (String(format: String(localized: "剩余%d天"), days), .orange)
         }
-        if territory.isInBuildPeriod {
+        if territory.isInBuildPeriod && (territory.buildingCount ?? 0) == 0 {
             if let days = territory.daysUntilBuildDeadline {
                 return (String(format: String(localized: "建设期%d天"), days), Color(red: 0.2, green: 0.6, blue: 1.0))
             }

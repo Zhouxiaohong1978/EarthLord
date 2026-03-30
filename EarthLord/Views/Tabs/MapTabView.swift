@@ -289,9 +289,9 @@ struct MapTabView: View {
         // 探索结果弹窗
         .sheet(isPresented: $showExplorationResult) {
             if let result = explorationManager.explorationResult {
-                ExplorationResultView(result: result) { selectedIds in
+                ExplorationResultView(result: result, onConfirm: { selectedIds in
                     Task { await explorationManager.confirmExplorationRewards(selectedIds: selectedIds) }
-                }
+                })
             }
         }
         // 探索失败弹窗

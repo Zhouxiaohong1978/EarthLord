@@ -123,6 +123,12 @@ struct SettingsDetailView: View {
                             .foregroundColor(ApocalypseTheme.textPrimary)
                     }
                     .listRowBackground(ApocalypseTheme.cardBackground)
+
+                    Link(destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!) {
+                        Text("settings.terms")
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                    }
+                    .listRowBackground(ApocalypseTheme.cardBackground)
                 } header: {
                     Text("settings.section.support")
                         .foregroundColor(ApocalypseTheme.textSecondary)

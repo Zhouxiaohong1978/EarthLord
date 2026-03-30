@@ -114,7 +114,8 @@ final class InventoryManager: ObservableObject {
                     quality: quality,
                     obtainedAt: obtainedAt,
                     obtainedFrom: dbItem.obtainedFrom,
-                    customName: dbItem.customName
+                    customName: dbItem.customName,
+                    customDescription: dbItem.customDescription
                 )
             }
 
@@ -168,7 +169,8 @@ final class InventoryManager: ObservableObject {
         quality: ItemQuality? = nil,
         obtainedFrom: String? = nil,
         sessionId: String? = nil,
-        customName: String? = nil
+        customName: String? = nil,
+        customDescription: String? = nil
     ) async throws {
         guard let userId = AuthManager.shared.currentUser?.id else {
             throw InventoryError.notAuthenticated
@@ -203,7 +205,8 @@ final class InventoryManager: ObservableObject {
                 "quality": quality != nil ? .string(quality!.rawValue) : .null,
                 "obtained_from": obtainedFrom != nil ? .string(obtainedFrom!) : .null,
                 "exploration_session_id": sessionId != nil ? .string(sessionId!) : .null,
-                "custom_name": customName != nil ? .string(customName!) : .null
+                "custom_name": customName != nil ? .string(customName!) : .null,
+                "custom_description": customDescription != nil ? .string(customDescription!) : .null
             ]
 
             try await supabase
@@ -355,59 +358,68 @@ final class InventoryManager: ObservableObject {
 
     // MARK: - 拆解
 
-    /// 根据 AI 物品名称推断应返还的标准材料 ID
-    /// 按关键词匹配，无命中则使用 fallback（原 item_id）
-    static func classifyDisassembleMaterial(from name: String, fallback: String) -> String {
+    /// 根据 AI 物品名称+描述推断应返还的标准材料 ID
+    /// 名称和描述同时匹配，无命中则使用 fallback（原 item_id）
+    static func classifyDisassembleMaterial(from name: String, description: String? = nil, fallback: String) -> String {
+        let combined = name + (description.map { " " + $0 } ?? "")
         // 电子/科技类 → 电子元件
-        let electronic = ["电池", "显卡", "芯片", "电路", "电子", "模块", "充电", "充电宝", "信号", "天线", "雷达",
-                          "传感器", "处理器", "内存", "硬盘", "路由", "摄像", "屏幕", "面板", "主板",
+        // 工具类（描述中提到"工具"优先）→ 工具
+        let toolHints = ["改装为工具", "用作工具", "当作工具", "制作工具", "简易工具", "充当工具"]
+        if toolHints.contains(where: { combined.contains($0) }) { return "tool" }
+
+        // 建造支撑/框架 → 废金属（铝/钢支架等）
+        let buildHints = ["搭建庇护所", "庇护所支架", "建造支架", "搭建支架", "用于支撑", "临时支架"]
+        if buildHints.contains(where: { combined.contains($0) }) { return "scrap_metal" }
+
+        // 电子/科技类 → 电子元件
+        let electronic = ["电池", "显卡", "芯片", "电路", "电子", "模块", "充电", "充电宝", "信号", "天线",
+                          "雷达", "传感器", "处理器", "内存", "硬盘", "路由", "摄像", "屏幕", "面板", "主板",
                           "控制器", "变压器", "线圈", "继电器", "电源", "适配器", "数据线", "电容", "电阻"]
-        if electronic.contains(where: { name.contains($0) }) { return "electronic_component" }
+        if electronic.contains(where: { combined.contains($0) }) { return "electronic_component" }
 
         // 金属类 → 废金属
         let metal = ["金属", "钢铁", "铸铁", "合金", "铜", "铝", "铁", "钢", "齿轮", "螺丝", "螺母",
-                     "轴承", "弹片", "链条", "锁具", "铆钉", "弹簧", "刀片", "钢管"]
-        if metal.contains(where: { name.contains($0) }) { return "scrap_metal" }
+                     "轴承", "弹片", "链条", "锁具", "锁芯", "铆钉", "弹簧", "刀片", "钢管", "窗框", "门框"]
+        if metal.contains(where: { combined.contains($0) }) { return "scrap_metal" }
 
         // 木制类 → 木材
         let wood = ["木", "板材", "竹", "木棍", "木框", "木架", "木箱", "树枝", "柴火", "桌腿",
                     "椅背", "木门", "木桌", "木椅", "托盘"]
-        if wood.contains(where: { name.contains($0) }) { return "wood" }
+        if wood.contains(where: { combined.contains($0) }) { return "wood" }
 
         // 石/混凝土类 → 石头
-        let stone = ["混凝土", "水泥", "砖块", "石块", "岩石", "碎石", "石板", "石砖", "陶瓷",
-                     "瓷砖", "石材"]
-        if stone.contains(where: { name.contains($0) }) { return "stone" }
+        let stone = ["混凝土", "水泥", "砖块", "石块", "岩石", "碎石", "石板", "石砖", "陶瓷", "瓷砖", "石材"]
+        if stone.contains(where: { combined.contains($0) }) { return "stone" }
 
-        // 布料/纤维类 → 布料
+        // 布料/纤维/纸张类 → 布料
         let cloth = ["布料", "棉布", "纤维", "织物", "丝绸", "麻布", "帆布", "皮革", "衣物",
-                     "帆", "编织", "毯子", "袋子", "背包布"]
-        if cloth.contains(where: { name.contains($0) }) { return "cloth" }
+                     "编织", "毯子", "袋子", "画册", "书本", "纸张", "本子"]
+        if cloth.contains(where: { combined.contains($0) }) { return "cloth" }
 
         // 玻璃类 → 玻璃
         let glass = ["玻璃", "镜片", "镜面", "透明板", "灯罩", "瓶身"]
-        if glass.contains(where: { name.contains($0) }) { return "glass" }
+        if glass.contains(where: { combined.contains($0) }) { return "glass" }
 
         // 绳索/线缆类 → 绳子
         let rope = ["绳索", "缆绳", "线缆", "束带", "捆绑带", "吊绳", "电线", "导线"]
-        if rope.contains(where: { name.contains($0) }) { return "rope" }
+        if rope.contains(where: { combined.contains($0) }) { return "rope" }
 
         // 医疗/化学类 → 绷带
         let medical = ["药剂", "绷带", "注射器", "医疗", "急救", "包扎", "消毒"]
-        if medical.contains(where: { name.contains($0) }) { return "bandage" }
+        if medical.contains(where: { combined.contains($0) }) { return "bandage" }
 
         // 燃料/油类 → 燃料
         let fuel = ["燃料", "汽油", "柴油", "酒精", "可燃液", "油罐", "燃油"]
-        if fuel.contains(where: { name.contains($0) }) { return "fuel" }
+        if fuel.contains(where: { combined.contains($0) }) { return "fuel" }
 
         return fallback
     }
 
-    /// 拆解 AI 命名物品，根据物品名称推断材料类型，返还 60%（最少 1 个）
+    /// 拆解 AI 命名物品，根据名称+描述推断材料类型，返还 60%（最少 1 个）
     @discardableResult
     func disassembleItem(_ item: BackpackItem) async throws -> (itemId: String, quantity: Int) {
         guard let customName = item.customName else { return (item.itemId, 0) }
-        let returnItemId = InventoryManager.classifyDisassembleMaterial(from: customName, fallback: item.itemId)
+        let returnItemId = InventoryManager.classifyDisassembleMaterial(from: customName, description: item.customDescription, fallback: item.itemId)
         let returnQty = max(1, Int(Double(item.quantity) * 0.6))
         try await deleteItem(inventoryId: item.id)
         try await addItem(itemId: returnItemId, quantity: returnQty, obtainedFrom: "拆解")

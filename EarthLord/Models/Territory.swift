@@ -25,6 +25,7 @@ struct Territory: Codable, Identifiable {
     let lastActiveAt: String?     // 最后活跃时间（用于90天到期检测）
     let broadcastMessage: String? // 领主广播消息（访客搜刮时展示）
     let taxRate: Int?             // 税率（默认10%）
+    let buildingCount: Int?       // 已建建筑数量（由触发器维护）
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -41,6 +42,7 @@ struct Territory: Codable, Identifiable {
         case lastActiveAt = "last_active_at"
         case broadcastMessage = "broadcast_message"
         case taxRate = "tax_rate"
+        case buildingCount = "building_count"
     }
 
     /// 将 path 转换为 CLLocationCoordinate2D 数组
@@ -62,7 +64,7 @@ struct Territory: Codable, Identifiable {
         return formatter.date(from: str)
     }
 
-    /// 圈地完成后的天数（以 lastActiveAt 和 completedAt/createdAt 中较晚者为基准）
+    /// 从圈地完成时起计算的天数（仅用于90天到期，受 lastActiveAt 重置）
     var daysSinceCompleted: Int? {
         let baseStr = completedAt ?? createdAt
         guard let str = baseStr, let baseDate = parseDate(str) else { return nil }
@@ -74,6 +76,13 @@ struct Territory: Codable, Identifiable {
             effectiveBase = baseDate
         }
         return Calendar.current.dateComponents([.day], from: effectiveBase, to: Date()).day
+    }
+
+    /// 从圈地完成时起计算的天数（固定基准，不受 lastActiveAt 影响，用于30天建设期）
+    private var daysSinceCreated: Int? {
+        let baseStr = completedAt ?? createdAt
+        guard let str = baseStr, let baseDate = parseDate(str) else { return nil }
+        return Calendar.current.dateComponents([.day], from: baseDate, to: Date()).day
     }
 
     /// 距离90天到期还剩几天（nil = 无法计算）
@@ -88,15 +97,15 @@ struct Territory: Codable, Identifiable {
         return days > 90
     }
 
-    /// 是否处于30天建设期内
+    /// 是否处于30天建设期内（以圈地完成时间为基准，不受活跃时间影响）
     var isInBuildPeriod: Bool {
-        guard let days = daysSinceCompleted else { return false }
+        guard let days = daysSinceCreated else { return false }
         return days <= 30
     }
 
     /// 距建设截止（30天）还剩几天，已过返回 nil
     var daysUntilBuildDeadline: Int? {
-        guard let days = daysSinceCompleted else { return nil }
+        guard let days = daysSinceCreated else { return nil }
         let remaining = 30 - days
         return remaining > 0 ? remaining : nil
     }

@@ -61,6 +61,7 @@ struct ExplorationHistoryItem: Identifiable {
     let duration: Int
     let status: String
     let rewardTier: String?
+    let scavengeCount: Int
 
     /// 格式化的距离
     var formattedDistance: String {
@@ -231,6 +232,7 @@ final class ExplorationStatsManager: ObservableObject {
             let durationSeconds: Int
             let status: String
             let rewardTier: String?
+            let scavengeCount: Int?
 
             enum CodingKeys: String, CodingKey {
                 case id
@@ -240,12 +242,13 @@ final class ExplorationStatsManager: ObservableObject {
                 case durationSeconds = "duration_seconds"
                 case status
                 case rewardTier = "reward_tier"
+                case scavengeCount = "scavenge_count"
             }
         }
 
         let response: [SessionRecord] = try await supabase
             .from("exploration_sessions")
-            .select("id, started_at, ended_at, distance_walked, duration_seconds, status, reward_tier")
+            .select("id, started_at, ended_at, distance_walked, duration_seconds, status, reward_tier, scavenge_count")
             .eq("user_id", value: userId.uuidString)
             .order("started_at", ascending: false)
             .limit(limit)
@@ -267,7 +270,8 @@ final class ExplorationStatsManager: ObservableObject {
                 distance: record.distanceWalked,
                 duration: record.durationSeconds,
                 status: record.status,
-                rewardTier: record.rewardTier
+                rewardTier: record.rewardTier,
+                scavengeCount: record.scavengeCount ?? 0
             )
         }
 

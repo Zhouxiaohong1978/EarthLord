@@ -15,8 +15,9 @@ struct TerritoryBuildingRow: View {
     var onUpgrade: (() -> Void)?
     var onDemolish: (() -> Void)?
 
-    /// 定时器触发器 - 用于实时更新建造进度
+    /// 定时器触发器 - 用于实时更新建造进度和产出倒计时
     @State private var timerTrigger = false
+    @State private var showCollectSheet = false
 
     /// 定时器
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -65,12 +66,15 @@ struct TerritoryBuildingRow: View {
                 .stroke(ApocalypseTheme.textMuted.opacity(0.3), lineWidth: 1)
         )
         .onReceive(timer) { _ in
-            // 仅在建造中或升级中时触发刷新
-            if building.status == .constructing || building.status == .upgrading {
+            if building.status == .constructing || building.status == .upgrading
+                || BuildingManager.shared.hasProduction(building) {
                 timerTrigger.toggle()
             }
         }
         .id(timerTrigger) // 通过改变 id 强制视图刷新
+        .sheet(isPresented: $showCollectSheet) {
+            BuildingCollectSheet(building: building)
+        }
     }
 
     // MARK: - 子视图
@@ -118,19 +122,33 @@ struct TerritoryBuildingRow: View {
             }
 
         case .active:
-            HStack(spacing: 4) {
-                Image(systemName: building.status.icon)
-                    .font(.system(size: 10))
-                Text(building.status.displayName)
-                    .font(.system(size: 11))
+            HStack(spacing: 6) {
+                HStack(spacing: 4) {
+                    Image(systemName: building.status.icon)
+                        .font(.system(size: 10))
+                    Text(building.status.displayName)
+                        .font(.system(size: 11))
+                }
+                .foregroundColor(building.status.color)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(building.status.color.opacity(0.15)))
+
+                // 产出倒计时
+                if BuildingManager.shared.hasProduction(building) {
+                    if BuildingManager.shared.canCollect(building) {
+                        Text("可领取")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ApocalypseTheme.success)
+                    } else if let secs = BuildingManager.shared.secondsUntilNextProduction(building) {
+                        let h = Int(secs) / 3600
+                        let m = (Int(secs) % 3600) / 60
+                        Text(h > 0 ? "\(h)h \(m)m" : "\(m)m")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                    }
+                }
             }
-            .foregroundColor(building.status.color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .fill(building.status.color.opacity(0.15))
-            )
 
         case .inactive, .damaged:
             HStack(spacing: 4) {
@@ -157,8 +175,24 @@ struct TerritoryBuildingRow: View {
             CircularProgressView(progress: building.buildProgress)
                 .frame(width: 36, height: 36)
         } else if building.status == .active {
-            // 操作菜单
-            operationMenu
+            HStack(spacing: 8) {
+                // 产出可领取时显示领取按钮
+                if BuildingManager.shared.canCollect(building) {
+                    Button {
+                        showCollectSheet = true
+                    } label: {
+                        Text("领取")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(ApocalypseTheme.success)
+                            .cornerRadius(8)
+                    }
+                }
+                // 操作菜单
+                operationMenu
+            }
         } else {
             // 其他状态：显示状态图标
             Image(systemName: building.status.icon)
@@ -207,7 +241,7 @@ struct CircularProgressView: View {
     let progress: Double
     var lineWidth: CGFloat = 4
     var backgroundColor: Color = ApocalypseTheme.textMuted.opacity(0.3)
-    var foregroundColor: Color = ApocalypseTheme.primary
+    var foregroundColor: Color = ApocalypseTheme.success
 
     var body: some View {
         ZStack {
@@ -226,6 +260,138 @@ struct CircularProgressView: View {
                 .font(.system(size: 9, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
         }
+    }
+}
+
+// MARK: - BuildingCollectSheet
+
+/// 建筑产出领取弹窗
+struct BuildingCollectSheet: View {
+    let building: PlayerBuilding
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var warehouseManager = WarehouseManager.shared
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private var config: (itemId: String, quantity: Int, intervalHours: Double)? {
+        BuildingManager.shared.productionConfig(for: building.templateId)
+    }
+
+    private var itemDefinition: ItemDefinition? {
+        guard let c = config else { return nil }
+        return MockExplorationData.getItemDefinition(by: c.itemId)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApocalypseTheme.background.ignoresSafeArea()
+                VStack(spacing: 32) {
+                    // 物品展示
+                    if let def = itemDefinition, let c = config {
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(def.category.color.opacity(0.15))
+                                    .frame(width: 80, height: 80)
+                                Image(systemName: def.category.icon)
+                                    .font(.system(size: 32))
+                                    .foregroundColor(def.category.color)
+                            }
+                            Text(LanguageManager.shared.localizedString(for: def.name))
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(ApocalypseTheme.textPrimary)
+                            Text("x\(c.quantity)")
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundColor(ApocalypseTheme.success)
+                            Text("选择存放位置")
+                                .font(.system(size: 14))
+                                .foregroundColor(ApocalypseTheme.textMuted)
+                        }
+                    }
+
+                    // 两个选项按钮
+                    VStack(spacing: 12) {
+                        // 存入背包
+                        Button {
+                            Task { await collect(toWarehouse: false) }
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "bag.fill")
+                                    .font(.system(size: 16))
+                                Text("存入背包")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(ApocalypseTheme.primary)
+                            .cornerRadius(12)
+                        }
+                        .disabled(isLoading)
+
+                        // 存入仓库
+                        Button {
+                            Task { await collect(toWarehouse: true) }
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "archivebox.fill")
+                                    .font(.system(size: 16))
+                                Text("存入仓库")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            .foregroundColor(warehouseManager.hasWarehouse ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(warehouseManager.hasWarehouse ? ApocalypseTheme.primary : ApocalypseTheme.textMuted, lineWidth: 1.5)
+                            )
+                        }
+                        .disabled(isLoading || !warehouseManager.hasWarehouse)
+
+                        if !warehouseManager.hasWarehouse {
+                            Text("建造小仓库后可使用此选项")
+                                .font(.system(size: 12))
+                                .foregroundColor(ApocalypseTheme.textMuted)
+                        }
+                    }
+                    .padding(.horizontal, 32)
+
+                    if isLoading {
+                        ProgressView().tint(ApocalypseTheme.primary)
+                    }
+
+                    Spacer()
+                }
+                .padding(.top, 32)
+            }
+            .navigationTitle("领取产出")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+            }
+            .alert("领取失败", isPresented: .constant(errorMessage != nil)) {
+                Button("确定") { errorMessage = nil }
+            } message: { Text(errorMessage ?? "") }
+        }
+    }
+
+    private func collect(toWarehouse: Bool) async {
+        isLoading = true
+        do {
+            try await BuildingManager.shared.collectProduction(
+                buildingId: building.id,
+                toWarehouse: toWarehouse
+            )
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
 }
 

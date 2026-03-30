@@ -135,9 +135,11 @@ struct BuildingPlacementView: View {
             }
         }
         .onAppear {
-            // 刷新背包数据
             Task {
-                await inventoryManager.refreshInventory()
+                // 并行刷新背包和仓库，确保材料判断准确
+                async let inv: () = inventoryManager.refreshInventory()
+                async let wh: () = warehouseManager.refreshItems()
+                _ = await (inv, wh)
             }
         }
     }

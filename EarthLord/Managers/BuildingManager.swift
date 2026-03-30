@@ -149,38 +149,6 @@ final class BuildingManager: ObservableObject {
         return .success(currentCount: currentCount, maxCount: template.maxPerTerritory)
     }
 
-    /// 使用卫星模块加速建造（每个-2小时，最多3个）
-    func applySatelliteModuleSpeedup(buildingId: UUID, moduleCount: Int) async throws {
-        guard moduleCount > 0 else { return }
-        let count = min(moduleCount, 3)
-
-        // 消耗背包中的 satellite_module
-        let items = InventoryManager.shared.items.filter { $0.itemId == "satellite_module" }
-        var remaining = count
-        for item in items {
-            guard remaining > 0 else { break }
-            let use = min(item.quantity, remaining)
-            try await InventoryManager.shared.useItem(inventoryId: item.id, quantity: use)
-            remaining -= use
-        }
-
-        // 更新建筑完成时间（每个减2小时）
-        guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }),
-              let currentCompletedAt = playerBuildings[index].buildCompletedAt else { return }
-
-        let reduction = TimeInterval(count * 7200) // 每个减2小时
-        let newCompletedAt = max(Date(), currentCompletedAt - reduction)
-
-        try await supabase
-            .from("player_buildings")
-            .update(["build_completed_at": newCompletedAt.ISO8601Format()])
-            .eq("id", value: buildingId.uuidString)
-            .execute()
-
-        playerBuildings[index].buildCompletedAt = newCompletedAt
-        logger.log("卫星模块加速：使用\(count)个卫星模块，缩短\(count * 2)小时", type: .success)
-    }
-
     /// 使用建造加速令缩短当前建造时间（每个-30分钟，最多5个）
     func applyBuildSpeedup(buildingId: UUID, tokenCount: Int) async throws {
         guard tokenCount > 0 else { return }

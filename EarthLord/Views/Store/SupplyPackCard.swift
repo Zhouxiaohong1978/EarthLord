@@ -84,36 +84,6 @@ private func theme(for productId: String) -> PackTheme {
             nameKey: "pack.rare.name",
             taglineKey: "pack.rare.tagline"
         )
-    case "com.earthlord.capacity_expansion.v2":
-        return PackTheme(
-            accentColor: Color(red: 0.20, green: 0.85, blue: 0.72),
-            secondaryColor: Color(red: 0.10, green: 0.62, blue: 0.52),
-            headerGradient: [
-                Color(red: 0.04, green: 0.22, blue: 0.18),
-                Color(red: 0.08, green: 0.08, blue: 0.09)
-            ],
-            icon: "archivebox.fill",
-            badgeIcon: "🗃️",
-            tierLabel: "UTILITY",
-            tierLabelColor: Color(red: 0.20, green: 0.85, blue: 0.72),
-            nameKey: "pack.capacity.name",
-            taglineKey: "pack.capacity.tagline"
-        )
-    case "com.earthlord.comm_upgrade":
-        return PackTheme(
-            accentColor: Color(red: 0.30, green: 0.65, blue: 1.00),
-            secondaryColor: Color(red: 0.10, green: 0.42, blue: 0.82),
-            headerGradient: [
-                Color(red: 0.05, green: 0.12, blue: 0.28),
-                Color(red: 0.08, green: 0.08, blue: 0.09)
-            ],
-            icon: "antenna.radiowaves.left.and.right",
-            badgeIcon: "📡",
-            tierLabel: "UPGRADE",
-            tierLabelColor: Color(red: 0.30, green: 0.65, blue: 1.00),
-            nameKey: "pack.comm.name",
-            taglineKey: "pack.comm.tagline"
-        )
     default:
         return PackTheme(
             accentColor: ApocalypseTheme.primary,
@@ -150,9 +120,7 @@ struct SupplyPackCard: View {
 
             // ── 物品列表 / 效果说明 ──
             VStack(alignment: .leading, spacing: 12) {
-                if product.id == "com.earthlord.capacity_expansion.v2" {
-                    capacityEffectSection
-                } else if let config = packConfig {
+                if let config = packConfig {
                     itemsSection(config: config)
                 }
 
@@ -238,52 +206,6 @@ struct SupplyPackCard: View {
         .frame(minHeight: 150)
     }
 
-    // MARK: 扩容效果说明
-
-    private var capacityEffectSection: some View {
-        let purchased = InventoryManager.shared.hasCapacityExpansion
-        return VStack(alignment: .leading, spacing: 10) {
-            Label("store.contains", systemImage: "shippingbox")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(ApocalypseTheme.textSecondary)
-
-            // 效果说明行
-            HStack(spacing: 12) {
-                Image(systemName: "archivebox.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(t.accentColor)
-                    .frame(width: 32)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(LocalizedStringKey("pack.capacity.effect"))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(ApocalypseTheme.textPrimary)
-                    Text(LocalizedStringKey("pack.capacity.onetime"))
-                        .font(.system(size: 12))
-                        .foregroundColor(ApocalypseTheme.textSecondary)
-                }
-                Spacer()
-                Text("+500")
-                    .font(.system(size: 18, weight: .black, design: .rounded))
-                    .foregroundColor(t.accentColor)
-            }
-            .padding(12)
-            .background(t.accentColor.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            // 购买状态提示
-            if purchased {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(ApocalypseTheme.success)
-                        .font(.caption)
-                    Text(LocalizedStringKey("pack.capacity.purchased"))
-                        .font(.caption2)
-                        .foregroundColor(ApocalypseTheme.success)
-                }
-            }
-        }
-    }
 
     // MARK: 物品列表
 

@@ -108,15 +108,33 @@ struct TradeItemRow: View {
 
     // MARK: - 物品图标
 
+    private var isAIItem: Bool { item.customName != nil }
+
     private var itemIcon: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             Circle()
-                .fill(category.color.opacity(0.2))
+                .fill(isAIItem
+                      ? Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.2)
+                      : category.color.opacity(0.2))
                 .frame(width: 36, height: 36)
+                .overlay(
+                    Circle()
+                        .strokeBorder(
+                            isAIItem ? Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.6) : Color.clear,
+                            lineWidth: 1.5
+                        )
+                )
 
             Image(systemName: category.icon)
                 .font(.system(size: 14))
-                .foregroundColor(category.color)
+                .foregroundColor(isAIItem ? Color(red: 1.0, green: 0.84, blue: 0.0) : category.color)
+
+            if isAIItem {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
+                    .offset(x: 2, y: -2)
+            }
         }
     }
 }

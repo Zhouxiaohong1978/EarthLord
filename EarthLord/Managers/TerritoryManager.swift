@@ -506,16 +506,21 @@ final class TerritoryManager {
         return nil
     }
 
-    /// 记录一次领地访问并扣税
+    /// 记录一次领地访问并扣税，将税收物品投递到领主邮箱
     /// - Parameters:
     ///   - territory: 被访问的领地
-    ///   - itemCount: 本次搜刮获得的物品总件数
+    ///   - items: 本次搜刮获得的全部物品
     /// - Returns: 实际被扣税的件数
-    func recordVisitAndTax(territory: Territory, itemCount: Int) async -> Int {
+    func recordVisitAndTax(territory: Territory, items: [ObtainedItem]) async -> Int {
         guard let visitorId = AuthManager.shared.currentUser?.id else { return 0 }
         let rate = territory.taxRate ?? 10
-        let taxAmount = max(1, Int(Double(itemCount) * Double(rate) / 100.0))
+        // 四舍五入，无保底——搜到件数少时可能为0（如1件×10%=0件，合理）
+        let taxAmount = Int((Double(items.count) * Double(rate) / 100.0).rounded())
 
+        // 被扣的税收物品（从末尾取）
+        let taxedItems = Array(items.suffix(taxAmount))
+
+        // 记录访问日志
         do {
             let visitData: [String: AnyJSON] = [
                 "territory_id": .string(territory.id),
@@ -531,10 +536,51 @@ final class TerritoryManager {
         } catch {
             TerritoryLogger.shared.log("税收记录失败: \(error.localizedDescription)", type: .error)
         }
+
+        // 将税收物品投递到领主邮箱
+        guard let ownerUUID = UUID(uuidString: territory.userId), !taxedItems.isEmpty else {
+            return taxAmount
+        }
+
+        let mailItems = taxedItems.map { item in
+            MailItem(itemId: item.itemId, quantity: item.quantity, quality: item.quality?.rawValue)
+        }
+
+        let visitorCallsign = CommunicationManager.shared.userCallsign ?? String(localized: "某访客")
+        let territoryName = territory.name ?? String(localized: "你的领地")
+        let title = String(format: String(localized: "领地税收到账 · %@"), territoryName)
+        let content = String(format: String(localized: "玩家「%@」在你的领地「%@」搜刮物资，按 %d%% 税率缴纳了 %d 件物品，请前往邮箱领取。"), visitorCallsign, territoryName, rate, taxAmount)
+
+        do {
+            try await MailboxManager.shared.deliverItems(
+                to: ownerUUID,
+                mailType: .taxIncome,
+                title: title,
+                content: content,
+                items: mailItems,
+                expiresInDays: 14
+            )
+            TerritoryLogger.shared.log("税收物品已投递至领主邮箱: \(taxAmount)件", type: .success)
+        } catch {
+            TerritoryLogger.shared.log("税收物品投递失败: \(error.localizedDescription)", type: .error)
+        }
+
         return taxAmount
     }
 
     /// 设置领地广播消息
+    /// 设置领地税率（0 / 10 / 20 / 30）
+    func updateTaxRate(_ rate: Int, for territoryId: String) async throws {
+        guard let userId = AuthManager.shared.currentUser?.id else { throw TerritoryError.notAuthenticated }
+        try await supabase
+            .from("territories")
+            .update(["tax_rate": rate])
+            .eq("id", value: territoryId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+        TerritoryLogger.shared.log("税率已更新: \(rate)%", type: .info)
+    }
+
     func setBroadcastMessage(_ message: String?, for territoryId: String) async throws {
         guard let userId = AuthManager.shared.currentUser?.id else { throw TerritoryError.notAuthenticated }
         try await supabase
@@ -804,4 +850,6 @@ extension Notification.Name {
     static let territoryDeleted = Notification.Name("territoryDeleted")
     /// 跳转到通讯 Tab
     static let switchToCommunicationTab = Notification.Name("switchToCommunicationTab")
+    /// 跳转到背包
+    static let navigateToBackpack = Notification.Name("navigateToBackpack")
 }

@@ -12,19 +12,34 @@ import Auth
 struct MessageCenterView: View {
     @EnvironmentObject var authManager: AuthManager
     @StateObject private var communicationManager = CommunicationManager.shared
+    @StateObject private var mailboxManager = MailboxManager.shared
+    @StateObject private var dailyRewardManager = DailyRewardManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     @State private var isLoading = true
+
+    /// 未处理的个人通知数量（用于角标）
+    private var personalNotificationCount: Int {
+        var count = 0
+        if subscriptionManager.currentTier != .free && !dailyRewardManager.hasClaimedToday { count += 1 }
+        let unclaimed = mailboxManager.mails.filter { !$0.isClaimed && !$0.items.isEmpty && !$0.isExpired }
+        // 税收到账（按笔数计）
+        count += unclaimed.filter { $0.mailType == .taxIncome }.count
+        // 即将过期（非税收）
+        count += unclaimed.filter { $0.mailType != .taxIncome }.compactMap { $0.daysRemaining }.filter { $0 <= 3 }.count
+        // 普通未领取
+        if !unclaimed.filter({ $0.mailType != .taxIncome && ($0.daysRemaining ?? 99) > 3 }).isEmpty { count += 1 }
+        return count
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             headerView
 
-            // Channel list
+            // Channel list（通知行始终显示）
             if isLoading {
                 loadingView
-            } else if communicationManager.channelPreviews.isEmpty {
-                emptyView
             } else {
                 channelListView
             }
@@ -66,6 +81,19 @@ struct MessageCenterView: View {
     private var channelListView: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
+                // 个人通知入口（始终置顶）
+                NavigationLink {
+                    PersonalNotificationView()
+                        .environmentObject(authManager)
+                } label: {
+                    PersonalNotificationRow(badgeCount: personalNotificationCount)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Divider()
+                    .background(ApocalypseTheme.cardBackground)
+                    .padding(.leading, 72)
+
                 ForEach(communicationManager.channelPreviews) { preview in
                     NavigationLink {
                         destinationView(for: preview)
@@ -180,6 +208,54 @@ struct MessageCenterView: View {
                 communicationManager.channelPreviews.insert(preview, at: 0)
             }
         }
+    }
+}
+
+// MARK: - Personal Notification Row
+
+struct PersonalNotificationRow: View {
+    let badgeCount: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(ApocalypseTheme.warning.opacity(0.2))
+                    .frame(width: 50, height: 50)
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(ApocalypseTheme.warning)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(String(localized: "通知"))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Spacer()
+                }
+                Text(badgeCount > 0
+                     ? String(format: String(localized: "%d 条待处理提醒"), badgeCount)
+                     : String(localized: "暂无待处理提醒"))
+                    .font(.caption)
+                    .foregroundColor(badgeCount > 0 ? ApocalypseTheme.warning : ApocalypseTheme.textSecondary)
+            }
+
+            if badgeCount > 0 {
+                Text(badgeCount > 99 ? "99+" : "\(badgeCount)")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.red)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(ApocalypseTheme.background)
     }
 }
 

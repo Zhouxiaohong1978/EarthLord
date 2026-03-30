@@ -95,10 +95,11 @@ struct MailItemRow: View {
 
     private var mailIconColor: Color {
         switch mail.mailType {
-        case .purchase: return ApocalypseTheme.primary
-        case .reward: return .green
-        case .gift: return .pink
-        case .trade: return ApocalypseTheme.info
+        case .purchase:  return ApocalypseTheme.primary
+        case .reward:    return .green
+        case .gift:      return .pink
+        case .trade:     return ApocalypseTheme.info
+        case .taxIncome: return ApocalypseTheme.warning
         }
     }
 

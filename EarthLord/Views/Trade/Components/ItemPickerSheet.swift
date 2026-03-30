@@ -43,6 +43,7 @@ struct ItemPickerSheet: View {
 
     @State private var searchText = ""
     @State private var selectedCategory: ItemCategory?
+    @State private var showAIOnly = false          // 仅显示特殊物品
     @State private var selectedItems: [TradeItem] = []
     @State private var showQuantityPicker = false
     @State private var pendingItem: SelectableItem?
@@ -92,15 +93,21 @@ struct ItemPickerSheet: View {
     private var filteredItems: [SelectableItem] {
         var items = selectableItems
 
-        // 分类筛选
-        if let category = selectedCategory {
-            items = items.filter { $0.definition.category == category }
+        // 特殊物品筛选
+        if showAIOnly {
+            items = items.filter { $0.customName != nil }
+        } else if let category = selectedCategory {
+            // 分类筛选：排除特殊物品，只显示普通物品
+            items = items.filter { $0.customName == nil && $0.definition.category == category }
+        } else {
+            // 全部：普通物品全显示，特殊物品也显示（不过滤）
         }
 
-        // 搜索筛选
+        // 搜索筛选（同时搜索物品名和 AI 命名）
         if !searchText.isEmpty {
             items = items.filter {
                 $0.definition.name.localizedCaseInsensitiveContains(searchText)
+                || ($0.customName?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
 
@@ -155,6 +162,12 @@ struct ItemPickerSheet: View {
             .sheet(isPresented: $showQuantityPicker) {
                 quantityPickerSheet
             }
+            .onAppear {
+                // 出售模式：打开时刷新背包数据
+                if mode == .fromInventory {
+                    Task { await InventoryManager.shared.refreshInventory() }
+                }
+            }
         }
     }
 
@@ -198,9 +211,22 @@ struct ItemPickerSheet: View {
                 CategoryChip(
                     title: "全部",
                     icon: "square.grid.2x2.fill",
-                    isSelected: selectedCategory == nil
+                    isSelected: selectedCategory == nil && !showAIOnly
                 ) {
                     selectedCategory = nil
+                    showAIOnly = false
+                }
+
+                // 特殊物品（AI 命名）—— 仅出售模式（从背包选）才有 AI 物品
+                if mode == .fromInventory {
+                    CategoryChip(
+                        title: "特殊物品",
+                        icon: "sparkles",
+                        isSelected: showAIOnly
+                    ) {
+                        showAIOnly = true
+                        selectedCategory = nil
+                    }
                 }
 
                 // 各分类
@@ -208,9 +234,10 @@ struct ItemPickerSheet: View {
                     CategoryChip(
                         title: category.rawValue,
                         icon: category.icon,
-                        isSelected: selectedCategory == category
+                        isSelected: !showAIOnly && selectedCategory == category
                     ) {
                         selectedCategory = category
+                        showAIOnly = false
                     }
                 }
             }
@@ -235,12 +262,19 @@ struct ItemPickerSheet: View {
     // MARK: - 可选物品行
 
     private func selectableItemRow(_ item: SelectableItem) -> some View {
-        let isSelected = selectedItems.contains { $0.itemId == item.definition.id }
+        // AI 物品用 customName 匹配，标准物品用 definition.id 匹配
+        let isSelected: Bool = item.customName != nil
+            ? selectedItems.contains { $0.customName == item.customName && $0.itemId == item.definition.id }
+            : selectedItems.contains { $0.customName == nil && $0.itemId == item.definition.id }
 
         return Button {
             if isSelected {
                 // 取消选择
-                selectedItems.removeAll { $0.itemId == item.definition.id }
+                if item.customName != nil {
+                    selectedItems.removeAll { $0.customName == item.customName && $0.itemId == item.definition.id }
+                } else {
+                    selectedItems.removeAll { $0.customName == nil && $0.itemId == item.definition.id }
+                }
             } else {
                 // 选择物品，弹出数量选择
                 pendingItem = item
@@ -250,14 +284,35 @@ struct ItemPickerSheet: View {
         } label: {
             HStack(spacing: 12) {
                 // 物品图标
-                ZStack {
+                ZStack(alignment: .topTrailing) {
                     Circle()
-                        .fill(item.definition.category.color.opacity(0.2))
+                        .fill(item.customName != nil
+                              ? Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.2)
+                              : item.definition.category.color.opacity(0.2))
                         .frame(width: 40, height: 40)
+                        .overlay(
+                            Circle()
+                                .strokeBorder(
+                                    item.customName != nil
+                                        ? Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.6)
+                                        : Color.clear,
+                                    lineWidth: 1.5
+                                )
+                        )
 
                     Image(systemName: item.definition.category.icon)
                         .font(.system(size: 16))
-                        .foregroundColor(item.definition.category.color)
+                        .foregroundColor(item.customName != nil
+                                         ? Color(red: 1.0, green: 0.84, blue: 0.0)
+                                         : item.definition.category.color)
+
+                    // AI 物品徽标
+                    if item.customName != nil {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
+                            .offset(x: 2, y: -2)
+                    }
                 }
 
                 // 物品信息
@@ -289,7 +344,10 @@ struct ItemPickerSheet: View {
 
                 // 选中状态
                 if isSelected {
-                    if let selected = selectedItems.first(where: { $0.itemId == item.definition.id }) {
+                    let selectedMatch: TradeItem? = item.customName != nil
+                        ? selectedItems.first { $0.customName == item.customName && $0.itemId == item.definition.id }
+                        : selectedItems.first { $0.customName == nil && $0.itemId == item.definition.id }
+                    if let selected = selectedMatch {
                         Text("x\(selected.quantity)")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(ApocalypseTheme.primary)
@@ -430,7 +488,7 @@ struct ItemPickerSheet: View {
                         // 确认按钮
                         Button {
                             let tradeItem = TradeItem(
-                                itemId: item.definition.id,
+                                itemId: item.definition.id,   // 始终用 definition.id，customName 区分 AI 物品
                                 quantity: pendingQuantity,
                                 quality: item.quality,
                                 customName: item.customName

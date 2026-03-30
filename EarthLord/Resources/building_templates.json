@@ -18,7 +18,7 @@
         {"wood": 20, "stone": 10},
         {"wood": 25, "stone": 15}
       ],
-      "build_time_seconds": 10,
+      "build_time_seconds": 300,
       "max_per_territory": 3,
       "max_level": 3
     },
@@ -42,7 +42,7 @@
         {"wood": 50, "cloth": 30},
         {"wood": 60, "cloth": 35}
       ],
-      "build_time_seconds": 30,
+      "build_time_seconds": 1800,
       "max_per_territory": 1,
       "max_level": 5
     },
@@ -64,7 +64,7 @@
         {"scrap_metal": 12, "wood": 6},
         {"scrap_metal": 16, "wood": 8}
       ],
-      "build_time_seconds": 20,
+      "build_time_seconds": 600,
       "max_per_territory": 3,
       "max_level": 3
     },
@@ -87,7 +87,7 @@
         {"cloth": 12, "bandage": 10, "rope": 5},
         {"cloth": 16, "bandage": 12, "rope": 6}
       ],
-      "build_time_seconds": 30,
+      "build_time_seconds": 2700,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -108,7 +108,7 @@
       "upgrade_resources": [
         {"wood": 40, "nails": 20}
       ],
-      "build_time_seconds": 20,
+      "build_time_seconds": 900,
       "max_per_territory": 6,
       "max_level": 2
     },
@@ -131,7 +131,7 @@
         {"scrap_metal": 40, "stone": 20, "rope": 3},
         {"scrap_metal": 50, "stone": 25, "rope": 4}
       ],
-      "build_time_seconds": 120,
+      "build_time_seconds": 7200,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -153,7 +153,7 @@
         {"wood": 60, "scrap_metal": 30, "nails": 20},
         {"wood": 80, "scrap_metal": 40, "nails": 30, "rope": 10}
       ],
-      "build_time_seconds": 120,
+      "build_time_seconds": 7200,
       "max_per_territory": 2,
       "max_level": 3
     },
@@ -176,7 +176,7 @@
         {"wood": 50, "scrap_metal": 25},
         {"wood": 65, "scrap_metal": 30}
       ],
-      "build_time_seconds": 180,
+      "build_time_seconds": 10800,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -198,7 +198,7 @@
         {"wood": 40, "seeds": 6},
         {"wood": 50, "seeds": 8}
       ],
-      "build_time_seconds": 300,
+      "build_time_seconds": 14400,
       "max_per_territory": 4,
       "max_level": 3
     },
@@ -221,7 +221,7 @@
         {"wood": 50, "nails": 12, "rope": 10},
         {"wood": 65, "nails": 16, "rope": 12}
       ],
-      "build_time_seconds": 240,
+      "build_time_seconds": 14400,
       "max_per_territory": 2,
       "max_level": 3
     },
@@ -243,7 +243,7 @@
       "upgrade_resources": [
         {"wood": 40, "cloth": 20, "rope": 6}
       ],
-      "build_time_seconds": 180,
+      "build_time_seconds": 10800,
       "max_per_territory": 2,
       "max_level": 2
     },
@@ -266,7 +266,7 @@
         {"scrap_metal": 25, "wood": 40, "seeds": 3},
         {"scrap_metal": 32, "wood": 50, "seeds": 4}
       ],
-      "build_time_seconds": 360,
+      "build_time_seconds": 14400,
       "max_per_territory": 2,
       "max_level": 3
     },
@@ -289,7 +289,7 @@
         {"fuel": 3, "scrap_metal": 50, "rope": 3},
         {"fuel": 4, "scrap_metal": 65, "rope": 4}
       ],
-      "build_time_seconds": 480,
+      "build_time_seconds": 21600,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -312,7 +312,7 @@
         {"scrap_metal": 60, "nails": 20},
         {"scrap_metal": 80, "nails": 25}
       ],
-      "build_time_seconds": 360,
+      "build_time_seconds": 14400,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -335,7 +335,7 @@
         {"fuel": 6, "scrap_metal": 75, "rope": 5},
         {"fuel": 8, "scrap_metal": 100, "rope": 6}
       ],
-      "build_time_seconds": 480,
+      "build_time_seconds": 21600,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -357,7 +357,7 @@
         {"scrap_metal": 60, "electronic_component": 12},
         {"scrap_metal": 80, "electronic_component": 16}
       ],
-      "build_time_seconds": 600,
+      "build_time_seconds": 28800,
       "max_per_territory": 2,
       "max_level": 3
     },
@@ -379,7 +379,7 @@
         {"scrap_metal": 90, "electronic_component": 30},
         {"scrap_metal": 120, "electronic_component": 40}
       ],
-      "build_time_seconds": 1800,
+      "build_time_seconds": 86400,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -401,7 +401,7 @@
         {"scrap_metal": 120, "wood": 60, "nails": 30},
         {"scrap_metal": 160, "wood": 80, "nails": 50, "rope": 15}
       ],
-      "build_time_seconds": 900,
+      "build_time_seconds": 43200,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -424,7 +424,7 @@
         {"scrap_metal": 110, "nails": 36},
         {"scrap_metal": 145, "nails": 48}
       ],
-      "build_time_seconds": 1200,
+      "build_time_seconds": 64800,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -447,7 +447,7 @@
         {"wood": 75, "cloth": 36},
         {"wood": 100, "cloth": 50}
       ],
-      "build_time_seconds": 1800,
+      "build_time_seconds": 86400,
       "max_per_territory": 1,
       "max_level": 3
     },
@@ -470,7 +470,7 @@
         {"electronic_component": 25},
         {"electronic_component": 32}
       ],
-      "build_time_seconds": 3600,
+      "build_time_seconds": 259200,
       "max_per_territory": 1,
       "max_level": 3
     }

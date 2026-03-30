@@ -78,10 +78,10 @@ struct MainTabView: View {
             .tint(ApocalypseTheme.primary)
             .environmentObject(locationManager)  // 注入全局定位管理器
             .onReceive(NotificationCenter.default.publisher(for: .navigateToMailbox)) { _ in
-                // 切换到资源 Tab（index 2）
-                withAnimation {
-                    selectedTab = 2
-                }
+                withAnimation { selectedTab = 2 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToBackpack)) { _ in
+                withAnimation { selectedTab = 2 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToMapTab)) { _ in
                 // 切换到地图 Tab（index 0）

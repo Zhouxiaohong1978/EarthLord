@@ -393,6 +393,54 @@
         }
       }
     },
+    "%d 天后过期，含 %d 件物品，请及时领取" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires in %1$d days with %2$d items. Claim soon."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$d 天后过期，含 %2$d 件物品，请及时领取"
+          }
+        }
+      }
+    },
+    "%d 封邮件有待领取物品" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d mails have unclaimed items"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 封邮件有待领取物品"
+          }
+        }
+      }
+    },
+    "%d 条待处理提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d pending alerts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 条待处理提醒"
+          }
+        }
+      }
+    },
     "%d 条未读" : {
       "localizations" : {
         "en" : {
@@ -1094,9 +1142,6 @@
         }
       }
     },
-    "+500" : {
-
-    },
     "×%lld" : {
       "localizations" : {
         "en" : {
@@ -1772,6 +1817,7 @@
       }
     },
     "item.capacity_expansion" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1804,6 +1850,7 @@
       }
     },
     "item.device_upgrade_token" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2448,6 +2495,7 @@
       }
     },
     "pack.capacity.effect" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2464,6 +2512,7 @@
       }
     },
     "pack.capacity.name" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2480,6 +2529,7 @@
       }
     },
     "pack.capacity.onetime" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2496,6 +2546,7 @@
       }
     },
     "pack.capacity.purchased" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2529,6 +2580,7 @@
       }
     },
     "pack.comm.name" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4037,6 +4089,22 @@
         }
       }
     },
+    "一切都在掌控中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything is under control."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一切都在掌控中"
+          }
+        }
+      }
+    },
     "万m²" : {
       "localizations" : {
         "en" : {
@@ -4422,6 +4490,22 @@
         }
       }
     },
+    "中税，3件约扣1件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium tax. ~1 item deducted per 3."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中税，3件约扣1件"
+          }
+        }
+      }
+    },
     "为你的领地命名" : {
       "localizations" : {
         "en" : {
@@ -4770,6 +4854,22 @@
         }
       }
     },
+    "今日礼包已准备好，前往个人页领取" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your daily gift is ready. Go to Profile to claim it."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日礼包已准备好，前往个人页领取"
+          }
+        }
+      }
+    },
     "今日礼包待领取" : {
       "localizations" : {
         "en" : {
@@ -4782,6 +4882,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "今日礼包待领取"
+          }
+        }
+      }
+    },
+    "今日过期，含 %d 件物品，请尽快领取" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires today with %d items. Claim now!"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日过期，含 %d 件物品，请尽快领取"
           }
         }
       }
@@ -4874,6 +4990,12 @@
           }
         }
       }
+    },
+    "仓库即将满载" : {
+
+    },
+    "仓库容量不足，物品可能无法入库" : {
+
     },
     "仓库已满" : {
 
@@ -5199,6 +5321,22 @@
         }
       }
     },
+    "你的领地" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Territory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的领地"
+          }
+        }
+      }
+    },
     "使用" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5406,6 +5544,22 @@
         }
       }
     },
+    "免税，欢迎所有访客搜刮" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tax-free. All visitors welcome."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免税，欢迎所有访客搜刮"
+          }
+        }
+      }
+    },
     "免费" : {
       "localizations" : {
         "en" : {
@@ -5562,8 +5716,37 @@
         }
       }
     },
-    "共 %d 条消息" : {
-
+    "共 %d 件物品税收待领取，前往邮箱收取" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d items of tax income pending. Go to mailbox to collect."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共 %d 件物品税收待领取，前往邮箱收取"
+          }
+        }
+      }
+    },
+    "共 %d 封邮件含附件物品，领取至背包或仓库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d mails with attached items. Collect to backpack or warehouse."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共 %d 封邮件含附件物品，领取至背包或仓库"
+          }
+        }
+      }
     },
     "关于" : {
       "extractionState" : "stale",
@@ -6152,9 +6335,6 @@
         }
       }
     },
-    "前往通讯频道" : {
-
-    },
     "前往邮箱" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6171,6 +6351,9 @@
           }
         }
       }
+    },
+    "剩余 %@" : {
+
     },
     "剩余 %lld 天" : {
       "localizations" : {
@@ -6378,6 +6561,9 @@
           }
         }
       }
+    },
+    "加速失败" : {
+
     },
     "包含物品" : {
       "extractionState" : "stale",
@@ -7852,6 +8038,9 @@
       }
     },
     "完成一次探索（行走 ≥ 200 米）" : {
+
+    },
+    "完成时间 → %@" : {
 
     },
     "完成的交易会显示在这里" : {
@@ -9489,6 +9678,9 @@
         }
       }
     },
+    "建造加速" : {
+
+    },
     "建造加速令" : {
       "localizations" : {
         "en" : {
@@ -10557,6 +10749,9 @@
           }
         }
       }
+    },
+    "拥有 %lld 个" : {
+
     },
     "挂单不存在" : {
       "localizations" : {
@@ -11631,6 +11826,9 @@
     "新邮件" : {
 
     },
+    "无" : {
+
+    },
     "无前置频道要求" : {
 
     },
@@ -11820,9 +12018,6 @@
         }
       }
     },
-    "暂无内容" : {
-
-    },
     "暂无可用频道" : {
       "localizations" : {
         "en" : {
@@ -11895,6 +12090,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暂无建筑"
+          }
+        }
+      }
+    },
+    "暂无待处理提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pending alerts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无待处理提醒"
+          }
+        }
+      }
+    },
+    "暂无待处理通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pending notifications"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无待处理通知"
           }
         }
       }
@@ -12444,6 +12671,22 @@
         }
       }
     },
+    "某访客" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A visitor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "某访客"
+          }
+        }
+      }
+    },
     "查看已完成的交易" : {
       "localizations" : {
         "en" : {
@@ -12475,6 +12718,9 @@
           }
         }
       }
+    },
+    "查看背包" : {
+
     },
     "查看订阅" : {
       "extractionState" : "stale",
@@ -12839,6 +13085,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "每日礼包"
+          }
+        }
+      }
+    },
+    "每日礼包待领取" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily Gift Ready"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日礼包待领取"
           }
         }
       }
@@ -13649,6 +13911,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "独行者"
+          }
+        }
+      }
+    },
+    "玩家「%@」在你的领地「%@」搜刮物资，按 %d%% 税率缴纳了 %d 件物品，请前往邮箱领取。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Player \"%@\" scavenged in your territory \"%@\" and paid %3$d%% tax — %4$d items collected. Go to your mailbox to claim them."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "玩家「%@」在你的领地「%@」搜刮物资，按 %d%% 税率缴纳了 %d 件物品，请前往邮箱领取。"
           }
         }
       }
@@ -14574,6 +14852,9 @@
     "立即出去探索，搜刮食物和水并使用补给体征" : {
 
     },
+    "立即加速" : {
+
+    },
     "立即搜刮" : {
       "localizations" : {
         "en" : {
@@ -15304,6 +15585,9 @@
           }
         }
       }
+    },
+    "缩短 %@" : {
+
     },
     "缺少 %lld" : {
       "localizations" : {
@@ -16184,7 +16468,24 @@
         }
       }
     },
-    "访客在你的领地搜刮时会看到此消息" : {
+    "访客在你的领地搜刮时会看到此消息。税收以物品形式自动扣除，无需手动操作。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visitors will see this message when scavenging in your territory. Tax is automatically deducted in items, not gold."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "访客在你的领地搜刮时会看到此消息。税收以物品形式自动扣除，无需手动操作。"
+          }
+        }
+      }
+    },
+    "访客搜刮时可见。税收以物品形式自动扣除，无需在此说明。" : {
 
     },
     "评价 %@" : {
@@ -16534,6 +16835,9 @@
       }
     },
     "请输入有效的频道名称" : {
+
+    },
+    "请选择数量" : {
 
     },
     "请选择目标频道" : {
@@ -17098,6 +17402,22 @@
         }
       }
     },
+    "轻税，3件以下通常免扣" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light tax. Under 3 items usually exempt."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻税，3件以下通常免扣"
+          }
+        }
+      }
+    },
     "输入注册邮箱" : {
       "localizations" : {
         "en" : {
@@ -17532,7 +17852,6 @@
       }
     },
     "通知" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -17770,6 +18089,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重命名领地"
+          }
+        }
+      }
+    },
+    "重税，2件以上约扣1件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heavy tax. ~1 item deducted per 2."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重税，2件以上约扣1件"
           }
         }
       }
@@ -18538,12 +18873,76 @@
         }
       }
     },
+    "领地税收" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory Tax"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地税收"
+          }
+        }
+      }
+    },
     "领地税收 %d%% · 扣除 %d 件物品" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "领地税收 %1$d%% · 扣除 %2$d 件物品"
+          }
+        }
+      }
+    },
+    "领地税收到账 · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tax Income · %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地税收到账 · %@"
+          }
+        }
+      }
+    },
+    "领地税收到账 · %d 笔" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tax Income · %d entries"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地税收到账 · %d 笔"
+          }
+        }
+      }
+    },
+    "领地税率" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory Tax Rate"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地税率"
           }
         }
       }

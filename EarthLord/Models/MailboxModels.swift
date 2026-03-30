@@ -11,10 +11,11 @@ import Foundation
 
 /// 邮件类型枚举
 enum MailType: String, Codable, CaseIterable {
-    case purchase = "purchase"    // 购买物品
-    case reward = "reward"        // 系统奖励
-    case gift = "gift"            // 玩家赠送
-    case trade = "trade"          // 交易完成通知
+    case purchase = "purchase"      // 购买物品
+    case reward = "reward"          // 系统奖励
+    case gift = "gift"              // 玩家赠送
+    case trade = "trade"            // 交易完成通知
+    case taxIncome = "tax_income"   // 领地税收到账
 
     var displayName: String {
         switch self {
@@ -22,6 +23,7 @@ enum MailType: String, Codable, CaseIterable {
         case .reward: return String(localized: "系统奖励")
         case .gift: return String(localized: "玩家赠送")
         case .trade: return String(localized: "交易通知")
+        case .taxIncome: return String(localized: "领地税收")
         }
     }
 
@@ -31,6 +33,7 @@ enum MailType: String, Codable, CaseIterable {
         case .reward: return "gift.fill"
         case .gift: return "heart.fill"
         case .trade: return "arrow.left.arrow.right"
+        case .taxIncome: return "flag.fill"
         }
     }
 }

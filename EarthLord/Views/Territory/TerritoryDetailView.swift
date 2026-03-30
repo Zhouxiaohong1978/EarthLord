@@ -29,6 +29,9 @@ struct TerritoryDetailView: View {
     /// 是否正在更新交易状态
     @State private var isUpdatingTrading = false
 
+    /// 税率（0 / 10 / 20 / 30）
+    @State private var taxRate: Int = 10
+
     /// 广播消息编辑内容
     @State private var broadcastMessage: String = ""
 
@@ -141,6 +144,7 @@ struct TerritoryDetailView: View {
             startTimer()
             allowTrading = territory.allowTrading ?? true
             broadcastMessage = territory.broadcastMessage ?? ""
+            taxRate = territory.taxRate ?? 10
         }
         .onDisappear {
             stopTimer()
@@ -246,6 +250,9 @@ struct TerritoryDetailView: View {
 
                     // 允许交易开关
                     tradingToggleCard
+
+                    // 领地税率设置
+                    taxRateCard
 
                     // 领地广播消息
                     broadcastMessageCard
@@ -502,6 +509,71 @@ struct TerritoryDetailView: View {
         )
     }
 
+    /// 领地税率卡片
+    private var taxRateCard: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "percent")
+                    .font(.system(size: 20))
+                    .foregroundColor(ApocalypseTheme.warning)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "领地税率"))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Text(taxRateDescription)
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+
+                Spacer()
+
+                Text("\(taxRate)%")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(taxRate == 0 ? ApocalypseTheme.success : ApocalypseTheme.warning)
+            }
+
+            // 四档选择
+            HStack(spacing: 8) {
+                ForEach([0, 10, 20, 30], id: \.self) { rate in
+                    Button {
+                        guard rate != taxRate else { return }
+                        taxRate = rate
+                        Task {
+                            try? await TerritoryManager.shared.updateTaxRate(rate, for: territory.id)
+                        }
+                    } label: {
+                        Text("\(rate)%")
+                            .font(.system(size: 13, weight: rate == taxRate ? .bold : .regular))
+                            .foregroundColor(rate == taxRate ? .white : ApocalypseTheme.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(rate == taxRate ? ApocalypseTheme.warning : ApocalypseTheme.cardBackground)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(ApocalypseTheme.background)
+        )
+    }
+
+    private var taxRateDescription: String {
+        switch taxRate {
+        case 0:  return String(localized: "免税，欢迎所有访客搜刮")
+        case 10: return String(localized: "轻税，3件以下通常免扣")
+        case 20: return String(localized: "中税，3件约扣1件")
+        case 30: return String(localized: "重税，2件以上约扣1件")
+        default: return ""
+        }
+    }
+
     /// 领地广播消息卡片（领主公告，访客搜刮时展示）
     private var broadcastMessageCard: some View {
         VStack(spacing: 0) {
@@ -539,14 +611,15 @@ struct TerritoryDetailView: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(ApocalypseTheme.background)
         )
-        .alert(String(localized: "编辑广播消息"), isPresented: $showBroadcastEditor) {
-            TextField(String(localized: "输入领地公告（最多50字）"), text: $broadcastMessage)
-            Button(String(localized: "保存")) {
+        .sheet(isPresented: $showBroadcastEditor) {
+            BroadcastMessageEditorSheet(
+                message: $broadcastMessage,
+                isSaving: $isSavingBroadcast
+            ) {
                 Task { await saveBroadcastMessage() }
             }
-            Button(String(localized: "取消"), role: .cancel) {}
-        } message: {
-            Text(String(localized: "访客在你的领地搜刮时会看到此消息"))
+            .presentationDetents([.height(260)])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -736,4 +809,82 @@ struct TerritoryDetailView: View {
             buildingCount: nil
         )
     )
+}
+
+// MARK: - 广播消息编辑 Sheet
+
+struct BroadcastMessageEditorSheet: View {
+    @Binding var message: String
+    @Binding var isSaving: Bool
+    let onSave: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // 标题行
+            HStack {
+                Text(String(localized: "编辑广播消息"))
+                    .font(.headline)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                Spacer()
+                Button(String(localized: "取消")) { dismiss() }
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+
+            // 说明
+            Text(String(localized: "访客搜刮时可见。税收以物品形式自动扣除，无需在此说明。"))
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+
+            // 文本编辑框
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(ApocalypseTheme.background)
+                    .frame(minHeight: 80)
+
+                TextField(String(localized: "输入领地公告（最多50字）"), text: $message, axis: .vertical)
+                    .lineLimit(3)
+                    .font(.system(size: 15))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                    .padding(10)
+                    .focused($isFocused)
+                    .onChange(of: message) { _ in
+                        if message.count > 50 {
+                            message = String(message.prefix(50))
+                        }
+                    }
+            }
+
+            // 字数 + 保存按钮
+            HStack {
+                Text("\(message.count)/50")
+                    .font(.caption2)
+                    .foregroundColor(message.count >= 50 ? ApocalypseTheme.warning : ApocalypseTheme.textMuted)
+                Spacer()
+                Button {
+                    isFocused = false
+                    onSave()
+                    dismiss()
+                } label: {
+                    if isSaving {
+                        ProgressView().tint(.white).scaleEffect(0.8)
+                    } else {
+                        Text(String(localized: "保存"))
+                            .fontWeight(.semibold)
+                    }
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+                .background(ApocalypseTheme.primary)
+                .cornerRadius(8)
+                .disabled(isSaving)
+            }
+        }
+        .padding(20)
+        .background(ApocalypseTheme.cardBackground)
+        .onAppear { isFocused = true }
+    }
 }

@@ -334,16 +334,9 @@ final class InventoryManager: ObservableObject {
         items.count
     }
 
-    /// 是否已购买扩容（Non-consumable，买一次永久 +500格）
-    static let capacityExpansionKey = "backpack_capacity_expanded"
-    var hasCapacityExpansion: Bool {
-        get { UserDefaults.standard.bool(forKey: Self.capacityExpansionKey) }
-        set { UserDefaults.standard.set(newValue, forKey: Self.capacityExpansionKey) }
-    }
-
-    /// 获取背包容量上限（订阅档位 + 扩容加成）
+    /// 获取背包容量上限（由订阅档位决定）
     var backpackCapacity: Int {
-        SubscriptionManager.shared.backpackCapacity + (hasCapacityExpansion ? 500 : 0)
+        SubscriptionManager.shared.backpackCapacity
     }
 
     /// 检查背包是否已满（按物品总数量）

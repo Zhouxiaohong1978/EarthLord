@@ -336,7 +336,11 @@ struct TradeOfferDetailView: View {
 
     private func getAvailableQuantity(for item: TradeItem) -> Int {
         return inventoryManager.items
-            .filter { $0.itemId == item.itemId && $0.quality == item.quality }
+            .filter {
+                $0.itemId == item.itemId
+                && $0.quality == item.quality
+                && $0.customName == item.customName  // AI 物品需精确匹配 customName
+            }
             .reduce(0) { $0 + $1.quantity }
     }
 

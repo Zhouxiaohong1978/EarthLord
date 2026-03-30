@@ -770,9 +770,9 @@ private struct GeoJSONPoint: Codable {
 
 /// 消息分类枚举（官方频道使用）
 enum MessageCategory: String, Codable, CaseIterable {
+    case mission = "mission"     // 任务发布（置顶）
     case survival = "survival"   // 生存指南
     case news = "news"           // 游戏资讯
-    case mission = "mission"     // 任务发布
     case alert = "alert"         // 紧急广播
 
     var displayName: String {

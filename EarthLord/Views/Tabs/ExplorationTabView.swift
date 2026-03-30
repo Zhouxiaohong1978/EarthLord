@@ -51,10 +51,10 @@ struct ExplorationTabView: View {
             }
             .navigationBarHidden(true)
             .onReceive(NotificationCenter.default.publisher(for: .navigateToMailbox)) { _ in
-                // 切换到邮箱分段
-                withAnimation {
-                    selectedSegment = .mailbox
-                }
+                withAnimation { selectedSegment = .mailbox }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToBackpack)) { _ in
+                withAnimation { selectedSegment = .backpack }
             }
         }
     }
@@ -772,6 +772,7 @@ struct BackpackContentView: View {
     @State private var showDisassembleConfirm = false
     @State private var pendingDisassemble: (itemId: String, customName: String, quantity: Int)?
 
+
     /// 当前容量（物品总数量）
     private var currentCapacity: Double {
         Double(inventoryManager.totalItemCount)
@@ -901,7 +902,7 @@ struct BackpackContentView: View {
                     if let item = inventoryManager.items.first(where: {
                         $0.itemId == p.itemId && $0.customName == p.customName
                     }) {
-                        try? await InventoryManager.shared.disassembleItem(item)
+                        _ = try? await InventoryManager.shared.disassembleItem(item)
                     }
                     pendingDisassemble = nil
                 }

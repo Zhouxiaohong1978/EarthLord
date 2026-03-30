@@ -18,6 +18,7 @@ struct TerritoryBuildingRow: View {
     /// 定时器触发器 - 用于实时更新建造进度和产出倒计时
     @State private var timerTrigger = false
     @State private var showCollectSheet = false
+    @State private var showSpeedupSheet = false
 
     /// 定时器
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -74,6 +75,9 @@ struct TerritoryBuildingRow: View {
         .id(timerTrigger) // 通过改变 id 强制视图刷新
         .sheet(isPresented: $showCollectSheet) {
             BuildingCollectSheet(building: building)
+        }
+        .sheet(isPresented: $showSpeedupSheet) {
+            BuildingSpeedupSheet(building: building)
         }
     }
 
@@ -171,9 +175,22 @@ struct TerritoryBuildingRow: View {
     @ViewBuilder
     private var trailingContent: some View {
         if building.status == .constructing || building.status == .upgrading {
-            // 进度环
-            CircularProgressView(progress: building.buildProgress)
-                .frame(width: 36, height: 36)
+            HStack(spacing: 8) {
+                // 加速按钮
+                Button {
+                    showSpeedupSheet = true
+                } label: {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Color(red: 0.95, green: 0.62, blue: 0.12))
+                        .clipShape(Circle())
+                }
+                // 进度环
+                CircularProgressView(progress: building.buildProgress)
+                    .frame(width: 36, height: 36)
+            }
         } else if building.status == .active {
             HStack(spacing: 8) {
                 // 产出可领取时显示领取按钮
@@ -392,6 +409,266 @@ struct BuildingCollectSheet: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+}
+
+// MARK: - BuildingSpeedupSheet
+
+/// 建造加速弹窗
+struct BuildingSpeedupSheet: View {
+    let building: PlayerBuilding
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var inventoryManager = InventoryManager.shared
+
+    @State private var speedupTokenCount: Int = 0
+    @State private var isApplying = false
+    @State private var errorMessage: String?
+    @State private var showError = false
+
+    private var availableSpeedupTokens: Int {
+        inventoryManager.items
+            .filter { $0.itemId == "build_speedup" }
+            .reduce(0) { $0 + $1.quantity }
+    }
+
+    private var maxSpeedupTokens: Int { min(availableSpeedupTokens, 5) }
+
+    /// 预计减少的总秒数（每个加速令 -30 分钟）
+    private var totalReductionSeconds: Int {
+        speedupTokenCount * 1800
+    }
+
+    /// 格式化减少时间
+    private var formattedReduction: String {
+        let total = totalReductionSeconds
+        if total == 0 { return "0分钟" }
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        if hours > 0 && minutes > 0 { return "\(hours)小时\(minutes)分钟" }
+        if hours > 0 { return "\(hours)小时" }
+        return "\(minutes)分钟"
+    }
+
+    /// 加速后预计完成时间
+    private var previewCompletedAt: Date? {
+        guard let completedAt = building.buildCompletedAt, totalReductionSeconds > 0 else {
+            return building.buildCompletedAt
+        }
+        return max(Date(), completedAt - TimeInterval(totalReductionSeconds))
+    }
+
+    /// 剩余时间格式化
+    private func formattedRemaining(from date: Date) -> String {
+        let secs = max(0, date.timeIntervalSince(Date()))
+        let h = Int(secs) / 3600
+        let m = (Int(secs) % 3600) / 60
+        let s = Int(secs) % 60
+        if h > 0 { return "\(h)h \(m)m" }
+        if m > 0 { return "\(m)m \(s)s" }
+        return "\(s)s"
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApocalypseTheme.background.ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 24) {
+
+                        // ── 当前进度卡片 ──
+                        VStack(spacing: 8) {
+                            CircularProgressView(progress: building.buildProgress)
+                                .frame(width: 72, height: 72)
+                            Text(building.buildingName)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(ApocalypseTheme.textPrimary)
+                            if let completedAt = building.buildCompletedAt {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "clock")
+                                        .font(.system(size: 12))
+                                    Text("剩余 \(formattedRemaining(from: completedAt))")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(ApocalypseTheme.textSecondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(ApocalypseTheme.cardBackground))
+
+                        // ── 建造加速令 ──
+                        speedupSection(
+                            icon: "bolt.fill",
+                            iconColor: Color(red: 0.95, green: 0.62, blue: 0.12),
+                            title: "建造加速令",
+                            subtitle: "每个缩短 30 分钟，最多 5 个",
+                            available: availableSpeedupTokens,
+                            maxCount: maxSpeedupTokens,
+                            count: $speedupTokenCount
+                        )
+
+                        // ── 加速预览 ──
+                        if totalReductionSeconds > 0 {
+                            VStack(spacing: 6) {
+                                HStack {
+                                    Image(systemName: "arrow.down.circle.fill")
+                                        .foregroundColor(ApocalypseTheme.success)
+                                    Text("缩短 \(formattedReduction)")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(ApocalypseTheme.success)
+                                }
+                                if let preview = previewCompletedAt {
+                                    Text("完成时间 → \(formattedRemaining(from: preview))")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(ApocalypseTheme.textSecondary)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.success.opacity(0.1)))
+                        }
+
+                        // ── 确认按钮 ──
+                        Button {
+                            Task { await applySpeedup() }
+                        } label: {
+                            Group {
+                                if isApplying {
+                                    ProgressView().tint(.white)
+                                } else {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "bolt.fill")
+                                        Text(totalReductionSeconds > 0 ? "立即加速" : "请选择数量")
+                                    }
+                                    .font(.system(size: 16, weight: .bold))
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(totalReductionSeconds > 0
+                                          ? Color(red: 0.95, green: 0.62, blue: 0.12)
+                                          : ApocalypseTheme.textMuted)
+                            )
+                        }
+                        .disabled(totalReductionSeconds == 0 || isApplying)
+                    }
+                    .padding(20)
+                }
+            }
+            .navigationTitle("建造加速")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+            }
+            .alert("加速失败", isPresented: $showError) {
+                Button("确定") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
+            .onAppear {
+                Task { await InventoryManager.shared.refreshInventory() }
+            }
+        }
+    }
+
+    // MARK: - 加速项组件
+
+    private func speedupSection(
+        icon: String,
+        iconColor: Color,
+        title: String,
+        subtitle: String,
+        available: Int,
+        maxCount: Int,
+        count: Binding<Int>
+    ) -> some View {
+        HStack(spacing: 14) {
+            // 图标
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(iconColor)
+            }
+
+            // 标题 + 说明
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+                Text("拥有 \(available) 个")
+                    .font(.system(size: 11))
+                    .foregroundColor(available > 0 ? ApocalypseTheme.success : ApocalypseTheme.danger)
+            }
+
+            Spacer()
+
+            // 数量选择器
+            if maxCount > 0 {
+                HStack(spacing: 0) {
+                    Button {
+                        if count.wrappedValue > 0 { count.wrappedValue -= 1 }
+                    } label: {
+                        Image(systemName: "minus")
+                            .font(.system(size: 13, weight: .bold))
+                            .frame(width: 32, height: 32)
+                            .foregroundColor(count.wrappedValue > 0 ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
+                    }
+
+                    Text("\(count.wrappedValue)")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                        .frame(minWidth: 28)
+                        .multilineTextAlignment(.center)
+
+                    Button {
+                        if count.wrappedValue < maxCount { count.wrappedValue += 1 }
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .bold))
+                            .frame(width: 32, height: 32)
+                            .foregroundColor(count.wrappedValue < maxCount ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
+                    }
+                }
+                .background(RoundedRectangle(cornerRadius: 8).fill(ApocalypseTheme.background))
+            } else {
+                Text("无")
+                    .font(.system(size: 13))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .frame(width: 96)
+            }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.cardBackground))
+    }
+
+    // MARK: - 执行加速
+
+    private func applySpeedup() async {
+        isApplying = true
+        do {
+            try await BuildingManager.shared.applyBuildSpeedup(
+                buildingId: building.id,
+                tokenCount: speedupTokenCount
+            )
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+        isApplying = false
     }
 }
 

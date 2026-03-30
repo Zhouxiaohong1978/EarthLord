@@ -339,19 +339,7 @@ final class CommunicationManager: ObservableObject {
         }
     }
 
-    /// 使用设备升级令升级当前设备（供内购调用）
-    func applyDeviceUpgradeTokens(count: Int) async throws {
-        guard let userId = AuthManager.shared.currentUser?.id,
-              let device = currentDevice, device.isUnlocked else { return }
-        let applyCount = min(count, 10 - device.deviceLevel)
-        guard applyCount > 0 else { return }
-        for _ in 0..<applyCount {
-            try await upgradeDevice(userId: userId, deviceType: device.deviceType)
-        }
-        logger.log("设备升级令：升级 \(applyCount) 级", type: .success)
-    }
-
-    /// 检查 Lord 订阅者是否应自动解锁卫星
+/// 检查 Lord 订阅者是否应自动解锁卫星
     func ensureLordSatelliteAccess() async {
         guard SubscriptionManager.shared.hasSatelliteAccess,
               let userId = AuthManager.shared.currentUser?.id else { return }
@@ -1149,9 +1137,9 @@ final class CommunicationManager: ObservableObject {
             filtered = response
         }
 
-        channelMessages[CommunicationManager.officialChannelId] = filtered.reversed()
+        channelMessages[CommunicationManager.officialChannelId] = filtered
         logger.log("成功加载 \(filtered.count) 条官方消息", type: .success)
-        return filtered.reversed()
+        return filtered
     }
 
     // MARK: - Day 36: PTT Methods

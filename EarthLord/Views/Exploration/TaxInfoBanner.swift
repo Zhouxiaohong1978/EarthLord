@@ -57,15 +57,15 @@ struct TaxInfoBanner: View {
                 )
             }
 
-            // 前往通讯按钮
+            // 查看背包按钮
             Button {
                 onDismiss()
-                NotificationCenter.default.post(name: .switchToCommunicationTab, object: nil)
+                NotificationCenter.default.post(name: .navigateToBackpack, object: nil)
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
+                    Image(systemName: "backpack.fill")
                         .font(.system(size: 13))
-                    Text(LocalizedStringKey("前往通讯频道"))
+                    Text(LocalizedStringKey("查看背包"))
                         .font(.system(size: 13, weight: .medium))
                 }
                 .foregroundColor(ApocalypseTheme.primary)
@@ -85,7 +85,7 @@ struct TaxInfoBanner: View {
         )
         .padding(.horizontal, 20)
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
                 onDismiss()
             }
         }

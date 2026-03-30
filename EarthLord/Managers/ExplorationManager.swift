@@ -1928,15 +1928,15 @@ extension ExplorationManager {
         if let hostTerritory = TerritoryManager.shared.findOtherTerritory(containing: checkCoord) {
             let taxCount = await TerritoryManager.shared.recordVisitAndTax(
                 territory: hostTerritory,
-                itemCount: itemsToSave.count
+                items: itemsToSave
             )
-            // 从末尾扣除税收件数
+            // 从末尾扣除税收件数（税收物品已在 recordVisitAndTax 内投递给领主）
             if taxCount > 0 && taxCount < itemsToSave.count {
                 itemsToSave = Array(itemsToSave.dropLast(taxCount))
             } else if taxCount >= itemsToSave.count {
                 itemsToSave = []
             }
-            logger.log("在他人领地搜刮，扣税 \(taxCount) 件，实得 \(itemsToSave.count) 件", type: .info)
+            logger.log("在他人领地搜刮，扣税 \(taxCount) 件，已投递领主邮箱，实得 \(itemsToSave.count) 件", type: .info)
             // 通知 UI 显示税收提示
             await MainActor.run {
                 lastTaxInfo = TaxInfo(

@@ -366,9 +366,10 @@ struct MapViewRepresentable: UIViewRepresentable {
 
                 // 根据轨迹类型设置颜色
                 if polyline.title == "exploration" {
-                    // 🚶 探索轨迹：橙色
-                    renderer.strokeColor = UIColor.systemOrange
-                    renderer.lineWidth = 5.0
+                    // 🚶 探索轨迹：亮青蓝色虚线，区别于橙色领地
+                    renderer.strokeColor = UIColor(red: 0.0, green: 0.9, blue: 1.0, alpha: 0.95)
+                    renderer.lineWidth = 4.0
+                    renderer.lineDashPattern = [10, 6]
                 } else {
                     // 🗺️ 圈地轨迹：闭环后从青色变成绿色
                     if parent.isPathClosed {

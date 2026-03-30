@@ -72,6 +72,10 @@ struct TradeItem: Codable, Identifiable, Equatable {
     let quality: ItemQuality?    // 品质（可选）
     let customName: String?      // AI 命名物品的自定义名称
 
+    enum CodingKeys: String, CodingKey {
+        case id, itemId, quantity, quality, customName
+    }
+
     init(
         id: UUID = UUID(),
         itemId: String,
@@ -84,6 +88,16 @@ struct TradeItem: Codable, Identifiable, Equatable {
         self.quantity = quantity
         self.quality = quality
         self.customName = customName
+    }
+
+    /// 自定义解码：id 字段缺失时自动生成 UUID（兼容 RPC 写入的历史记录）
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id         = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
+        itemId     = try c.decode(String.self, forKey: .itemId)
+        quantity   = try c.decode(Int.self, forKey: .quantity)
+        quality    = try? c.decode(ItemQuality.self, forKey: .quality)
+        customName = try? c.decodeIfPresent(String.self, forKey: .customName)
     }
 
     /// 显示名称：AI 物品用 customName，标准物品用定义表名称
@@ -356,6 +370,7 @@ struct TradeOfferDB: Codable {
 // MARK: - TradeHistoryDB Supabase 数据库模型
 
 /// 交易历史数据库模型（用于 Supabase）
+/// items_exchanged 在 DB 中为 jsonb 对象，直接解码为 TradeExchange
 struct TradeHistoryDB: Codable {
     let id: String?
     let offerId: String
@@ -363,7 +378,7 @@ struct TradeHistoryDB: Codable {
     let buyerId: String
     let sellerUsername: String
     let buyerUsername: String
-    let itemsExchanged: String         // JSON 字符串
+    let itemsExchanged: TradeExchange   // jsonb → 直接解码
     let completedAt: String
     let sellerRating: Int?
     let buyerRating: Int?
@@ -395,16 +410,8 @@ struct TradeHistoryDB: Codable {
             return nil
         }
 
-        // 解析 JSON 字符串
-        let decoder = JSONDecoder()
-        guard let exchangeData = itemsExchanged.data(using: .utf8),
-              let exchange = try? decoder.decode(TradeExchange.self, from: exchangeData) else {
-            return nil
-        }
-
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
         let completed = dateFormatter.date(from: completedAt) ?? Date()
 
         return TradeHistory(
@@ -414,7 +421,7 @@ struct TradeHistoryDB: Codable {
             buyerId: buyerId,
             sellerUsername: sellerUsername,
             buyerUsername: buyerUsername,
-            itemsExchanged: exchange,
+            itemsExchanged: itemsExchanged,
             completedAt: completed,
             sellerRating: sellerRating,
             buyerRating: buyerRating,

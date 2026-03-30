@@ -503,10 +503,17 @@ final class TradeManager: ObservableObject {
             _ = try await fetchMyOffers()
             _ = try await fetchAvailableOffers()
             _ = try await fetchTradeHistory()
+            _ = try await fetchTodayTradeCount()
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// 获取今日交易次数（公开，供 UI 层主动刷新）
+    @discardableResult
+    func fetchTodayTradeCount() async throws -> Int {
+        return try await getTodayTradeCount()
     }
 
     // MARK: - Rating

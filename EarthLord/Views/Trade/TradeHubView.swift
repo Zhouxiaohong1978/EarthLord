@@ -88,14 +88,35 @@ struct TradeHubView: View {
 
     // MARK: - 头部统计
 
+    private var dailyLimit: Int? {
+        SubscriptionManager.shared.dailyTradeLimit
+    }
+
+    private var todayTradeLabel: String {
+        if let limit = dailyLimit {
+            return "\(tradeManager.todayTradeCount)/\(limit)"
+        }
+        return "\(tradeManager.todayTradeCount)"
+    }
+
+    private var todayTradeColor: Color {
+        guard let limit = dailyLimit else { return ApocalypseTheme.success }
+        let ratio = Double(tradeManager.todayTradeCount) / Double(limit)
+        if ratio >= 1.0 { return ApocalypseTheme.danger }
+        if ratio >= 0.8 { return ApocalypseTheme.warning }
+        return ApocalypseTheme.success
+    }
+
     private var headerStats: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 0) {
             statItem(
                 value: "\(tradeManager.availableOffers.count)",
                 label: "市场挂单",
                 icon: "cart.fill",
                 color: ApocalypseTheme.primary
             )
+
+            Divider().frame(height: 40).background(ApocalypseTheme.textMuted.opacity(0.3))
 
             statItem(
                 value: "\(activeOffersCount)",
@@ -104,11 +125,14 @@ struct TradeHubView: View {
                 color: ApocalypseTheme.info
             )
 
+            Divider().frame(height: 40).background(ApocalypseTheme.textMuted.opacity(0.3))
+
             statItem(
-                value: "\(tradeManager.tradeHistory.count)",
-                label: "交易次数",
+                value: todayTradeLabel,
+                label: dailyLimit != nil ? "今日次数" : "今日次数",
                 icon: "arrow.left.arrow.right",
-                color: ApocalypseTheme.success
+                color: todayTradeColor,
+                subtitle: dailyLimit != nil ? "免费限\(dailyLimit!)次/天" : "无限制"
             )
         }
         .padding(16)
@@ -118,19 +142,25 @@ struct TradeHubView: View {
         )
     }
 
-    private func statItem(value: String, label: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 6) {
+    private func statItem(value: String, label: String, icon: String, color: Color, subtitle: String? = nil) -> some View {
+        VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 18))
                 .foregroundColor(color)
 
             Text(verbatim: value)
                 .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundColor(ApocalypseTheme.textPrimary)
+                .foregroundColor(color)
 
             Text(LocalizedStringKey(label))
                 .font(.system(size: 11))
                 .foregroundColor(ApocalypseTheme.textMuted)
+
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .font(.system(size: 10))
+                    .foregroundColor(ApocalypseTheme.textMuted.opacity(0.7))
+            }
         }
         .frame(maxWidth: .infinity)
     }

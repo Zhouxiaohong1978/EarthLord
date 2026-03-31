@@ -177,16 +177,15 @@ struct TerritoryMapView: UIViewRepresentable {
                     if let template = buildingAnnotation.template {
                         let iconName = template.icon
                         if !iconName.contains("."), let source = UIImage(named: iconName) {
-                            // 自定义图片：白色圆角正方形底板
-                            let size = CGSize(width: 48, height: 48)
+                            // 自定义图片：白色圆角正方形底板，尺寸由 map_icon_size 决定
+                            let pt = CGFloat(template.mapIconSize ?? 44)
+                            let size = CGSize(width: pt, height: pt)
                             let renderer = UIGraphicsImageRenderer(size: size)
-                            let icon = renderer.image { ctx in
+                            let icon = renderer.image { _ in
                                 let rect = CGRect(origin: .zero, size: size)
-                                let radius: CGFloat = 10
-                                // 白色圆角底板
+                                let radius: CGFloat = pt * 0.2
                                 UIColor.white.setFill()
                                 UIBezierPath(roundedRect: rect, cornerRadius: radius).fill()
-                                // 图片内嵌2pt边距
                                 let inset = rect.insetBy(dx: 2, dy: 2)
                                 let imagePath = UIBezierPath(roundedRect: inset, cornerRadius: radius - 2)
                                 imagePath.addClip()
@@ -195,7 +194,7 @@ struct TerritoryMapView: UIViewRepresentable {
                             let customView = MKAnnotationView(annotation: buildingAnnotation, reuseIdentifier: "TerritoryBuildingCustom")
                             customView.canShowCallout = true
                             customView.image = icon
-                            customView.centerOffset = CGPoint(x: 0, y: -24)
+                            customView.centerOffset = CGPoint(x: 0, y: -pt / 2)
                             customView.displayPriority = .required
                             return customView
                         } else {

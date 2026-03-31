@@ -134,6 +134,7 @@ struct BuildingTemplate: Identifiable, Codable {
     let description: String
     let descriptionEn: String?
     let icon: String
+    let mapIconSize: Int?
     let requiredResources: [String: Int]
     var upgradeResources: [[String: Int]]? = nil
     let buildTimeSeconds: Int
@@ -150,6 +151,7 @@ struct BuildingTemplate: Identifiable, Codable {
         case description
         case descriptionEn = "description_en"
         case icon
+        case mapIconSize = "map_icon_size"
         case requiredResources = "required_resources"
         case upgradeResources = "upgrade_resources"
         case buildTimeSeconds = "build_time_seconds"

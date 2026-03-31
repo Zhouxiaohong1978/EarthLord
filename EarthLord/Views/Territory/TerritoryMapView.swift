@@ -175,8 +175,31 @@ struct TerritoryMapView: UIViewRepresentable {
                     annotationView?.glyphImage = UIImage(systemName: "hammer.fill")
                 case .active:
                     if let template = buildingAnnotation.template {
-                        annotationView?.markerTintColor = UIColor(template.category.color)
-                        annotationView?.glyphImage = UIImage(systemName: template.icon)
+                        let iconName = template.icon
+                        if !iconName.contains("."), let source = UIImage(named: iconName) {
+                            // 自定义图片：渲染圆形标注替换默认 pin
+                            let size = CGSize(width: 48, height: 48)
+                            let renderer = UIGraphicsImageRenderer(size: size)
+                            let rounded = renderer.image { _ in
+                                let rect = CGRect(origin: .zero, size: size)
+                                UIBezierPath(ovalIn: rect).addClip()
+                                source.draw(in: rect)
+                                UIColor.systemOrange.setStroke()
+                                let border = UIBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5))
+                                border.lineWidth = 3
+                                border.stroke()
+                            }
+                            // 切换为普通 AnnotationView 显示图片
+                            let customView = MKAnnotationView(annotation: buildingAnnotation, reuseIdentifier: "TerritoryBuildingCustom")
+                            customView.canShowCallout = true
+                            customView.image = rounded
+                            customView.centerOffset = CGPoint(x: 0, y: -24)
+                            customView.displayPriority = .required
+                            return customView
+                        } else {
+                            annotationView?.markerTintColor = UIColor(template.category.color)
+                            annotationView?.glyphImage = UIImage(systemName: iconName)
+                        }
                     } else {
                         annotationView?.markerTintColor = .systemGreen
                         annotationView?.glyphImage = UIImage(systemName: "building.2.fill")

@@ -31,7 +31,7 @@
       "tier": 1,
       "description": "简易的避难场所，可以遮风挡雨。提供基础的休息功能，恢复体力。",
       "description_en": "A basic shelter to block wind and rain. Provides rest to restore stamina.",
-      "icon": "tent.2.fill",
+      "icon": "building_shelter",
       "required_resources": {
         "wood": 50,
         "cloth": 30
@@ -55,7 +55,7 @@
       "tier": 1,
       "description": "用于存储饮用水的大型桶，维持长期水源供应。每日自动产出矿泉水×1。",
       "description_en": "A large barrel for storing drinking water. Auto-produces 1 water bottle daily.",
-      "icon": "drop.fill",
+      "icon": "building_water_barrel",
       "required_resources": {
         "scrap_metal": 20,
         "wood": 10
@@ -77,7 +77,7 @@
       "tier": 1,
       "description": "简易的医疗处置区域，使用医疗物品时回复效果提升20%。",
       "description_en": "A basic medical area. Medical items restore 20% more vitals when used here.",
-      "icon": "cross.case.fill",
+      "icon": "building_medical_station",
       "required_resources": {
         "cloth": 20,
         "bandage": 15,

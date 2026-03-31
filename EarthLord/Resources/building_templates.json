@@ -25,26 +25,26 @@
     {
       "id": "shelter",
       "template_id": "shelter",
-      "name": "简易帐篷",
-      "name_en": "Simple Shelter",
+      "name": "庇护所",
+      "name_en": "Shelter",
       "category": "survival",
       "tier": 1,
-      "description": "简易的避难场所，可以遮风挡雨。提供基础的休息功能，恢复体力。",
-      "description_en": "A basic shelter to block wind and rain. Provides rest to restore stamina.",
-      "icon": "building_shelter",
+      "description": "帐篷与围栏一体的庇护单元，既能遮风挡雨，又有基本防御。提供休息功能并降低威胁入侵风险。",
+      "description_en": "A combined shelter and fence providing both cover and basic defense. Restores stamina and reduces intrusion risk.",
+      "icon": "building_refuge",
       "required_resources": {
-        "wood": 50,
-        "cloth": 30
+        "wood": 80,
+        "nails": 30,
+        "scrap_metal": 20
       },
       "upgrade_resources": [
-        {"wood": 30, "cloth": 20},
-        {"wood": 40, "cloth": 25},
-        {"wood": 50, "cloth": 30},
-        {"wood": 60, "cloth": 35}
+        {"wood": 50, "nails": 20, "scrap_metal": 12},
+        {"wood": 65, "nails": 25, "scrap_metal": 16},
+        {"wood": 80, "nails": 30, "scrap_metal": 20}
       ],
       "build_time_seconds": 1800,
       "max_per_territory": 1,
-      "max_level": 5
+      "max_level": 3
     },
     {
       "id": "water_barrel",
@@ -92,27 +92,6 @@
       "max_level": 3
     },
     {
-      "id": "simple_fence",
-      "template_id": "simple_fence",
-      "name": "简易围栏",
-      "name_en": "Simple Fence",
-      "category": "defense",
-      "tier": 1,
-      "description": "用木材和钉子搭建的栅栏，划定领地边界，建立心理安全边界。",
-      "description_en": "A wooden fence built with nails to mark territory boundaries.",
-      "icon": "square.dashed",
-      "required_resources": {
-        "wood": 60,
-        "nails": 30
-      },
-      "upgrade_resources": [
-        {"wood": 40, "nails": 20}
-      ],
-      "build_time_seconds": 900,
-      "max_per_territory": 6,
-      "max_level": 2
-    },
-    {
       "id": "water_purifier",
       "template_id": "water_purifier",
       "name": "净水装置",
@@ -121,7 +100,7 @@
       "tier": 2,
       "description": "利用废金属和石头过滤层净化污水，每日自动产出矿泉水×2。",
       "description_en": "Purifies contaminated water using metal filters and stone layers. Produces 2 water bottles daily.",
-      "icon": "humidity.fill",
+      "icon": "building_water_purifier",
       "required_resources": {
         "scrap_metal": 60,
         "stone": 30,
@@ -144,7 +123,7 @@
       "tier": 2,
       "description": "小型储物设施，可以安全存放物资。增加领地的物资存储上限。",
       "description_en": "A small storage facility to safely store supplies and increase territory capacity.",
-      "icon": "archivebox.fill",
+      "icon": "building_storage_small",
       "required_resources": {
         "wood": 100,
         "scrap_metal": 50

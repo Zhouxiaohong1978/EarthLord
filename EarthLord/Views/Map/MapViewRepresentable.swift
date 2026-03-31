@@ -440,17 +440,17 @@ struct MapViewRepresentable: UIViewRepresentable {
                     if let source = UIImage(named: iconName) {
                         let size = CGSize(width: 48, height: 48)
                         let renderer = UIGraphicsImageRenderer(size: size)
-                        let rounded = renderer.image { ctx in
+                        let icon = renderer.image { _ in
                             let rect = CGRect(origin: .zero, size: size)
-                            UIBezierPath(ovalIn: rect).addClip()
-                            source.draw(in: rect)
-                            // 橙色边框
-                            UIColor.systemOrange.setStroke()
-                            let border = UIBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5))
-                            border.lineWidth = 3
-                            border.stroke()
+                            let radius: CGFloat = 10
+                            UIColor.white.setFill()
+                            UIBezierPath(roundedRect: rect, cornerRadius: radius).fill()
+                            let inset = rect.insetBy(dx: 2, dy: 2)
+                            let imagePath = UIBezierPath(roundedRect: inset, cornerRadius: radius - 2)
+                            imagePath.addClip()
+                            source.draw(in: inset)
                         }
-                        annotationView.image = rounded
+                        annotationView.image = icon
                         annotationView.centerOffset = CGPoint(x: 0, y: -24)
                     }
 

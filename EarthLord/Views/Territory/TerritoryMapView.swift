@@ -177,22 +177,24 @@ struct TerritoryMapView: UIViewRepresentable {
                     if let template = buildingAnnotation.template {
                         let iconName = template.icon
                         if !iconName.contains("."), let source = UIImage(named: iconName) {
-                            // 自定义图片：渲染圆形标注替换默认 pin
+                            // 自定义图片：白色圆角正方形底板
                             let size = CGSize(width: 48, height: 48)
                             let renderer = UIGraphicsImageRenderer(size: size)
-                            let rounded = renderer.image { _ in
+                            let icon = renderer.image { ctx in
                                 let rect = CGRect(origin: .zero, size: size)
-                                UIBezierPath(ovalIn: rect).addClip()
-                                source.draw(in: rect)
-                                UIColor.systemOrange.setStroke()
-                                let border = UIBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5))
-                                border.lineWidth = 3
-                                border.stroke()
+                                let radius: CGFloat = 10
+                                // 白色圆角底板
+                                UIColor.white.setFill()
+                                UIBezierPath(roundedRect: rect, cornerRadius: radius).fill()
+                                // 图片内嵌2pt边距
+                                let inset = rect.insetBy(dx: 2, dy: 2)
+                                let imagePath = UIBezierPath(roundedRect: inset, cornerRadius: radius - 2)
+                                imagePath.addClip()
+                                source.draw(in: inset)
                             }
-                            // 切换为普通 AnnotationView 显示图片
                             let customView = MKAnnotationView(annotation: buildingAnnotation, reuseIdentifier: "TerritoryBuildingCustom")
                             customView.canShowCallout = true
-                            customView.image = rounded
+                            customView.image = icon
                             customView.centerOffset = CGPoint(x: 0, y: -24)
                             customView.displayPriority = .required
                             return customView

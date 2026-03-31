@@ -229,6 +229,7 @@ struct BuildingDetailView: View {
         description: "篝火是最基本的生存设施，提供温暖和照明。在寒冷的夜晚，篝火可以帮助你抵御低温，同时也能驱赶野兽。",
         descriptionEn: "A basic fire source providing light and warmth.",
         icon: "flame.fill",
+        mapIconSize: nil,
         requiredResources: ["wood": 30, "stone": 20],
         buildTimeSeconds: 300,
         maxPerTerritory: 3,

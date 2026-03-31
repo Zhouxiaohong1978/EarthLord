@@ -394,6 +394,7 @@ struct BuildingPlacementView: View {
         description: "提供温暖和照明",
         descriptionEn: "Provides warmth and light.",
         icon: "flame.fill",
+        mapIconSize: nil,
         requiredResources: ["wood": 30, "stone": 20],
         buildTimeSeconds: 300,
         maxPerTerritory: 3,

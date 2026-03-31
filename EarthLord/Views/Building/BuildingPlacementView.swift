@@ -155,9 +155,7 @@ struct BuildingPlacementView: View {
                     .fill(template.category.color.opacity(0.2))
                     .frame(width: 64, height: 64)
 
-                Image(systemName: template.icon)
-                    .font(.system(size: 28))
-                    .foregroundColor(template.category.color)
+                BuildingIconView(iconName: template.icon, size: 28, tintColor: template.category.color)
             }
 
             // 建筑信息

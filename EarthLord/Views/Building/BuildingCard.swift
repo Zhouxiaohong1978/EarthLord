@@ -21,9 +21,7 @@ struct BuildingCard: View {
                         .fill(template.category.color.opacity(0.2))
                         .frame(width: 60, height: 60)
 
-                    Image(systemName: template.icon)
-                        .font(.system(size: 28))
-                        .foregroundColor(template.category.color)
+                    BuildingIconView(iconName: template.icon, size: 28, tintColor: template.category.color)
                 }
 
                 // 建筑名称
@@ -83,9 +81,7 @@ struct SelectableBuildingCard: View {
                         .fill(template.category.color.opacity(isSelected ? 0.3 : 0.2))
                         .frame(width: 60, height: 60)
 
-                    Image(systemName: template.icon)
-                        .font(.system(size: 28))
-                        .foregroundColor(template.category.color)
+                    BuildingIconView(iconName: template.icon, size: 28, tintColor: template.category.color)
 
                     // 选中标记
                     if isSelected {

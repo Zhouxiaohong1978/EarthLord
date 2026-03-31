@@ -61,9 +61,7 @@ struct BuildingDetailView: View {
                     .fill(template.category.color.opacity(0.2))
                     .frame(width: 100, height: 100)
 
-                Image(systemName: template.icon)
-                    .font(.system(size: 48))
-                    .foregroundColor(template.category.color)
+                BuildingIconView(iconName: template.icon, size: 48, tintColor: template.category.color)
             }
 
             // 分类标签

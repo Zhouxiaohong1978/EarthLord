@@ -90,9 +90,11 @@ struct TerritoryBuildingRow: View {
                 .fill((template?.category.color ?? ApocalypseTheme.primary).opacity(0.2))
                 .frame(width: 44, height: 44)
 
-            Image(systemName: template?.icon ?? "building.2")
-                .font(.system(size: 20))
-                .foregroundColor(template?.category.color ?? ApocalypseTheme.primary)
+            BuildingIconView(
+                iconName: template?.icon ?? "building.2.fill",
+                size: 20,
+                tintColor: template?.category.color ?? ApocalypseTheme.primary
+            )
         }
     }
 

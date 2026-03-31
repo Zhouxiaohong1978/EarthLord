@@ -9,7 +9,7 @@
       "tier": 1,
       "description": "基础的火源设施，提供照明和取暖功能。可以用来烹饪食物和驱散野兽。建成后体征衰减降低5%。",
       "description_en": "A basic fire source providing light and warmth. Reduces vitals decay by 5% when built.",
-      "icon": "flame.fill",
+      "icon": "building_campfire",
       "required_resources": {
         "wood": 15,
         "stone": 10
@@ -31,7 +31,7 @@
       "tier": 1,
       "description": "简易的避难场所，可以遮风挡雨。提供基础的休息功能，恢复体力。",
       "description_en": "A basic shelter to block wind and rain. Provides rest to restore stamina.",
-      "icon": "house.fill",
+      "icon": "tent.2.fill",
       "required_resources": {
         "wood": 50,
         "cloth": 30

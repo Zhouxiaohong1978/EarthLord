@@ -425,44 +425,67 @@ struct MapViewRepresentable: UIViewRepresentable {
 
             // 处理建筑标注
             if let buildingAnnotation = annotation as? BuildingAnnotation {
-                let identifier = "BuildingMarker"
-
-                // 复用或创建新的标注视图
-                let annotationView = mapView.dequeueReusableAnnotationView(
-                    withIdentifier: identifier
-                ) as? MKMarkerAnnotationView ?? MKMarkerAnnotationView(
-                    annotation: annotation,
-                    reuseIdentifier: identifier
-                )
-
-                annotationView.annotation = annotation
-                annotationView.canShowCallout = true
-
-                // 根据建筑状态设置颜色
-                let statusColor: UIColor
-                switch buildingAnnotation.building.status {
-                case .constructing:
-                    statusColor = .systemOrange
-                case .upgrading:
-                    statusColor = .systemBlue
-                case .active:
-                    statusColor = .systemGreen
-                case .inactive:
-                    statusColor = .systemGray
-                case .damaged:
-                    statusColor = .systemRed
-                }
-                annotationView.markerTintColor = statusColor
-
-                // 设置建筑图标
                 let iconName = buildingAnnotation.template?.icon ?? "building.2.fill"
-                let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
-                annotationView.glyphImage = UIImage(systemName: iconName, withConfiguration: config)
+                let isCustomIcon = !iconName.contains(".")
 
-                // 建筑标注始终显示
-                annotationView.displayPriority = .required
+                if isCustomIcon {
+                    // 自定义图片：直接显示圆形图片标注
+                    let identifier = "BuildingCustomMarker"
+                    let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+                        ?? MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
 
-                return annotationView
+                    annotationView.annotation = annotation
+                    annotationView.canShowCallout = true
+
+                    let size: CGFloat = 44
+                    if let image = UIImage(named: iconName) {
+                        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: size, height: size))
+                        imageView.image = image
+                        imageView.contentMode = .scaleAspectFill
+                        imageView.clipsToBounds = true
+                        imageView.layer.cornerRadius = size / 2
+                        imageView.layer.borderWidth = 2
+                        imageView.layer.borderColor = UIColor.systemOrange.cgColor
+
+                        // 清除旧子视图
+                        annotationView.subviews.forEach { $0.removeFromSuperview() }
+                        annotationView.addSubview(imageView)
+                        annotationView.frame = CGRect(x: 0, y: 0, width: size, height: size)
+                        annotationView.centerOffset = CGPoint(x: 0, y: -size / 2)
+                    }
+
+                    annotationView.displayPriority = .required
+                    return annotationView
+
+                } else {
+                    // SF Symbol：使用标准 MKMarkerAnnotationView
+                    let identifier = "BuildingMarker"
+                    let annotationView = mapView.dequeueReusableAnnotationView(
+                        withIdentifier: identifier
+                    ) as? MKMarkerAnnotationView ?? MKMarkerAnnotationView(
+                        annotation: annotation,
+                        reuseIdentifier: identifier
+                    )
+
+                    annotationView.annotation = annotation
+                    annotationView.canShowCallout = true
+
+                    let statusColor: UIColor
+                    switch buildingAnnotation.building.status {
+                    case .constructing: statusColor = .systemOrange
+                    case .upgrading:    statusColor = .systemBlue
+                    case .active:       statusColor = .systemGreen
+                    case .inactive:     statusColor = .systemGray
+                    case .damaged:      statusColor = .systemRed
+                    }
+                    annotationView.markerTintColor = statusColor
+
+                    let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+                    annotationView.glyphImage = UIImage(systemName: iconName, withConfiguration: config)
+                    annotationView.displayPriority = .required
+
+                    return annotationView
+                }
             }
 
             // 处理 POI 标注

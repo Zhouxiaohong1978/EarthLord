@@ -429,7 +429,7 @@ struct MapViewRepresentable: UIViewRepresentable {
                 let isCustomIcon = !iconName.contains(".")
 
                 if isCustomIcon {
-                    // 自定义图片：直接显示圆形图片标注
+                    // 自定义图片：渲染成圆形 UIImage 直接作为标注图标
                     let identifier = "BuildingCustomMarker"
                     let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
                         ?? MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
@@ -437,21 +437,21 @@ struct MapViewRepresentable: UIViewRepresentable {
                     annotationView.annotation = annotation
                     annotationView.canShowCallout = true
 
-                    let size: CGFloat = 44
-                    if let image = UIImage(named: iconName) {
-                        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: size, height: size))
-                        imageView.image = image
-                        imageView.contentMode = .scaleAspectFill
-                        imageView.clipsToBounds = true
-                        imageView.layer.cornerRadius = size / 2
-                        imageView.layer.borderWidth = 2
-                        imageView.layer.borderColor = UIColor.systemOrange.cgColor
-
-                        // 清除旧子视图
-                        annotationView.subviews.forEach { $0.removeFromSuperview() }
-                        annotationView.addSubview(imageView)
-                        annotationView.frame = CGRect(x: 0, y: 0, width: size, height: size)
-                        annotationView.centerOffset = CGPoint(x: 0, y: -size / 2)
+                    if let source = UIImage(named: iconName) {
+                        let size = CGSize(width: 48, height: 48)
+                        let renderer = UIGraphicsImageRenderer(size: size)
+                        let rounded = renderer.image { ctx in
+                            let rect = CGRect(origin: .zero, size: size)
+                            UIBezierPath(ovalIn: rect).addClip()
+                            source.draw(in: rect)
+                            // 橙色边框
+                            UIColor.systemOrange.setStroke()
+                            let border = UIBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5))
+                            border.lineWidth = 3
+                            border.stroke()
+                        }
+                        annotationView.image = rounded
+                        annotationView.centerOffset = CGPoint(x: 0, y: -24)
                     }
 
                     annotationView.displayPriority = .required

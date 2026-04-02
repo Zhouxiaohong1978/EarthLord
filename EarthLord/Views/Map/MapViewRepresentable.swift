@@ -444,11 +444,7 @@ struct MapViewRepresentable: UIViewRepresentable {
                     annotationView.canShowCallout = true
 
                     if let source = UIImage(named: iconName) {
-                        let latDelta = mapView.region.span.latitudeDelta
-                        let referenceSpan: CLLocationDegrees = 0.003
-                        let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.1), 4.0))
-                        let baseSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
-                        let iconSize = (baseSize * scaleFactor).clamped(to: 16...400)
+                        let iconSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
                         annotationView.image = buildingIcon(source: source, size: iconSize)
                         annotationView.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
                     }
@@ -548,25 +544,9 @@ struct MapViewRepresentable: UIViewRepresentable {
             updateBuildingIconSizes(in: mapView)
         }
 
-        /// 根据当前缩放级别动态更新所有建筑图标尺寸
+        /// 建筑图标尺寸固定（与领地详情页一致，不随地图缩放重算）
         func updateBuildingIconSizes(in mapView: MKMapView) {
-            let latDelta = mapView.region.span.latitudeDelta
-            let referenceSpan: CLLocationDegrees = 0.003
-            let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.1), 4.0))
-
-            for annotation in mapView.annotations {
-                guard let buildingAnnotation = annotation as? BuildingAnnotation,
-                      let view = mapView.view(for: annotation) as? MKAnnotationView else { continue }
-                let template = buildingAnnotation.template
-                    ?? parent.buildingTemplates.first { $0.templateId == buildingAnnotation.building.templateId }
-                let iconName = template?.icon ?? ""
-                guard !iconName.contains("."), let source = UIImage(named: iconName) else { continue }
-
-                let baseSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
-                let iconSize = (baseSize * scaleFactor).clamped(to: 16...400)
-                view.image = buildingIcon(source: source, size: iconSize)
-                view.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
-            }
+            // 固定像素大小，与 TerritoryMapView 行为一致，无需重新渲染
         }
 
         /// 渲染建筑图标（透明背景，直接绘制原图）

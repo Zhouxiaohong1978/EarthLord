@@ -129,7 +129,9 @@ struct MapTabView: View {
                     explorationManager.visiblePOIs
                         .filter { explorationManager.isCoolingDown($0) }
                         .map { explorationManager.coordKey(for: $0.coordinate) }
-                )
+                ),
+                buildings: buildingManager.playerBuildings,
+                buildingTemplates: buildingManager.buildingTemplates
             )
             .ignoresSafeArea()
 
@@ -270,6 +272,11 @@ struct MapTabView: View {
             // 加载领地数据
             Task {
                 await loadTerritories()
+            }
+
+            // 加载建筑数据（在地图上显示建筑图标）
+            Task {
+                await buildingManager.refreshBuildings()
             }
         }
         // 监听闭环状态，闭环后根据验证结果显示横幅

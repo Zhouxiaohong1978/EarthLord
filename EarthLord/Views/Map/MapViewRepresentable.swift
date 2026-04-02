@@ -450,7 +450,7 @@ struct MapViewRepresentable: UIViewRepresentable {
                         let baseSize = CGFloat(template?.mapIconSize ?? 60)
                         let iconSize = (baseSize * scaleFactor).clamped(to: 20...140)
                         annotationView.image = buildingIcon(source: source, size: iconSize)
-                        annotationView.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
+                        annotationView.centerOffset = .zero
                     }
 
                     annotationView.displayPriority = .required
@@ -564,7 +564,7 @@ struct MapViewRepresentable: UIViewRepresentable {
                 let baseSize = CGFloat(buildingAnnotation.template?.mapIconSize ?? 60)
                 let iconSize = (baseSize * scaleFactor).clamped(to: 20...140)
                 view.image = buildingIcon(source: source, size: iconSize)
-                view.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
+                view.centerOffset = .zero
             }
         }
 

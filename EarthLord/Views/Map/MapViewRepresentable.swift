@@ -445,12 +445,12 @@ struct MapViewRepresentable: UIViewRepresentable {
 
                     if let source = UIImage(named: iconName) {
                         let latDelta = mapView.region.span.latitudeDelta
-                        let referenceSpan: CLLocationDegrees = 0.005
-                        let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.25), 3.0))
-                        let baseSize = CGFloat(template?.mapIconSize ?? 60)
-                        let iconSize = (baseSize * scaleFactor).clamped(to: 20...140)
+                        let referenceSpan: CLLocationDegrees = 0.003
+                        let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.1), 4.0))
+                        let baseSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
+                        let iconSize = (baseSize * scaleFactor).clamped(to: 16...400)
                         annotationView.image = buildingIcon(source: source, size: iconSize)
-                        annotationView.centerOffset = .zero
+                        annotationView.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
                     }
 
                     annotationView.displayPriority = .required
@@ -551,20 +551,21 @@ struct MapViewRepresentable: UIViewRepresentable {
         /// 根据当前缩放级别动态更新所有建筑图标尺寸
         func updateBuildingIconSizes(in mapView: MKMapView) {
             let latDelta = mapView.region.span.latitudeDelta
-            let referenceSpan: CLLocationDegrees = 0.005
-            let rawScale = referenceSpan / latDelta
-            let scaleFactor = CGFloat(min(max(rawScale, 0.25), 3.0))
+            let referenceSpan: CLLocationDegrees = 0.003
+            let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.1), 4.0))
 
             for annotation in mapView.annotations {
                 guard let buildingAnnotation = annotation as? BuildingAnnotation,
                       let view = mapView.view(for: annotation) as? MKAnnotationView else { continue }
-                let iconName = buildingAnnotation.template?.icon ?? ""
+                let template = buildingAnnotation.template
+                    ?? parent.buildingTemplates.first { $0.templateId == buildingAnnotation.building.templateId }
+                let iconName = template?.icon ?? ""
                 guard !iconName.contains("."), let source = UIImage(named: iconName) else { continue }
 
-                let baseSize = CGFloat(buildingAnnotation.template?.mapIconSize ?? 60)
-                let iconSize = (baseSize * scaleFactor).clamped(to: 20...140)
+                let baseSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
+                let iconSize = (baseSize * scaleFactor).clamped(to: 16...400)
                 view.image = buildingIcon(source: source, size: iconSize)
-                view.centerOffset = .zero
+                view.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
             }
         }
 

@@ -82,7 +82,7 @@ struct TerritoryMapView: UIViewRepresentable {
             let ann = TerritoryBuildingAnnotation(building: building)
             ann.coordinate = coord
             if let t = templates[building.templateId] {
-                ann.title = "\(building.buildingName) Lv.\(building.level)"
+                ann.title = "\(t.name) Lv.\(building.level)"
                 ann.subtitle = t.category.displayName
                 ann.template = t
             } else {

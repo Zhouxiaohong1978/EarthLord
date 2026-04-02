@@ -428,7 +428,10 @@ struct MapViewRepresentable: UIViewRepresentable {
 
             // 处理建筑标注
             if let buildingAnnotation = annotation as? BuildingAnnotation {
-                let iconName = buildingAnnotation.template?.icon ?? "building.2.fill"
+                // 优先用 annotation 上绑定的模板，若为 nil 则从当前模板列表中回查（防止加载时序问题）
+                let template = buildingAnnotation.template
+                    ?? parent.buildingTemplates.first { $0.templateId == buildingAnnotation.building.templateId }
+                let iconName = template?.icon ?? "building.2.fill"
                 let isCustomIcon = !iconName.contains(".")
 
                 if isCustomIcon {
@@ -444,7 +447,7 @@ struct MapViewRepresentable: UIViewRepresentable {
                         let latDelta = mapView.region.span.latitudeDelta
                         let referenceSpan: CLLocationDegrees = 0.005
                         let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.25), 3.0))
-                        let baseSize = CGFloat(buildingAnnotation.template?.mapIconSize ?? 60)
+                        let baseSize = CGFloat(template?.mapIconSize ?? 60)
                         let iconSize = (baseSize * scaleFactor).clamped(to: 20...140)
                         annotationView.image = buildingIcon(source: source, size: iconSize)
                         annotationView.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
@@ -674,7 +677,7 @@ class BuildingAnnotation: NSObject, MKAnnotation {
     dynamic var coordinate: CLLocationCoordinate2D
 
     var title: String? {
-        building.buildingName
+        template?.name ?? building.buildingName
     }
 
     var subtitle: String? {

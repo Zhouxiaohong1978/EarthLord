@@ -274,7 +274,10 @@ struct MapTabView: View {
                 await loadTerritories()
             }
 
-            // 加载建筑数据（在地图上显示建筑图标）
+            // 加载建筑模板 + 建筑数据（在地图上显示建筑图标）
+            if buildingManager.buildingTemplates.isEmpty {
+                buildingManager.loadTemplates()
+            }
             Task {
                 await buildingManager.refreshBuildings()
             }

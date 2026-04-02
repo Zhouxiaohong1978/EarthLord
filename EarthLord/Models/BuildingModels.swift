@@ -137,6 +137,7 @@ struct BuildingTemplate: Identifiable, Codable {
     let mapIconSize: Int?
     let requiredResources: [String: Int]
     var upgradeResources: [[String: Int]]? = nil
+    var prerequisites: [String]? = nil
     let buildTimeSeconds: Int
     let maxPerTerritory: Int
     let maxLevel: Int
@@ -154,6 +155,7 @@ struct BuildingTemplate: Identifiable, Codable {
         case mapIconSize = "map_icon_size"
         case requiredResources = "required_resources"
         case upgradeResources = "upgrade_resources"
+        case prerequisites
         case buildTimeSeconds = "build_time_seconds"
         case maxPerTerritory = "max_per_territory"
         case maxLevel = "max_level"
@@ -224,6 +226,7 @@ struct PlayerBuilding: Identifiable, Codable {
     var level: Int
     let locationLat: Double?
     let locationLon: Double?
+    var mapDisplaySize: Int?
     let buildStartedAt: Date
     var buildCompletedAt: Date?
     let createdAt: Date
@@ -240,6 +243,7 @@ struct PlayerBuilding: Identifiable, Codable {
         case level
         case locationLat = "location_lat"
         case locationLon = "location_lon"
+        case mapDisplaySize = "map_display_size"
         case buildStartedAt = "build_started_at"
         case buildCompletedAt = "build_completed_at"
         case createdAt = "created_at"
@@ -322,6 +326,7 @@ struct PlayerBuildingDB: Codable {
     let level: Int
     let locationLat: Double?
     let locationLon: Double?
+    let mapDisplaySize: Int?
     let buildStartedAt: String
     let buildCompletedAt: String?
     let createdAt: String?
@@ -338,6 +343,7 @@ struct PlayerBuildingDB: Codable {
         case level
         case locationLat = "location_lat"
         case locationLon = "location_lon"
+        case mapDisplaySize = "map_display_size"
         case buildStartedAt = "build_started_at"
         case buildCompletedAt = "build_completed_at"
         case createdAt = "created_at"
@@ -379,6 +385,7 @@ struct PlayerBuildingDB: Codable {
             level: level,
             locationLat: locationLat,
             locationLon: locationLon,
+            mapDisplaySize: mapDisplaySize,
             buildStartedAt: buildStarted,
             buildCompletedAt: buildCompleted,
             createdAt: created,
@@ -401,6 +408,7 @@ enum BuildingError: LocalizedError {
     case buildingNotFound
     case saveFailed(String)
     case loadFailed(String)
+    case prerequisiteNotMet(String)
 
     var errorDescription: String? {
         switch self {
@@ -423,6 +431,8 @@ enum BuildingError: LocalizedError {
             return String(format: String(localized: "保存失败: %@"), message)
         case .loadFailed(let message):
             return String(format: String(localized: "加载失败: %@"), message)
+        case .prerequisiteNotMet(let buildingId):
+            return String(format: String(localized: "需要先建造前置建筑: %@"), buildingId)
         }
     }
 }
@@ -435,6 +445,15 @@ struct CanBuildResult {
     let missingResources: [String: Int]
     let currentCount: Int
     let maxCount: Int
+    let unmetPrerequisite: String?
+
+    init(canBuild: Bool, missingResources: [String: Int], currentCount: Int, maxCount: Int, unmetPrerequisite: String? = nil) {
+        self.canBuild = canBuild
+        self.missingResources = missingResources
+        self.currentCount = currentCount
+        self.maxCount = maxCount
+        self.unmetPrerequisite = unmetPrerequisite
+    }
 
     /// 是否因为资源不足而无法建造
     var isResourceInsufficient: Bool {
@@ -444,6 +463,11 @@ struct CanBuildResult {
     /// 是否因为数量限制而无法建造
     var isMaxReached: Bool {
         return currentCount >= maxCount
+    }
+
+    /// 是否因为前置建筑未满足而无法建造
+    var isPrerequisiteNotMet: Bool {
+        return unmetPrerequisite != nil
     }
 
     /// 成功结果
@@ -463,6 +487,17 @@ struct CanBuildResult {
             missingResources: missing,
             currentCount: currentCount,
             maxCount: maxCount
+        )
+    }
+
+    /// 前置建筑未满足结果
+    static func prerequisiteNotMet(_ prereqId: String, currentCount: Int, maxCount: Int) -> CanBuildResult {
+        return CanBuildResult(
+            canBuild: false,
+            missingResources: [:],
+            currentCount: currentCount,
+            maxCount: maxCount,
+            unmetPrerequisite: prereqId
         )
     }
 

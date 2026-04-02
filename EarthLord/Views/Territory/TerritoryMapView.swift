@@ -2,228 +2,325 @@
 //  TerritoryMapView.swift
 //  EarthLord
 //
-//  领地地图组件（UIKit）- 全屏显示领地多边形和建筑标记
+//  编辑布局：点击选中建筑 → 单指拖拽移位 / 双指捏合缩放
 //
 
 import SwiftUI
 import MapKit
 
-/// 领地地图视图（全屏）
 struct TerritoryMapView: UIViewRepresentable {
-    /// 领地边界坐标（原始 WGS-84，会自动转换为 GCJ-02）
     let territoryCoordinates: [CLLocationCoordinate2D]
-    /// 领地内的建筑列表
     let buildings: [PlayerBuilding]
-    /// 建筑模板字典
     let templates: [String: BuildingTemplate]
-    /// 是否显示用户位置
     var showsUserLocation: Bool = true
+    @Binding var isEditingLayout: Bool
 
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
-        mapView.mapType = .hybrid  // 卫星混合模式
+        mapView.mapType = .hybrid
         mapView.showsUserLocation = showsUserLocation
         mapView.showsCompass = true
         mapView.showsScale = true
+        mapView.isZoomEnabled = false
+        mapView.pointOfInterestFilter = .excludingAll
+
+        // 单指拖拽（移动选中建筑）
+        let pan = UIPanGestureRecognizer(target: context.coordinator,
+                                          action: #selector(Coordinator.handlePan(_:)))
+        pan.delegate = context.coordinator
+        mapView.addGestureRecognizer(pan)
+
+        // 双指捏合（缩放选中建筑）
+        let pinch = UIPinchGestureRecognizer(target: context.coordinator,
+                                              action: #selector(Coordinator.handlePinch(_:)))
+        pinch.delegate = context.coordinator
+        mapView.addGestureRecognizer(pinch)
 
         return mapView
     }
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
-        // 更新领地多边形
-        updateTerritoryPolygon(mapView, context: context)
+        context.coordinator.parent = self
+        updateTerritoryPolygon(mapView)
+        syncBuildingAnnotations(mapView)
 
-        // 更新建筑标记
-        updateBuildingAnnotations(mapView, context: context)
-
-        // 首次加载时设置地图区域
         if !context.coordinator.hasInitializedRegion && !territoryCoordinates.isEmpty {
-            let region = regionForCoordinates(territoryCoordinates)
-            mapView.setRegion(region, animated: false)
+            mapView.setRegion(regionForCoordinates(territoryCoordinates), animated: false)
             context.coordinator.hasInitializedRegion = true
         }
+
+        // 退出编辑模式时清除选中状态
+        if !isEditingLayout {
+            context.coordinator.clearSelection(in: mapView)
+        }
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    // MARK: - Private Methods
+    // MARK: - Private
 
-    /// 更新领地多边形
-    private func updateTerritoryPolygon(_ mapView: MKMapView, context: Context) {
-        // 移除旧的领地多边形
-        let territoryOverlays = mapView.overlays.filter { ($0 as? MKPolygon)?.title == "territory" }
-        mapView.removeOverlays(territoryOverlays)
-
-        // 添加新的领地多边形
+    private func updateTerritoryPolygon(_ mapView: MKMapView) {
+        let old = mapView.overlays.filter { ($0 as? MKPolygon)?.title == "territory" }
+        mapView.removeOverlays(old)
         guard territoryCoordinates.count >= 3 else { return }
-
-        // 坐标转换（WGS-84 → GCJ-02）
-        let gcj02Coordinates = CoordinateConverter.wgs84ToGcj02(territoryCoordinates)
-
-        let polygon = MKPolygon(coordinates: gcj02Coordinates, count: gcj02Coordinates.count)
-        polygon.title = "territory"
-        mapView.addOverlay(polygon)
+        let gcj = CoordinateConverter.wgs84ToGcj02(territoryCoordinates)
+        let poly = MKPolygon(coordinates: gcj, count: gcj.count)
+        poly.title = "territory"
+        mapView.addOverlay(poly)
     }
 
-    /// 更新建筑标记
-    private func updateBuildingAnnotations(_ mapView: MKMapView, context: Context) {
-        // 移除旧的建筑标记
-        let buildingAnnotations = mapView.annotations.compactMap { $0 as? TerritoryBuildingAnnotation }
-        mapView.removeAnnotations(buildingAnnotations)
+    private func syncBuildingAnnotations(_ mapView: MKMapView) {
+        let existing = mapView.annotations.compactMap { $0 as? TerritoryBuildingAnnotation }
+        let existingIds = Set(existing.map { $0.building.id })
+        let newIds = Set(buildings.map { $0.id })
 
-        // 添加新的建筑标记
-        for building in buildings {
+        mapView.removeAnnotations(existing.filter { !newIds.contains($0.building.id) })
+
+        for building in buildings where !existingIds.contains(building.id) {
             guard let coord = building.coordinate else { continue }
-
-            // 注意：数据库中保存的已经是 GCJ-02 坐标，直接使用无需转换
-            let annotation = TerritoryBuildingAnnotation(building: building)
-            annotation.coordinate = coord
-
-            if let template = templates[building.templateId] {
-                annotation.title = "\(building.buildingName) Lv.\(building.level)"
-                annotation.subtitle = template.category.displayName
-                annotation.template = template
+            let ann = TerritoryBuildingAnnotation(building: building)
+            ann.coordinate = coord
+            if let t = templates[building.templateId] {
+                ann.title = "\(building.buildingName) Lv.\(building.level)"
+                ann.subtitle = t.category.displayName
+                ann.template = t
             } else {
-                annotation.title = building.buildingName
+                ann.title = building.buildingName
             }
-
-            mapView.addAnnotation(annotation)
+            mapView.addAnnotation(ann)
         }
     }
 
-    /// 计算坐标的显示区域
     private func regionForCoordinates(_ coordinates: [CLLocationCoordinate2D]) -> MKCoordinateRegion {
-        guard !coordinates.isEmpty else {
-            return MKCoordinateRegion()
-        }
-
-        // 坐标转换（WGS-84 → GCJ-02）
-        let gcj02Coordinates = CoordinateConverter.wgs84ToGcj02(coordinates)
-
-        let lats = gcj02Coordinates.map { $0.latitude }
-        let lons = gcj02Coordinates.map { $0.longitude }
-
-        let minLat = lats.min()!
-        let maxLat = lats.max()!
-        let minLon = lons.min()!
-        let maxLon = lons.max()!
-
-        let center = CLLocationCoordinate2D(
-            latitude: (minLat + maxLat) / 2,
-            longitude: (minLon + maxLon) / 2
+        let gcj = CoordinateConverter.wgs84ToGcj02(coordinates)
+        let lats = gcj.map { $0.latitude }
+        let lons = gcj.map { $0.longitude }
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: (lats.min()! + lats.max()!) / 2,
+                longitude: (lons.min()! + lons.max()!) / 2
+            ),
+            span: MKCoordinateSpan(
+                latitudeDelta: (lats.max()! - lats.min()!) * 0.65,
+                longitudeDelta: (lons.max()! - lons.min()!) * 0.65
+            )
         )
-
-        // 添加一些边距
-        let span = MKCoordinateSpan(
-            latitudeDelta: (maxLat - minLat) * 1.5 + 0.001,
-            longitudeDelta: (maxLon - minLon) * 1.5 + 0.001
-        )
-
-        return MKCoordinateRegion(center: center, span: span)
     }
 
     // MARK: - Coordinator
 
-    class Coordinator: NSObject, MKMapViewDelegate {
+    class Coordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelegate {
         var parent: TerritoryMapView
         var hasInitializedRegion = false
 
-        init(_ parent: TerritoryMapView) {
-            self.parent = parent
+        private weak var selectedAnnotationView: MKAnnotationView?
+        private var selectedAnnotation: TerritoryBuildingAnnotation?
+        private var pinchStartSize: CGFloat = 44
+
+        init(_ parent: TerritoryMapView) { self.parent = parent }
+
+        // MARK: 选中清除
+
+        func clearSelection(in mapView: MKMapView) {
+            deselect(mapView: mapView)
         }
 
-        // MARK: - MKMapViewDelegate
+        private func deselect(mapView: MKMapView) {
+            if let view = selectedAnnotationView {
+                UIView.animate(withDuration: 0.2) {
+                    view.transform = .identity
+                    view.layer.shadowOpacity = 0
+                }
+            }
+            selectedAnnotation = nil
+            selectedAnnotationView = nil
+            mapView.isScrollEnabled = true
+        }
+
+        // MARK: UIGestureRecognizerDelegate
+
+        func gestureRecognizerShouldBegin(_ gr: UIGestureRecognizer) -> Bool {
+            guard parent.isEditingLayout else { return false }
+            // pan 和 pinch 只有选中了建筑才开始
+            return selectedAnnotation != nil
+        }
+
+        func gestureRecognizer(_ gr: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            // 捏合与平移可同时识别（但 pan 与地图 scroll 互斥，通过 isScrollEnabled 控制）
+            return true
+        }
+
+        // MARK: 单指拖拽 → 移动建筑
+
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            guard let mapView = gesture.view as? MKMapView,
+                  let ann = selectedAnnotation else { return }
+
+            let location = gesture.location(in: mapView)
+            let newCoord = mapView.convert(location, toCoordinateFrom: mapView)
+            ann.coordinate = newCoord
+
+            // 同步移动 annotationView
+            if let view = selectedAnnotationView {
+                let pt = CGFloat(ann.building.mapDisplaySize ?? ann.template?.mapIconSize ?? 44)
+                view.center = CGPoint(x: location.x, y: location.y - pt / 2)
+            }
+
+            if gesture.state == .ended || gesture.state == .cancelled {
+                Task {
+                    await BuildingManager.shared.updateBuildingPosition(
+                        buildingId: ann.building.id,
+                        lat: newCoord.latitude,
+                        lon: newCoord.longitude
+                    )
+                }
+            }
+        }
+
+        // MARK: 双指捏合 → 调整建筑图标尺寸
+
+        @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+            guard let mapView = gesture.view as? MKMapView,
+                  let ann = selectedAnnotation,
+                  let view = selectedAnnotationView,
+                  let template = ann.template,
+                  !template.icon.contains("."),
+                  let source = UIImage(named: template.icon) else { return }
+
+            switch gesture.state {
+            case .began:
+                pinchStartSize = CGFloat(ann.building.mapDisplaySize ?? template.mapIconSize ?? 44)
+
+            case .changed:
+                let pt = max(24, min(200, pinchStartSize * gesture.scale))
+                view.image = buildIcon(source: source, pt: pt)
+                view.centerOffset = CGPoint(x: 0, y: -pt / 2)
+
+            case .ended:
+                let finalPt = Int(max(24, min(200, pinchStartSize * gesture.scale)))
+                Task {
+                    await BuildingManager.shared.updateBuildingDisplaySize(
+                        buildingId: ann.building.id,
+                        displaySize: finalPt
+                    )
+                }
+
+            default: break
+            }
+        }
+
+        // MARK: MKMapViewDelegate
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let polygon = overlay as? MKPolygon {
-                let renderer = MKPolygonRenderer(polygon: polygon)
-                renderer.fillColor = UIColor.systemGreen.withAlphaComponent(0.2)
-                renderer.strokeColor = UIColor.systemGreen.withAlphaComponent(0.8)
-                renderer.lineWidth = 3
-                return renderer
+            if let poly = overlay as? MKPolygon {
+                let r = MKPolygonRenderer(polygon: poly)
+                r.fillColor = UIColor.systemGreen.withAlphaComponent(0.2)
+                r.strokeColor = UIColor.systemGreen.withAlphaComponent(0.8)
+                r.lineWidth = 3
+                return r
             }
             return MKOverlayRenderer(overlay: overlay)
         }
 
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            // 用户位置使用默认样式
-            if annotation is MKUserLocation {
-                return nil
+            if annotation is MKUserLocation { return nil }
+            guard let ann = annotation as? TerritoryBuildingAnnotation else { return nil }
+
+            let building = ann.building
+            let template = ann.template
+            let pt = CGFloat(building.mapDisplaySize ?? template?.mapIconSize ?? 44)
+
+            if let template = template,
+               building.status == .active,
+               !template.icon.contains("."),
+               let source = UIImage(named: template.icon) {
+
+                let view = MKAnnotationView(annotation: ann, reuseIdentifier: "custom_\(building.id)")
+                view.canShowCallout = !parent.isEditingLayout
+                view.image = buildIcon(source: source, pt: pt)
+                view.centerOffset = CGPoint(x: 0, y: -pt / 2)
+                view.displayPriority = .required
+                return view
             }
 
-            // 建筑标记
-            if let buildingAnnotation = annotation as? TerritoryBuildingAnnotation {
-                let identifier = "TerritoryBuilding"
-                var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+            let marker: MKMarkerAnnotationView
+            if let d = mapView.dequeueReusableAnnotationView(withIdentifier: "marker") as? MKMarkerAnnotationView {
+                marker = d; marker.annotation = ann
+            } else {
+                marker = MKMarkerAnnotationView(annotation: ann, reuseIdentifier: "marker")
+            }
+            marker.canShowCallout = !parent.isEditingLayout
+            switch building.status {
+            case .constructing, .upgrading:
+                marker.markerTintColor = .systemOrange
+                marker.glyphImage = UIImage(systemName: "hammer.fill")
+            case .active:
+                marker.markerTintColor = UIColor(template?.category.color ?? .green)
+                marker.glyphImage = UIImage(systemName: template?.icon ?? "building.2.fill")
+            case .inactive:
+                marker.markerTintColor = .systemGray
+                marker.glyphImage = UIImage(systemName: "pause.circle.fill")
+            case .damaged:
+                marker.markerTintColor = .systemRed
+                marker.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
+            }
+            return marker
+        }
 
-                if annotationView == nil {
-                    annotationView = MKMarkerAnnotationView(annotation: buildingAnnotation, reuseIdentifier: identifier)
-                    annotationView?.canShowCallout = true
+        /// 点击建筑 → 在编辑模式下选中；普通模式下正常显示 callout
+        func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+            guard parent.isEditingLayout,
+                  let ann = view.annotation as? TerritoryBuildingAnnotation else { return }
+
+            // 先取消上一个选中
+            deselect(mapView: mapView)
+
+            selectedAnnotation = ann
+            selectedAnnotationView = view
+
+            // 高亮选中：放大 + 黄色光晕
+            UIView.animate(withDuration: 0.2) {
+                view.transform = CGAffineTransform(scaleX: 1.25, y: 1.25)
+                view.layer.shadowColor = UIColor.systemYellow.cgColor
+                view.layer.shadowRadius = 10
+                view.layer.shadowOpacity = 0.9
+                view.layer.shadowOffset = .zero
+            }
+
+            // 锁定地图平移，让单指专门用于移动建筑
+            mapView.isScrollEnabled = false
+
+            // 阻止系统 callout 弹出
+            mapView.deselectAnnotation(ann, animated: false)
+        }
+
+        func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
+            // 编辑模式下不走系统 deselect（我们自己管理）
+        }
+
+        // MARK: Helper
+
+        private func buildIcon(source: UIImage, pt: CGFloat) -> UIImage {
+            let size = CGSize(width: pt, height: pt)
+            let rect = CGRect(origin: .zero, size: size)
+            return UIGraphicsImageRenderer(size: size).image { _ in
+                // 去除黑色背景：将 RGB 均 ≤50 的纯黑像素变为透明
+                if let cg = source.cgImage,
+                   (cg.alphaInfo == .none || cg.alphaInfo == .noneSkipFirst || cg.alphaInfo == .noneSkipLast),
+                   let masked = cg.copy(maskingColorComponents: [0, 50, 0, 50, 0, 50]) {
+                    UIImage(cgImage: masked).draw(in: rect)
                 } else {
-                    annotationView?.annotation = buildingAnnotation
+                    source.draw(in: rect)
                 }
-
-                // 根据建筑状态设置样式
-                let building = buildingAnnotation.building
-
-                switch building.status {
-                case .constructing, .upgrading:
-                    annotationView?.markerTintColor = .systemOrange
-                    annotationView?.glyphImage = UIImage(systemName: "hammer.fill")
-                case .active:
-                    if let template = buildingAnnotation.template {
-                        let iconName = template.icon
-                        if !iconName.contains("."), let source = UIImage(named: iconName) {
-                            // 自定义图片：白色圆角正方形底板，尺寸由 map_icon_size 决定
-                            let pt = CGFloat(template.mapIconSize ?? 44)
-                            let size = CGSize(width: pt, height: pt)
-                            let renderer = UIGraphicsImageRenderer(size: size)
-                            let icon = renderer.image { _ in
-                                let rect = CGRect(origin: .zero, size: size)
-                                let radius: CGFloat = pt * 0.2
-                                UIColor.white.setFill()
-                                UIBezierPath(roundedRect: rect, cornerRadius: radius).fill()
-                                let inset = rect.insetBy(dx: 2, dy: 2)
-                                let imagePath = UIBezierPath(roundedRect: inset, cornerRadius: radius - 2)
-                                imagePath.addClip()
-                                source.draw(in: inset)
-                            }
-                            let customView = MKAnnotationView(annotation: buildingAnnotation, reuseIdentifier: "TerritoryBuildingCustom")
-                            customView.canShowCallout = true
-                            customView.image = icon
-                            customView.centerOffset = CGPoint(x: 0, y: -pt / 2)
-                            customView.displayPriority = .required
-                            return customView
-                        } else {
-                            annotationView?.markerTintColor = UIColor(template.category.color)
-                            annotationView?.glyphImage = UIImage(systemName: iconName)
-                        }
-                    } else {
-                        annotationView?.markerTintColor = .systemGreen
-                        annotationView?.glyphImage = UIImage(systemName: "building.2.fill")
-                    }
-                case .inactive:
-                    annotationView?.markerTintColor = .systemGray
-                    annotationView?.glyphImage = UIImage(systemName: "pause.circle.fill")
-                case .damaged:
-                    annotationView?.markerTintColor = .systemRed
-                    annotationView?.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
-                }
-
-                return annotationView
             }
-
-            return nil
         }
     }
 }
 
-// MARK: - 建筑标注
+// MARK: - TerritoryBuildingAnnotation
 
-/// 领地建筑标注
 class TerritoryBuildingAnnotation: NSObject, MKAnnotation {
     let building: PlayerBuilding
     dynamic var coordinate: CLLocationCoordinate2D
@@ -249,6 +346,7 @@ class TerritoryBuildingAnnotation: NSObject, MKAnnotation {
             CLLocationCoordinate2D(latitude: 31.235, longitude: 121.470)
         ],
         buildings: [],
-        templates: [:]
+        templates: [:],
+        isEditingLayout: .constant(false)
     )
 }

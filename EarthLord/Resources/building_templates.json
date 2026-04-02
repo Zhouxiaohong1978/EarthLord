@@ -10,7 +10,7 @@
       "description": "基础的火源设施，提供照明和取暖功能。可以用来烹饪食物和驱散野兽。建成后体征衰减降低5%。",
       "description_en": "A basic fire source providing light and warmth. Reduces vitals decay by 5% when built.",
       "icon": "building_campfire",
-      "map_icon_size": 24,
+      "map_icon_size": 38,
       "required_resources": {
         "wood": 15,
         "stone": 10
@@ -30,14 +30,15 @@
       "name_en": "Shelter",
       "category": "survival",
       "tier": 1,
-      "description": "帐篷与围栏一体的庇护单元，既能遮风挡雨，又有基本防御。提供休息功能并降低威胁入侵风险。",
-      "description_en": "A combined shelter and fence providing both cover and basic defense. Restores stamina and reduces intrusion risk.",
+      "description": "用木材、钉子、废金属和布料搭建的两层加固木板房，是领地生存的核心居所。内设铁床和储物箱，提供休息恢复体力，并使体征衰减降低10%。每个领地限建1栋。",
+      "description_en": "A two-story reinforced wooden house built with wood, nails, scrap metal, and cloth. Equipped with iron beds and storage boxes. Provides rest to restore stamina and reduces vitals decay by 10%. Limit 1 per territory.",
       "icon": "building_refuge",
-      "map_icon_size": 40,
+      "map_icon_size": 100,
       "required_resources": {
         "wood": 80,
         "nails": 30,
-        "scrap_metal": 20
+        "scrap_metal": 20,
+        "cloth": 10
       },
       "upgrade_resources": [
         {"wood": 50, "nails": 20, "scrap_metal": 12},
@@ -58,7 +59,7 @@
       "description": "用于存储饮用水的大型桶，维持长期水源供应。每日自动产出矿泉水×1。",
       "description_en": "A large barrel for storing drinking water. Auto-produces 1 water bottle daily.",
       "icon": "building_water_barrel",
-      "map_icon_size": 32,
+      "map_icon_size": 50,
       "required_resources": {
         "scrap_metal": 20,
         "wood": 10
@@ -129,7 +130,7 @@
       "description": "小型储物设施，可以安全存放物资。增加领地的物资存储上限。",
       "description_en": "A small storage facility to safely store supplies and increase territory capacity.",
       "icon": "building_storage_small",
-      "map_icon_size": 40,
+      "map_icon_size": 70,
       "required_resources": {
         "wood": 100,
         "scrap_metal": 50
@@ -149,9 +150,10 @@
       "name_en": "Workbench",
       "category": "production",
       "tier": 2,
-      "description": "用于合成和制作道具的工作台，解锁高级合成配方。",
-      "description_en": "A crafting station for making tools and items, unlocking advanced recipes.",
-      "icon": "wrench.and.screwdriver.fill",
+      "description": "用于合成和制作各类物品与工具的工作台，解锁高级合成配方。",
+      "description_en": "A crafting station for making all kinds of items and tools, unlocking advanced recipes.",
+      "icon": "building_workbench",
+      "map_icon_size": 60,
       "required_resources": {
         "wood": 80,
         "scrap_metal": 40,
@@ -174,7 +176,8 @@
       "tier": 2,
       "description": "基础的农业设施，可以种植蔬菜和粮食。每日自动产出罐头食品×1。",
       "description_en": "A basic farming plot. Auto-produces 1 canned food daily.",
-      "icon": "leaf.fill",
+      "icon": "building_farm_simple",
+      "map_icon_size": 90,
       "required_resources": {
         "wood": 60,
         "seeds": 10
@@ -190,17 +193,19 @@
     {
       "id": "watchtower",
       "template_id": "watchtower",
-      "name": "瞭望台",
+      "name": "瞭望塔",
       "name_en": "Watchtower",
       "category": "defense",
       "tier": 2,
-      "description": "高耸的木制瞭望台，解锁对讲机通讯设备（3km发送范围）。",
-      "description_en": "A tall wooden watchtower. Unlocks walkie-talkie communication (3km send range).",
-      "icon": "binoculars.fill",
+      "description": "驻扎哨兵的木制瞭望塔，塔顶旗帜让领地在地图上对幸存者可见（2km范围），同时解锁对讲机通讯设备（3km发送范围）。",
+      "description_en": "A manned wooden watchtower with a signal flag. Makes your territory visible on the map (2km) and unlocks walkie-talkie communication (3km send range).",
+      "icon": "building_watchtower",
+      "map_icon_size": 75,
       "required_resources": {
         "wood": 80,
         "nails": 20,
-        "rope": 15
+        "rope": 15,
+        "cloth": 15
       },
       "upgrade_resources": [
         {"wood": 50, "nails": 12, "rope": 10},
@@ -211,37 +216,15 @@
       "max_level": 3
     },
     {
-      "id": "signal_tower",
-      "template_id": "signal_tower",
-      "name": "信号旗台",
-      "name_en": "Signal Tower",
-      "category": "defense",
-      "tier": 2,
-      "description": "旗帜飘扬的信号台，让你的领地在地图上对所有幸存者可见。可见范围扩大至2km，吸引盟友、震慑入侵者。",
-      "description_en": "A flag-flying signal tower. Makes your territory visible to all survivors on the map within 2km. Attract allies, deter enemies.",
-      "icon": "flag.2.crossed.fill",
-      "required_resources": {
-        "wood": 60,
-        "cloth": 30,
-        "rope": 10
-      },
-      "upgrade_resources": [
-        {"wood": 40, "cloth": 20, "rope": 6}
-      ],
-      "build_time_seconds": 10800,
-      "max_per_territory": 2,
-      "max_level": 2
-    },
-    {
       "id": "greenhouse",
       "template_id": "greenhouse",
       "name": "温室",
       "name_en": "Greenhouse",
       "category": "production",
       "tier": 2,
-      "description": "用废旧金属框架和塑料布搭建的简易温室，不再依赖天气，每日自动产出罐头食品×2。",
-      "description_en": "A simple greenhouse built from scrap metal frames. Weather-independent. Auto-produces 2 canned food daily.",
-      "icon": "sun.and.horizon.fill",
+      "description": "用废旧金属框架和玻璃拼装的封闭式温室，不受天气影响，每日自动产出罐头食品×2。",
+      "description_en": "A closed greenhouse built from scrap metal frames and salvaged glass. Weather-independent. Auto-produces 2 canned food daily.",
+      "icon": "building_greenhouse",
       "required_resources": {
         "scrap_metal": 40,
         "wood": 60,
@@ -264,7 +247,7 @@
       "tier": 2,
       "description": "末日文明的象征——灯再次亮起来了。所有通讯设备范围提升20%，建造速度+10%。",
       "description_en": "Symbol of civilization restored. Boosts all comm device range by 20% and build speed by 10%.",
-      "icon": "bolt.fill",
+      "icon": "building_generator_shed",
       "required_resources": {
         "fuel": 5,
         "scrap_metal": 80,
@@ -287,7 +270,7 @@
       "tier": 2,
       "description": "完整的维修设施，工具箱耐久度无限复用，装备修复费用降低。",
       "description_en": "A full repair facility. Toolbox durability becomes unlimited. Equipment repair costs reduced.",
-      "icon": "hammer.fill",
+      "icon": "building_repair_workshop",
       "required_resources": {
         "toolbox": 1,
         "scrap_metal": 100,
@@ -310,7 +293,8 @@
       "tier": 2,
       "description": "末日中最稀缺的资源——囤积燃料就是拥有未来。自动为发电机棚持续供电。",
       "description_en": "The most scarce resource in the apocalypse. Auto-supplies the generator shed.",
-      "icon": "fuelpump.fill",
+      "icon": "building_fuel_depot",
+      "prerequisites": ["generator_shed"],
       "required_resources": {
         "fuel": 10,
         "scrap_metal": 120,
@@ -333,7 +317,7 @@
       "tier": 3,
       "description": "利用太阳能发电的设备。为其他设施提供电力支持，是进阶建筑的基础。",
       "description_en": "A solar-powered electricity generator. Provides power for advanced facilities.",
-      "icon": "sun.max.fill",
+      "icon": "building_solar_panel",
       "required_resources": {
         "scrap_metal": 100,
         "electronic_component": 20
@@ -355,7 +339,7 @@
       "tier": 3,
       "description": "强大的通讯设备，解锁营地通讯（30km发送范围）。可与更大范围的幸存者建立联络。",
       "description_en": "Unlocks camp radio communication (30km send range). Contact survivors in a wider area.",
-      "icon": "antenna.radiowaves.left.and.right",
+      "icon": "building_radio_station",
       "required_resources": {
         "scrap_metal": 150,
         "electronic_component": 50
@@ -377,7 +361,7 @@
       "tier": 3,
       "description": "大型储物设施，大幅增加领地的物资存储上限。",
       "description_en": "A large storage facility that greatly increases territory storage capacity.",
-      "icon": "building.2.fill",
+      "icon": "building_storage_medium",
       "required_resources": {
         "scrap_metal": 200,
         "wood": 100
@@ -399,7 +383,7 @@
       "tier": 3,
       "description": "领地防御的最高形态，气势磅礴的钢铁大门，彰显领主威严。",
       "description_en": "The ultimate territorial defense. An imposing steel gate that declares your dominion.",
-      "icon": "door.left.hand.closed",
+      "icon": "building_fortress_gate",
       "required_resources": {
         "scrap_metal": 180,
         "toolbox": 1,
@@ -422,7 +406,7 @@
       "tier": 3,
       "description": "需要基础图纸解锁。领地中央矗立的旗帜，终极宣示主权，其他玩家可在地图上看到。",
       "description_en": "Requires basic blueprint. A banner at the heart of your territory, visible to all on the map.",
-      "icon": "flag.fill",
+      "icon": "building_lord_banner",
       "required_resources": {
         "blueprint_basic": 1,
         "wood": 120,
@@ -445,7 +429,7 @@
       "tier": 3,
       "description": "需要史诗图纸解锁。游戏终极建筑——成为真正的末日领主。解锁卫星通讯（100km），POI冷却-20%，体征衰减-10%。",
       "description_en": "Requires epic blueprint. The ultimate building. Unlocks satellite comm (100km), -20% POI cooldown, -10% vitals decay.",
-      "icon": "building.columns.fill",
+      "icon": "building_lord_command",
       "required_resources": {
         "blueprint_epic": 1,
         "electronic_component": 40,

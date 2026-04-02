@@ -309,8 +309,11 @@ struct MapViewRepresentable: UIViewRepresentable {
         /// 上次领地数量 - 避免重复绘制
         var lastTerritoriesCount: Int = -1
 
-        /// 上次建筑数量 - 避免重复绘制
-        var lastBuildingsCount: Int = -1
+        /// 上次建筑哈希（ID+坐标）- 检测数量和位置变化
+        var lastBuildingsHash: String = ""
+
+        /// 上次地图缩放级别 - 用于动态调整图标尺寸
+        var lastRegionLatDelta: CLLocationDegrees = -1
 
         /// 上次POI数量 - 避免重复更新
         var lastPOICount: Int = -1
@@ -438,20 +441,13 @@ struct MapViewRepresentable: UIViewRepresentable {
                     annotationView.canShowCallout = true
 
                     if let source = UIImage(named: iconName) {
-                        let size = CGSize(width: 48, height: 48)
-                        let renderer = UIGraphicsImageRenderer(size: size)
-                        let icon = renderer.image { _ in
-                            let rect = CGRect(origin: .zero, size: size)
-                            let radius: CGFloat = 10
-                            UIColor.white.setFill()
-                            UIBezierPath(roundedRect: rect, cornerRadius: radius).fill()
-                            let inset = rect.insetBy(dx: 2, dy: 2)
-                            let imagePath = UIBezierPath(roundedRect: inset, cornerRadius: radius - 2)
-                            imagePath.addClip()
-                            source.draw(in: inset)
-                        }
-                        annotationView.image = icon
-                        annotationView.centerOffset = CGPoint(x: 0, y: -24)
+                        let latDelta = mapView.region.span.latitudeDelta
+                        let referenceSpan: CLLocationDegrees = 0.005
+                        let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.25), 3.0))
+                        let baseSize = CGFloat(buildingAnnotation.template?.mapIconSize ?? 60)
+                        let iconSize = (baseSize * scaleFactor).clamped(to: 20...140)
+                        annotationView.image = buildingIcon(source: source, size: iconSize)
+                        annotationView.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
                     }
 
                     annotationView.displayPriority = .required
@@ -542,8 +538,45 @@ struct MapViewRepresentable: UIViewRepresentable {
 
         /// 地图区域变化完成
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-            // 用户手动拖动地图后的处理
-            // 由于 hasInitialCentered 已设置，不会再自动居中
+            let newDelta = mapView.region.span.latitudeDelta
+            let changeRatio = abs(newDelta - lastRegionLatDelta) / max(lastRegionLatDelta, 0.0001)
+            guard changeRatio > 0.05 else { return }
+            lastRegionLatDelta = newDelta
+            updateBuildingIconSizes(in: mapView)
+        }
+
+        /// 根据当前缩放级别动态更新所有建筑图标尺寸
+        func updateBuildingIconSizes(in mapView: MKMapView) {
+            let latDelta = mapView.region.span.latitudeDelta
+            let referenceSpan: CLLocationDegrees = 0.005
+            let rawScale = referenceSpan / latDelta
+            let scaleFactor = CGFloat(min(max(rawScale, 0.25), 3.0))
+
+            for annotation in mapView.annotations {
+                guard let buildingAnnotation = annotation as? BuildingAnnotation,
+                      let view = mapView.view(for: annotation) as? MKAnnotationView else { continue }
+                let iconName = buildingAnnotation.template?.icon ?? ""
+                guard !iconName.contains("."), let source = UIImage(named: iconName) else { continue }
+
+                let baseSize = CGFloat(buildingAnnotation.template?.mapIconSize ?? 60)
+                let iconSize = (baseSize * scaleFactor).clamped(to: 20...140)
+                view.image = buildingIcon(source: source, size: iconSize)
+                view.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
+            }
+        }
+
+        /// 渲染圆角建筑图标
+        func buildingIcon(source: UIImage, size: CGFloat) -> UIImage {
+            let sz = CGSize(width: size, height: size)
+            return UIGraphicsImageRenderer(size: sz).image { _ in
+                let rect = CGRect(origin: .zero, size: sz)
+                let radius = size * 0.18
+                UIColor.white.setFill()
+                UIBezierPath(roundedRect: rect, cornerRadius: radius).fill()
+                let inset = rect.insetBy(dx: 2, dy: 2)
+                UIBezierPath(roundedRect: inset, cornerRadius: radius - 2).addClip()
+                source.draw(in: inset)
+            }
         }
 
         /// 地图加载完成
@@ -584,10 +617,12 @@ struct MapViewRepresentable: UIViewRepresentable {
 
     /// 更新建筑标记
     private func updateBuildingAnnotations(on mapView: MKMapView, context: Context) {
-        // 检查建筑数量是否变化
-        let currentBuildingCount = buildings.count
-        guard context.coordinator.lastBuildingsCount != currentBuildingCount else { return }
-        context.coordinator.lastBuildingsCount = currentBuildingCount
+        // 用 ID+坐标 哈希检测数量和位置变化
+        let currentHash = buildings.map {
+            "\($0.id)-\(String(format: "%.6f", $0.locationLat ?? 0))-\(String(format: "%.6f", $0.locationLon ?? 0))"
+        }.joined(separator: ",")
+        guard context.coordinator.lastBuildingsHash != currentHash else { return }
+        context.coordinator.lastBuildingsHash = currentHash
 
         // 移除旧的建筑标记
         let oldBuildingAnnotations = mapView.annotations.filter { $0 is BuildingAnnotation }
@@ -596,17 +631,19 @@ struct MapViewRepresentable: UIViewRepresentable {
         // 添加新的建筑标记
         for building in buildings {
             guard let coord = building.coordinate else { continue }
-
-            // ⚠️ 重要：数据库中保存的已经是 GCJ-02 坐标，直接使用无需转换
             let template = buildingTemplates.first { $0.templateId == building.templateId }
             let annotation = BuildingAnnotation(building: building, template: template)
             annotation.coordinate = coord
-
             mapView.addAnnotation(annotation)
         }
 
-        if currentBuildingCount > 0 {
-            print("🏗️ 更新建筑标记: \(currentBuildingCount) 个")
+        // 添加后按当前缩放级别刷新图标尺寸
+        DispatchQueue.main.async {
+            context.coordinator.updateBuildingIconSizes(in: mapView)
+        }
+
+        if !buildings.isEmpty {
+            print("🏗️ 更新建筑标记: \(buildings.count) 个")
         }
     }
 }
@@ -652,6 +689,14 @@ class BuildingAnnotation: NSObject, MKAnnotation {
         self.template = template
         self.coordinate = building.coordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
         super.init()
+    }
+}
+
+// MARK: - CGFloat clamp helper
+
+private extension CGFloat {
+    func clamped(to range: ClosedRange<CGFloat>) -> CGFloat {
+        Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
     }
 }
 

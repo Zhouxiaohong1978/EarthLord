@@ -65,6 +65,9 @@ struct TerritoryDetailView: View {
     /// 要拆除的建筑
     @State private var buildingToDemolish: PlayerBuilding?
 
+    /// 是否处于编辑布局模式
+    @State private var isEditingLayout = false
+
     /// 错误消息
     @State private var errorMessage: String?
 
@@ -115,7 +118,8 @@ struct TerritoryDetailView: View {
             TerritoryMapView(
                 territoryCoordinates: territoryCoordinates,
                 buildings: territoryBuildings,
-                templates: templateDict
+                templates: templateDict,
+                isEditingLayout: $isEditingLayout
             )
             .ignoresSafeArea()
 
@@ -127,6 +131,34 @@ struct TerritoryDetailView: View {
                     showInfoPanel: $showInfoPanel
                 )
                 Spacer()
+            }
+
+            // 编辑布局模式按钮（右下角）
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button {
+                        withAnimation { isEditingLayout.toggle() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: isEditingLayout ? "checkmark.circle.fill" : "arrow.up.and.down.and.arrow.left.and.right")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(isEditingLayout ? "完成" : "编辑布局")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(isEditingLayout ? ApocalypseTheme.success : ApocalypseTheme.primary)
+                                .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
+                        )
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, showInfoPanel ? 320 : 24)
+                }
             }
 
             // 3. 可折叠信息面板（底部）

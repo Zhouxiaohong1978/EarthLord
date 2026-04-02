@@ -396,6 +396,9 @@ struct BuildingCollectSheet: View {
             .alert("领取失败", isPresented: .constant(errorMessage != nil)) {
                 Button("确定") { errorMessage = nil }
             } message: { Text(errorMessage ?? "") }
+            .onAppear {
+                Task { await warehouseManager.refreshItems() }
+            }
         }
     }
 

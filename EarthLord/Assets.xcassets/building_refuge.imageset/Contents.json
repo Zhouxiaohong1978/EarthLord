@@ -1,6 +1,6 @@
 {
   "images" : [
-    { "filename" : "building_refuge.jpg", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "building_refuge.png", "idiom" : "universal", "scale" : "1x" },
     { "idiom" : "universal", "scale" : "2x" },
     { "idiom" : "universal", "scale" : "3x" }
   ],

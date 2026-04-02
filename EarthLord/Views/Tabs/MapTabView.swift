@@ -73,6 +73,9 @@ struct MapTabView: View {
     /// 探索管理器（单例，使用 ObservedObject 观察）
     @ObservedObject private var explorationManager = ExplorationManager.shared
 
+    /// 建筑管理器（用于在地图上显示建筑图标）
+    @ObservedObject private var buildingManager = BuildingManager.shared
+
     /// 体征管理器（用于濒死状态检测）
     @ObservedObject private var physiqueManager = PhysiqueManager.shared
 

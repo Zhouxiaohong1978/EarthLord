@@ -1,6 +1,10 @@
 {
   "images" : [
-    { "filename" : "building_storage_small.png", "idiom" : "universal", "scale" : "1x" },
+    {
+      "filename" : "building_fortress_gate.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
     { "idiom" : "universal", "scale" : "2x" },
     { "idiom" : "universal", "scale" : "3x" }
   ],

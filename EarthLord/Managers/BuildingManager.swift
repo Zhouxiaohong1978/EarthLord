@@ -119,6 +119,21 @@ final class BuildingManager: ObservableObject {
             }
         }
 
+        // 检查前置建筑是否已建造（active 状态）
+        if let prerequisites = template.prerequisites, !prerequisites.isEmpty {
+            for prereqId in prerequisites {
+                let hasPrereq = playerBuildings.contains {
+                    $0.territoryId == territoryId &&
+                    $0.templateId == prereqId &&
+                    $0.status == .active
+                }
+                if !hasPrereq {
+                    logger.log("建造检查失败：\(template.name) 需要先建造前置建筑 \(prereqId)", type: .warning)
+                    return .prerequisiteNotMet(prereqId, currentCount: 0, maxCount: template.maxPerTerritory)
+                }
+            }
+        }
+
         // 检查领地内该建筑的数量
         let currentCount = playerBuildings.filter {
             $0.territoryId == territoryId && $0.templateId == template.templateId
@@ -611,6 +626,54 @@ final class BuildingManager: ObservableObject {
         }
     }
 
+    /// 更新建筑在地图上的位置和显示尺寸
+    func updateBuildingMapLayout(buildingId: UUID, lat: Double, lon: Double, displaySize: Int?) async throws {
+        var update: [String: AnyJSON] = [
+            "location_lat": .double(lat),
+            "location_lon": .double(lon)
+        ]
+        if let size = displaySize {
+            update["map_display_size"] = .integer(size)
+        }
+        try await supabase
+            .from("player_buildings")
+            .update(update)
+            .eq("id", value: buildingId.uuidString)
+            .execute()
+
+        _ = try? await fetchAllPlayerBuildings()
+    }
+
+    /// 仅更新建筑地图显示尺寸
+    func updateBuildingDisplaySize(buildingId: UUID, displaySize: Int) async {
+        do {
+            try await supabase
+                .from("player_buildings")
+                .update(["map_display_size": AnyJSON.integer(displaySize)])
+                .eq("id", value: buildingId.uuidString)
+                .execute()
+            if let idx = playerBuildings.firstIndex(where: { $0.id == buildingId }) {
+                playerBuildings[idx].mapDisplaySize = displaySize
+            }
+        } catch {
+            logger.logError("更新建筑显示尺寸失败", error: error)
+        }
+    }
+
+    /// 仅更新建筑地图位置
+    func updateBuildingPosition(buildingId: UUID, lat: Double, lon: Double) async {
+        do {
+            try await supabase
+                .from("player_buildings")
+                .update(["location_lat": AnyJSON.double(lat), "location_lon": AnyJSON.double(lon)])
+                .eq("id", value: buildingId.uuidString)
+                .execute()
+            _ = try? await fetchAllPlayerBuildings()
+        } catch {
+            logger.logError("更新建筑位置失败", error: error)
+        }
+    }
+
     /// 获取领地内指定模板的建筑数量
     func getBuildingCount(templateId: String, territoryId: String) -> Int {
         return playerBuildings.filter {
@@ -629,10 +692,8 @@ final class BuildingManager: ObservableObject {
     private func applyBuildingEffects(templateId: String) async {
         switch templateId {
         case "watchtower":
-            // 瞭望台：解锁对讲机通讯设备
+            // 瞭望塔：解锁对讲机通讯 + 领地地图可见
             await CommunicationManager.shared.unlockDeviceByBuilding(deviceType: "walkie_talkie")
-        case "signal_tower":
-            // 信号旗台：领地在地图上对其他玩家可见（2km范围）
             TerritoryManager.shared.setTerritoryMapVisible(true)
         case "radio_station":
             // 营地电台：解锁营地通讯设备

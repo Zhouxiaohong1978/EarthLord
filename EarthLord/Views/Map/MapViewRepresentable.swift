@@ -446,7 +446,7 @@ struct MapViewRepresentable: UIViewRepresentable {
                     if let source = UIImage(named: iconName) {
                         // referenceSpan 对应领地详情页的默认缩放级别（territory_span * 0.65）
                         let latDelta = mapView.region.span.latitudeDelta
-                        let referenceSpan: CLLocationDegrees = 0.005
+                        let referenceSpan: CLLocationDegrees = 0.004
                         let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.05), 5.0))
                         let baseSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
                         let iconSize = baseSize * scaleFactor
@@ -552,7 +552,7 @@ struct MapViewRepresentable: UIViewRepresentable {
         /// 地图缩放时同步更新所有建筑图标尺寸
         func updateBuildingIconSizes(in mapView: MKMapView) {
             let latDelta = mapView.region.span.latitudeDelta
-            let referenceSpan: CLLocationDegrees = 0.005
+            let referenceSpan: CLLocationDegrees = 0.004
             let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.05), 5.0))
 
             for annotation in mapView.annotations {

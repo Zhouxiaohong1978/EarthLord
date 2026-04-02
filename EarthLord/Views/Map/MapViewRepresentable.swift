@@ -568,17 +568,18 @@ struct MapViewRepresentable: UIViewRepresentable {
             }
         }
 
-        /// 渲染圆角建筑图标
+        /// 渲染建筑图标（透明背景，直接绘制原图）
         func buildingIcon(source: UIImage, size: CGFloat) -> UIImage {
             let sz = CGSize(width: size, height: size)
+            let rect = CGRect(origin: .zero, size: sz)
             return UIGraphicsImageRenderer(size: sz).image { _ in
-                let rect = CGRect(origin: .zero, size: sz)
-                let radius = size * 0.18
-                UIColor.white.setFill()
-                UIBezierPath(roundedRect: rect, cornerRadius: radius).fill()
-                let inset = rect.insetBy(dx: 2, dy: 2)
-                UIBezierPath(roundedRect: inset, cornerRadius: radius - 2).addClip()
-                source.draw(in: inset)
+                if let cg = source.cgImage,
+                   (cg.alphaInfo == .none || cg.alphaInfo == .noneSkipFirst || cg.alphaInfo == .noneSkipLast),
+                   let masked = cg.copy(maskingColorComponents: [0, 50, 0, 50, 0, 50]) {
+                    UIImage(cgImage: masked).draw(in: rect)
+                } else {
+                    source.draw(in: rect)
+                }
             }
         }
 

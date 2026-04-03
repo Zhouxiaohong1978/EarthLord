@@ -23,6 +23,7 @@ struct TerritoryMapView: UIViewRepresentable {
         mapView.showsCompass = true
         mapView.showsScale = true
         mapView.isZoomEnabled = false
+        mapView.isRotateEnabled = false
         mapView.pointOfInterestFilter = .excludingAll
 
         // 单指拖拽（移动选中建筑）
@@ -46,8 +47,14 @@ struct TerritoryMapView: UIViewRepresentable {
         syncBuildingAnnotations(mapView)
 
         if !context.coordinator.hasInitializedRegion && !territoryCoordinates.isEmpty {
-            mapView.setRegion(regionForCoordinates(territoryCoordinates), animated: false)
+            let region = regionForCoordinates(territoryCoordinates)
+            mapView.setRegion(region, animated: false)
             context.coordinator.hasInitializedRegion = true
+            context.coordinator.boundaryCenter = region.center
+            context.coordinator.boundarySpan = MKCoordinateSpan(
+                latitudeDelta: region.span.latitudeDelta * 0.1,
+                longitudeDelta: region.span.longitudeDelta * 0.6
+            )
         }
 
         // 退出编辑模式时清除选中状态
@@ -113,6 +120,8 @@ struct TerritoryMapView: UIViewRepresentable {
     class Coordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelegate {
         var parent: TerritoryMapView
         var hasInitializedRegion = false
+        var boundaryCenter: CLLocationCoordinate2D?
+        var boundarySpan: MKCoordinateSpan?
 
         private weak var selectedAnnotationView: MKAnnotationView?
         private var selectedAnnotation: TerritoryBuildingAnnotation?
@@ -212,6 +221,19 @@ struct TerritoryMapView: UIViewRepresentable {
         }
 
         // MARK: MKMapViewDelegate
+
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            guard let center = boundaryCenter, let span = boundarySpan else { return }
+            let cur = mapView.region.center
+            let halfLat = span.latitudeDelta / 2
+            let halfLon = span.longitudeDelta / 2
+            let clampedLat = min(max(cur.latitude, center.latitude - halfLat), center.latitude + halfLat)
+            let clampedLon = min(max(cur.longitude, center.longitude - halfLon), center.longitude + halfLon)
+            guard abs(clampedLat - cur.latitude) > 0.000001 ||
+                  abs(clampedLon - cur.longitude) > 0.000001 else { return }
+            let clamped = CLLocationCoordinate2D(latitude: clampedLat, longitude: clampedLon)
+            mapView.setRegion(MKCoordinateRegion(center: clamped, span: mapView.region.span), animated: true)
+        }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let poly = overlay as? MKPolygon {

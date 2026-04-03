@@ -435,23 +435,22 @@ struct MapViewRepresentable: UIViewRepresentable {
                 let isCustomIcon = !iconName.contains(".")
 
                 if isCustomIcon {
-                    // 自定义图片：渲染成圆形 UIImage 直接作为标注图标
+                    // 自定义图片：使用 BuildingAnnotationView 以支持独立旋转
                     let identifier = "BuildingCustomMarker"
-                    let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
-                        ?? MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                    let annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? BuildingAnnotationView
+                        ?? BuildingAnnotationView(annotation: annotation, reuseIdentifier: identifier)
 
                     annotationView.annotation = annotation
                     annotationView.canShowCallout = true
 
                     if let source = UIImage(named: iconName) {
-                        // referenceSpan 对应领地详情页的默认缩放级别（territory_span * 0.65）
                         let latDelta = mapView.region.span.latitudeDelta
                         let referenceSpan: CLLocationDegrees = 0.004
                         let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.05), 5.0))
                         let baseSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
-                        let iconSize = baseSize * scaleFactor
-                        annotationView.image = buildingIcon(source: source, size: max(iconSize, 8))
-                        annotationView.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
+                        let iconSize = max(baseSize * scaleFactor, 8)
+                        annotationView.configure(image: buildingIcon(source: source, size: iconSize), size: iconSize)
+                        annotationView.updateHeading(mapView.camera.heading)
                     }
 
                     annotationView.displayPriority = .required
@@ -540,13 +539,32 @@ struct MapViewRepresentable: UIViewRepresentable {
             return nil
         }
 
-        /// 地图区域变化完成
+        /// 地图区域变化完成（缩放 + 旋转均触发）
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            // 更新建筑图标尺寸（仅缩放级别变化时）
             let newDelta = mapView.region.span.latitudeDelta
             let changeRatio = abs(newDelta - lastRegionLatDelta) / max(lastRegionLatDelta, 0.0001)
-            guard changeRatio > 0.05 else { return }
-            lastRegionLatDelta = newDelta
-            updateBuildingIconSizes(in: mapView)
+            if changeRatio > 0.05 {
+                lastRegionLatDelta = newDelta
+                updateBuildingIconSizes(in: mapView)
+            }
+            // 更新建筑图标方向（抵消地图旋转）
+            updateBuildingIconRotations(in: mapView)
+        }
+
+        /// 地图旋转过程中持续触发（实时更新图标方向）
+        func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+            updateBuildingIconRotations(in: mapView)
+        }
+
+        /// 对所有建筑图标的内部 iconView 施加反向旋转，使其始终朝上
+        func updateBuildingIconRotations(in mapView: MKMapView) {
+            let heading = mapView.camera.heading
+            for annotation in mapView.annotations {
+                guard annotation is BuildingAnnotation,
+                      let view = mapView.view(for: annotation) as? BuildingAnnotationView else { continue }
+                view.updateHeading(heading)
+            }
         }
 
         /// 地图缩放时同步更新所有建筑图标尺寸
@@ -557,16 +575,16 @@ struct MapViewRepresentable: UIViewRepresentable {
 
             for annotation in mapView.annotations {
                 guard let buildingAnnotation = annotation as? BuildingAnnotation,
-                      let view = mapView.view(for: annotation) as? MKAnnotationView else { continue }
+                      let view = mapView.view(for: annotation) as? BuildingAnnotationView else { continue }
                 let template = buildingAnnotation.template
                     ?? parent.buildingTemplates.first { $0.templateId == buildingAnnotation.building.templateId }
                 let iconName = template?.icon ?? ""
                 guard !iconName.contains("."), let source = UIImage(named: iconName) else { continue }
 
                 let baseSize = CGFloat(buildingAnnotation.building.mapDisplaySize ?? template?.mapIconSize ?? 60)
-                let iconSize = baseSize * scaleFactor
-                view.image = buildingIcon(source: source, size: max(iconSize, 8))
-                view.centerOffset = CGPoint(x: 0, y: -iconSize / 2)
+                let iconSize = max(baseSize * scaleFactor, 8)
+                view.configure(image: buildingIcon(source: source, size: iconSize), size: iconSize)
+                view.updateHeading(mapView.camera.heading)
             }
         }
 
@@ -643,9 +661,10 @@ struct MapViewRepresentable: UIViewRepresentable {
             mapView.addAnnotation(annotation)
         }
 
-        // 添加后按当前缩放级别刷新图标尺寸
+        // 添加后按当前缩放级别刷新图标尺寸，并同步旋转方向
         DispatchQueue.main.async {
             context.coordinator.updateBuildingIconSizes(in: mapView)
+            context.coordinator.updateBuildingIconRotations(in: mapView)
         }
 
         if !buildings.isEmpty {
@@ -695,6 +714,34 @@ class BuildingAnnotation: NSObject, MKAnnotation {
         self.template = template
         self.coordinate = building.coordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
         super.init()
+    }
+}
+
+// MARK: - BuildingAnnotationView
+
+/// 建筑标注视图：用内部 iconView 承载图标，旋转 iconView 而非整个 annotationView，
+/// 从而避免 MapKit 在重布局时重置 transform，实现地图旋转时图标方向保持固定。
+class BuildingAnnotationView: MKAnnotationView {
+    let iconView = UIImageView()
+
+    override init(annotation: MKAnnotation?, reuseIdentifier: String?) {
+        super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
+        iconView.contentMode = .scaleAspectFit
+        addSubview(iconView)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func configure(image: UIImage, size: CGFloat) {
+        bounds = CGRect(x: 0, y: 0, width: size, height: size)
+        iconView.frame = bounds
+        iconView.image = image
+        centerOffset = CGPoint(x: 0, y: -size / 2)
+    }
+
+    func updateHeading(_ heading: Double) {
+        let angle = -CGFloat(heading) * .pi / 180
+        iconView.transform = CGAffineTransform(rotationAngle: angle)
     }
 }
 

@@ -712,6 +712,22 @@ final class BuildingManager: ObservableObject {
         hasActiveBuilding(templateId: "generator_shed") ? 1.2 : 1.0
     }
 
+    /// 计算所有已建成建筑对体征衰减的总降低比例（0.0 ~ 0.50）
+    /// 建造完成后 playerBuildings 立即更新，体征系统下次计算时自动生效
+    var vitalDecayReduction: Double {
+        let decayMap: [String: Double] = [
+            "campfire":      0.05,
+            "tent_simple":   0.03,
+            "shelter":       0.10,
+            "lord_command":  0.10
+        ]
+        let total = playerBuildings
+            .filter { $0.status == .active }
+            .compactMap { decayMap[$0.templateId] }
+            .reduce(0, +)
+        return min(total, 0.50)  // 建筑加成上限 50%
+    }
+
     // MARK: - Building Production
 
     /// 建筑产出配置（templateId → (itemId, quantity, intervalHours)）

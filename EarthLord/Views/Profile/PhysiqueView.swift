@@ -47,7 +47,22 @@ struct PhysiqueView: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.success.opacity(0.1)))
-            } else {
+            }
+
+            if let buildingBuff = manager.buildingDecayBuffDescription {
+                HStack(spacing: 10) {
+                    Image(systemName: "house.fill")
+                        .foregroundColor(ApocalypseTheme.warning)
+                    Text(buildingBuff)
+                        .font(.subheadline)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.warning.opacity(0.1)))
+            }
+
+            if manager.subscriptionBuffKey == nil && manager.buildingDecayBuffDescription == nil {
                 VStack(spacing: 10) {
                     buffGuideRow(step: "1",
                                  icon: "figure.walk",

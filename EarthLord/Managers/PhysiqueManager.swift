@@ -110,11 +110,15 @@ final class PhysiqueManager: ObservableObject {
     var daysUntilDeath: Int { Int(hoursUntilDeath / 24) }
 
     private var decayMultiplier: Double {
+        let subscriptionMult: Double
         switch SubscriptionManager.shared.currentTier {
-        case .lord:     return 0.70
-        case .explorer: return 0.85
-        case .free:     return 1.00
+        case .lord:     subscriptionMult = 0.70
+        case .explorer: subscriptionMult = 0.85
+        case .free:     subscriptionMult = 1.00
         }
+        let buildingReduction = BuildingManager.shared.vitalDecayReduction
+        // 最低保留 30% 衰减速率，防止体征完全不减
+        return max(0.30, subscriptionMult - buildingReduction)
     }
 
     var subscriptionBuffKey: String? {
@@ -123,6 +127,13 @@ final class PhysiqueManager: ObservableObject {
         case .explorer: return "探索者加持：体征衰减 -15%"
         case .free:     return nil
         }
+    }
+
+    /// 当前建筑提供的体征衰减加成描述（有加成时显示）
+    var buildingDecayBuffDescription: String? {
+        let reduction = BuildingManager.shared.vitalDecayReduction
+        guard reduction > 0 else { return nil }
+        return "建筑庇护：体征衰减 -\(Int(reduction * 100))%"
     }
 
     // MARK: - Load

@@ -24,6 +24,30 @@
       "max_level": 3
     },
     {
+      "id": "tent_simple",
+      "template_id": "tent_simple",
+      "name": "简易帐篷",
+      "name_en": "Simple Tent",
+      "category": "survival",
+      "tier": 1,
+      "description": "用木棍、布料和绳索临时搭建的遮风挡雨处所。比庇护所更容易建造，是幸存者最早的栖身之地。建成后体征衰减降低3%。",
+      "description_en": "A makeshift shelter built from sticks, cloth, and rope. Easier to build than a shelter. Reduces vitals decay by 3% when built.",
+      "icon": "building_tent_simple",
+      "map_icon_size": 44,
+      "required_resources": {
+        "wood": 15,
+        "cloth": 20,
+        "rope": 5
+      },
+      "upgrade_resources": [
+        {"wood": 10, "cloth": 12, "rope": 3},
+        {"wood": 12, "cloth": 15, "rope": 4}
+      ],
+      "build_time_seconds": 600,
+      "max_per_territory": 2,
+      "max_level": 3
+    },
+    {
       "id": "shelter",
       "template_id": "shelter",
       "name": "庇护所",
@@ -84,6 +108,7 @@
       "icon": "building_medical_station",
       "map_icon_size": 40,
       "required_resources": {
+        "wood": 10,
         "cloth": 20,
         "bandage": 15,
         "rope": 8

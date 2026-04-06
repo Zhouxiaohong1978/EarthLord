@@ -15,24 +15,25 @@ struct TerritoryBuildingRow: View {
     var onUpgrade: (() -> Void)?
     var onDemolish: (() -> Void)?
 
-    /// 定时器触发器 - 用于实时更新建造进度和产出倒计时
-    @State private var timerTrigger = false
+    // MARK: - Sheet 状态
     @State private var showCollectSheet = false
     @State private var showSpeedupSheet = false
     @State private var showMaintenanceSheet = false
     @State private var showFortifySheet = false
 
-    /// 定时器
+    // MARK: - 定时器驱动的动态值（不用 .id() 重建 view，避免菜单闪退）
+    @State private var buildProgress: Double = 0
+    @State private var remainingTime: String = ""
+    @State private var canCollectNow: Bool = false
+    @State private var productionCountdown: String = ""
+
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         HStack(spacing: 12) {
-            // 左侧：分类图标
             buildingIcon
 
-            // 中间：名称 + 状态
             VStack(alignment: .leading, spacing: 4) {
-                // 名称 + 等级
                 HStack(spacing: 6) {
                     Text(template?.localizedName ?? building.buildingName)
                         .font(.system(size: 15, weight: .medium))
@@ -43,38 +44,20 @@ struct TerritoryBuildingRow: View {
                         .foregroundColor(ApocalypseTheme.primary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(ApocalypseTheme.primary.opacity(0.15))
-                        )
+                        .background(Capsule().fill(ApocalypseTheme.primary.opacity(0.15)))
                 }
-
-                // 状态信息
                 statusInfo
             }
 
             Spacer()
-
-            // 右侧：操作菜单或进度环
             trailingContent
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(ApocalypseTheme.cardBackground)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(ApocalypseTheme.textMuted.opacity(0.3), lineWidth: 1)
-        )
-        .onReceive(timer) { _ in
-            if building.status == .constructing || building.status == .upgrading
-                || BuildingManager.shared.hasProduction(building) {
-                timerTrigger.toggle()
-            }
-        }
-        .id(timerTrigger) // 通过改变 id 强制视图刷新
+        .background(RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.cardBackground))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(ApocalypseTheme.textMuted.opacity(0.3), lineWidth: 1))
+        .onAppear { refreshTimerValues() }
+        .onReceive(timer) { _ in refreshTimerValues() }
         .sheet(isPresented: $showCollectSheet) {
             BuildingCollectSheet(building: building)
         }
@@ -89,15 +72,31 @@ struct TerritoryBuildingRow: View {
         }
     }
 
+    /// 每秒更新动态值，不触发 view 重建
+    private func refreshTimerValues() {
+        if building.status == .constructing || building.status == .upgrading {
+            buildProgress = building.buildProgress
+            remainingTime = building.formattedRemainingTime
+        }
+        if BuildingManager.shared.hasProduction(building) {
+            canCollectNow = BuildingManager.shared.canCollect(building)
+            if let secs = BuildingManager.shared.secondsUntilNextProduction(building) {
+                let h = Int(secs) / 3600
+                let m = (Int(secs) % 3600) / 60
+                productionCountdown = h > 0 ? "\(h)h \(m)m" : "\(m)m"
+            } else {
+                productionCountdown = ""
+            }
+        }
+    }
+
     // MARK: - 子视图
 
-    /// 建筑图标
     private var buildingIcon: some View {
         ZStack {
             Circle()
                 .fill((template?.category.color ?? ApocalypseTheme.primary).opacity(0.2))
                 .frame(width: 44, height: 44)
-
             BuildingIconView(
                 iconName: template?.icon ?? "building.2.fill",
                 size: 20,
@@ -106,30 +105,21 @@ struct TerritoryBuildingRow: View {
         }
     }
 
-    /// 状态信息
     @ViewBuilder
     private var statusInfo: some View {
         switch building.status {
         case .constructing, .upgrading:
             HStack(spacing: 6) {
-                // 状态徽章
                 HStack(spacing: 4) {
-                    Image(systemName: building.status.icon)
-                        .font(.system(size: 10))
-                    Text(building.status.displayName)
-                        .font(.system(size: 11))
+                    Image(systemName: building.status.icon).font(.system(size: 10))
+                    Text(building.status.displayName).font(.system(size: 11))
                 }
                 .foregroundColor(building.status.color)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    Capsule()
-                        .fill(building.status.color.opacity(0.15))
-                )
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(Capsule().fill(building.status.color.opacity(0.15)))
 
-                // 剩余时间
-                if !building.formattedRemainingTime.isEmpty {
-                    Text(building.formattedRemainingTime)
+                if !remainingTime.isEmpty {
+                    Text(remainingTime)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
@@ -146,55 +136,40 @@ struct TerritoryBuildingRow: View {
                             .font(.system(size: 11))
                     }
                     .foregroundColor(durability > 0 ? building.status.color : ApocalypseTheme.danger)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(Capsule().fill((durability > 0 ? building.status.color : ApocalypseTheme.danger).opacity(0.15)))
 
-                    // 产出倒计时
                     if BuildingManager.shared.hasProduction(building) {
-                        if BuildingManager.shared.canCollect(building) {
+                        if canCollectNow {
                             Text(String(localized: "可领取"))
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(ApocalypseTheme.success)
-                        } else if let secs = BuildingManager.shared.secondsUntilNextProduction(building) {
-                            let h = Int(secs) / 3600
-                            let m = (Int(secs) % 3600) / 60
-                            Text(h > 0 ? "\(h)h \(m)m" : "\(m)m")
+                        } else if !productionCountdown.isEmpty {
+                            Text(productionCountdown)
                                 .font(.system(size: 11))
                                 .foregroundColor(ApocalypseTheme.textMuted)
                         }
                     }
                 }
-                // 耐久度进度条
                 DurabilityBar(durability: durability)
             }
 
         case .inactive, .damaged:
             HStack(spacing: 4) {
-                Image(systemName: building.status.icon)
-                    .font(.system(size: 10))
-                Text(building.status.displayName)
-                    .font(.system(size: 11))
+                Image(systemName: building.status.icon).font(.system(size: 10))
+                Text(building.status.displayName).font(.system(size: 11))
             }
             .foregroundColor(building.status.color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .fill(building.status.color.opacity(0.15))
-            )
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(Capsule().fill(building.status.color.opacity(0.15)))
         }
     }
 
-    /// 右侧内容
     @ViewBuilder
     private var trailingContent: some View {
         if building.status == .constructing || building.status == .upgrading {
             HStack(spacing: 8) {
-                // 加速按钮
-                Button {
-                    showSpeedupSheet = true
-                } label: {
+                Button { showSpeedupSheet = true } label: {
                     Image(systemName: "bolt.fill")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
@@ -202,27 +177,21 @@ struct TerritoryBuildingRow: View {
                         .background(Color(red: 0.95, green: 0.62, blue: 0.12))
                         .clipShape(Circle())
                 }
-                // 进度环
-                CircularProgressView(progress: building.buildProgress)
+                CircularProgressView(progress: buildProgress)
                     .frame(width: 36, height: 36)
             }
         } else if building.status == .active {
             HStack(spacing: 8) {
-                // 产出可领取时显示领取按钮
-                if BuildingManager.shared.canCollect(building) {
-                    Button {
-                        showCollectSheet = true
-                    } label: {
-                        Text("领取")
+                if canCollectNow {
+                    Button { showCollectSheet = true } label: {
+                        Text(String(localized: "领取"))
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
                             .background(ApocalypseTheme.success)
                             .cornerRadius(8)
                     }
                 }
-                // 操作菜单
                 operationMenu
             }
         } else {

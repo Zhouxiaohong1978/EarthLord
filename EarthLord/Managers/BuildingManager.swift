@@ -749,6 +749,13 @@ final class BuildingManager: ObservableObject {
         return 100.0 / baseDays * levelMultiplier
     }
 
+    /// 指定等级下耐久从 100 衰减至 0 需要的天数
+    func durabilityLifeDays(templateId: String, level: Int) -> Double {
+        let baseDays: Double = templateId == "campfire" ? 7.0 : 30.0
+        let levelMultiplier = [1.0, 0.8, 0.6][min(level - 1, 2)]
+        return baseDays / levelMultiplier
+    }
+
     /// 计算维护所需材料（约为建造材料的 25%，篝火只需木材）
     func maintenanceCost(for template: BuildingTemplate) -> [String: Int] {
         var base = template.requiredResources

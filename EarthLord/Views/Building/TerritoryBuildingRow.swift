@@ -1107,16 +1107,81 @@ struct BuildingFortifySheet: View {
     }
 
     private var fortifyNote: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "info.circle")
-                .font(.system(size: 13))
-                .foregroundColor(ApocalypseTheme.info)
-            Text(String(localized: "强化后建筑等级提升，耐久衰减变慢，材料从背包扣除"))
-                .font(.system(size: 12))
-                .foregroundColor(ApocalypseTheme.textMuted)
-                .lineSpacing(2)
+        let mgr = BuildingManager.shared
+        let tid = building.templateId
+        let curDays = mgr.durabilityLifeDays(templateId: tid, level: building.level)
+        let newDays = mgr.durabilityLifeDays(templateId: tid, level: building.level + 1)
+        // 衰减减慢百分比 = (新时限 - 旧时限) / 旧时限
+        let improvePct = Int(((newDays - curDays) / curDays * 100).rounded())
+
+        return VStack(spacing: 12) {
+            // 耐久时限对比
+            HStack(spacing: 0) {
+                durabilityStatCell(
+                    label: String(localized: "当前耐久时限"),
+                    value: formatDays(curDays),
+                    color: ApocalypseTheme.textSecondary
+                )
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(ApocalypseTheme.primary)
+                    .frame(width: 32)
+                durabilityStatCell(
+                    label: String(localized: "强化后耐久时限"),
+                    value: formatDays(newDays),
+                    color: ApocalypseTheme.success
+                )
+            }
+            .padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.cardBackground))
+
+            // 提升徽章 + 说明
+            HStack(spacing: 8) {
+                Text("+\(improvePct)%")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(ApocalypseTheme.success)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
+                Text(String(localized: "耐久维持更久，维护间隔变长"))
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+
+            // 逐级提示
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.info)
+                Text(String(localized: "强化逐级进行：Lv1 → Lv2 → Lv3，材料从背包扣除"))
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .lineSpacing(2)
+            }
+            .padding(.horizontal, 4)
         }
-        .padding(.horizontal, 4)
+    }
+
+    private func durabilityStatCell(label: String, value: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(ApocalypseTheme.textMuted)
+            Text(value)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func formatDays(_ days: Double) -> String {
+        if days < 1 { return String(format: "%.0f小时", days * 24) }
+        let d = Int(days)
+        let h = Int((days - Double(d)) * 24)
+        if h > 0 { return "\(d)天\(h)小时" }
+        return "\(d)天"
     }
 
     private var confirmButton: some View {

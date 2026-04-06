@@ -714,6 +714,7 @@ final class BuildingManager: ObservableObject {
 
     /// 计算所有已建成建筑对体征衰减的总降低比例（0.0 ~ 0.50）
     /// 建造完成后 playerBuildings 立即更新，体征系统下次计算时自动生效
+    /// 耐久度为 0 的建筑不提供加成
     var vitalDecayReduction: Double {
         let decayMap: [String: Double] = [
             "campfire":      0.05,
@@ -722,10 +723,114 @@ final class BuildingManager: ObservableObject {
             "lord_command":  0.10
         ]
         let total = playerBuildings
-            .filter { $0.status == .active }
+            .filter { $0.status == .active && computedDurability(for: $0) > 0 }
             .compactMap { decayMap[$0.templateId] }
             .reduce(0, +)
         return min(total, 0.50)  // 建筑加成上限 50%
+    }
+
+    // MARK: - Durability & Maintenance
+
+    /// 实时计算建筑耐久度（基于上次维护时间，无需后台任务）
+    /// - 篝火：7天归零；其他建筑：30天归零
+    /// - 等级越高衰减越慢（Lv2 × 0.8，Lv3 × 0.6）
+    func computedDurability(for building: PlayerBuilding) -> Int {
+        guard building.status == .active else { return building.durability }
+        let since = building.lastMaintainedAt ?? building.buildCompletedAt ?? building.buildStartedAt
+        let daysPassed = Date().timeIntervalSince(since) / 86400.0
+        let decayRate = durabilityDecayPerDay(templateId: building.templateId, level: building.level)
+        return max(0, Int(100.0 - daysPassed * decayRate))
+    }
+
+    /// 每天耐久衰减量
+    private func durabilityDecayPerDay(templateId: String, level: Int) -> Double {
+        let baseDays: Double = templateId == "campfire" ? 7.0 : 30.0
+        let levelMultiplier = [1.0, 0.8, 0.6][min(level - 1, 2)]
+        return 100.0 / baseDays * levelMultiplier
+    }
+
+    /// 计算维护所需材料（约为建造材料的 25%，篝火只需木材）
+    func maintenanceCost(for template: BuildingTemplate) -> [String: Int] {
+        var base = template.requiredResources
+        if template.templateId == "campfire" {
+            base = base.filter { $0.key == "wood" }
+        }
+        return base.mapValues { max(1, Int(Double($0) * 0.25)) }
+    }
+
+    /// 检查是否可以维护（背包+仓库合并判断）
+    func canMaintain(building: PlayerBuilding) -> (canMaintain: Bool, missing: [String: Int]) {
+        guard let template = getTemplate(by: building.templateId) else { return (false, [:]) }
+        let cost = maintenanceCost(for: template)
+        var available: [String: Int] = [:]
+        for item in InventoryManager.shared.items where item.customName == nil {
+            available[item.itemId, default: 0] += item.quantity
+        }
+        for item in WarehouseManager.shared.items where item.customName == nil {
+            available[item.itemId, default: 0] += item.quantity
+        }
+        var missing: [String: Int] = [:]
+        for (itemId, required) in cost {
+            let owned = available[itemId] ?? 0
+            if owned < required { missing[itemId] = required - owned }
+        }
+        return (missing.isEmpty, missing)
+    }
+
+    /// 执行维护：消耗材料，耐久恢复至 100，建筑状态改为 active
+    func maintainBuilding(buildingId: UUID) async throws {
+        guard AuthManager.shared.currentUser != nil else { throw BuildingError.notAuthenticated }
+        guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }) else {
+            throw BuildingError.buildingNotFound
+        }
+        let building = playerBuildings[index]
+        guard building.status == .active || building.status == .damaged else {
+            throw BuildingError.invalidStatus
+        }
+        guard let template = getTemplate(by: building.templateId) else {
+            throw BuildingError.templateNotFound
+        }
+
+        let (ok, missing) = canMaintain(building: building)
+        if !ok { throw BuildingError.insufficientResources(missing) }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        let cost = maintenanceCost(for: template)
+        for (itemId, required) in cost {
+            var remaining = required
+            let backpackItems = InventoryManager.shared.items
+                .filter { $0.itemId == itemId && $0.customName == nil }
+                .sorted { $0.quantity > $1.quantity }
+            for item in backpackItems {
+                guard remaining > 0 else { break }
+                let use = min(item.quantity, remaining)
+                try await InventoryManager.shared.useItem(inventoryId: item.id, quantity: use)
+                remaining -= use
+            }
+            if remaining > 0 {
+                try await WarehouseManager.shared.deductForConstruction(itemId: itemId, quantity: remaining)
+            }
+        }
+
+        let now = Date()
+        try await supabase
+            .from("player_buildings")
+            .update([
+                "durability": AnyJSON.integer(100),
+                "last_maintained_at": AnyJSON.string(now.ISO8601Format()),
+                "status": AnyJSON.string(BuildingStatus.active.rawValue),
+                "updated_at": AnyJSON.string(now.ISO8601Format())
+            ])
+            .eq("id", value: buildingId.uuidString)
+            .execute()
+
+        playerBuildings[index].durability = 100
+        playerBuildings[index].lastMaintainedAt = now
+        playerBuildings[index].status = .active
+        playerBuildings[index].updatedAt = now
+        logger.log("建筑维护完成: \(building.buildingName)，耐久恢复至 100", type: .success)
     }
 
     // MARK: - Building Production

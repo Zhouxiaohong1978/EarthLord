@@ -19,6 +19,7 @@ struct TerritoryBuildingRow: View {
     @State private var timerTrigger = false
     @State private var showCollectSheet = false
     @State private var showSpeedupSheet = false
+    @State private var showMaintenanceSheet = false
 
     /// 定时器
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -79,6 +80,9 @@ struct TerritoryBuildingRow: View {
         .sheet(isPresented: $showSpeedupSheet) {
             BuildingSpeedupSheet(building: building)
         }
+        .sheet(isPresented: $showMaintenanceSheet) {
+            BuildingMaintenanceSheet(building: building, template: template)
+        }
     }
 
     // MARK: - 子视图
@@ -128,32 +132,37 @@ struct TerritoryBuildingRow: View {
             }
 
         case .active:
-            HStack(spacing: 6) {
-                HStack(spacing: 4) {
-                    Image(systemName: building.status.icon)
-                        .font(.system(size: 10))
-                    Text(building.status.displayName)
-                        .font(.system(size: 11))
-                }
-                .foregroundColor(building.status.color)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Capsule().fill(building.status.color.opacity(0.15)))
-
-                // 产出倒计时
-                if BuildingManager.shared.hasProduction(building) {
-                    if BuildingManager.shared.canCollect(building) {
-                        Text("可领取")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(ApocalypseTheme.success)
-                    } else if let secs = BuildingManager.shared.secondsUntilNextProduction(building) {
-                        let h = Int(secs) / 3600
-                        let m = (Int(secs) % 3600) / 60
-                        Text(h > 0 ? "\(h)h \(m)m" : "\(m)m")
+            let durability = BuildingManager.shared.computedDurability(for: building)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        Image(systemName: durability > 0 ? building.status.icon : "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                        Text(durability > 0 ? building.status.displayName : String(localized: "需要维护"))
                             .font(.system(size: 11))
-                            .foregroundColor(ApocalypseTheme.textMuted)
+                    }
+                    .foregroundColor(durability > 0 ? building.status.color : ApocalypseTheme.danger)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill((durability > 0 ? building.status.color : ApocalypseTheme.danger).opacity(0.15)))
+
+                    // 产出倒计时
+                    if BuildingManager.shared.hasProduction(building) {
+                        if BuildingManager.shared.canCollect(building) {
+                            Text(String(localized: "可领取"))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(ApocalypseTheme.success)
+                        } else if let secs = BuildingManager.shared.secondsUntilNextProduction(building) {
+                            let h = Int(secs) / 3600
+                            let m = (Int(secs) % 3600) / 60
+                            Text(h > 0 ? "\(h)h \(m)m" : "\(m)m")
+                                .font(.system(size: 11))
+                                .foregroundColor(ApocalypseTheme.textMuted)
+                        }
                     }
                 }
+                // 耐久度进度条
+                DurabilityBar(durability: durability)
             }
 
         case .inactive, .damaged:
@@ -223,7 +232,16 @@ struct TerritoryBuildingRow: View {
     /// 操作菜单
     private var operationMenu: some View {
         Menu {
-            // 升级按钮
+            // 维护按钮
+            Button {
+                showMaintenanceSheet = true
+            } label: {
+                Label(String(localized: "维护"), systemImage: "wrench.fill")
+            }
+
+            Divider()
+
+            // 强化按钮
             if let template = template, building.level >= template.maxLevel {
                 Button {} label: {
                     Label(String(localized: "已达最高等级"), systemImage: "checkmark.circle.fill")
@@ -233,7 +251,7 @@ struct TerritoryBuildingRow: View {
                 Button {
                     onUpgrade?()
                 } label: {
-                    Label(String(localized: "升级"), systemImage: "arrow.up.circle")
+                    Label(String(localized: "强化"), systemImage: "arrow.up.circle")
                 }
             }
 
@@ -677,6 +695,266 @@ struct BuildingSpeedupSheet: View {
     }
 }
 
+// MARK: - DurabilityBar
+
+/// 耐久度进度条（嵌入建筑行）
+private struct DurabilityBar: View {
+    let durability: Int
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "wrench.and.screwdriver.fill")
+                .font(.system(size: 9))
+                .foregroundColor(barColor)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.08)).frame(height: 4)
+                    Capsule()
+                        .fill(barColor)
+                        .frame(width: geo.size.width * CGFloat(max(0, durability)) / 100.0, height: 4)
+                }
+            }
+            .frame(height: 4)
+            Text("\(durability)%")
+                .font(.system(size: 10))
+                .foregroundColor(barColor)
+                .frame(width: 30, alignment: .trailing)
+        }
+    }
+
+    private var barColor: Color {
+        if durability >= 60 { return ApocalypseTheme.success }
+        if durability > 0   { return ApocalypseTheme.warning }
+        return ApocalypseTheme.danger
+    }
+}
+
+// MARK: - BuildingMaintenanceSheet
+
+/// 建筑维护弹窗 - 显示所需材料并执行维护
+struct BuildingMaintenanceSheet: View {
+    let building: PlayerBuilding
+    let template: BuildingTemplate?
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var inventoryManager = InventoryManager.shared
+    @ObservedObject private var warehouseManager = WarehouseManager.shared
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private var manager: BuildingManager { BuildingManager.shared }
+
+    private var cost: [String: Int] {
+        guard let t = template else { return [:] }
+        return manager.maintenanceCost(for: t)
+    }
+
+    private var durability: Int { manager.computedDurability(for: building) }
+
+    /// 所有可用资源（背包+仓库合计）
+    private var available: [String: Int] {
+        var result: [String: Int] = [:]
+        for item in inventoryManager.items where item.customName == nil {
+            result[item.itemId, default: 0] += item.quantity
+        }
+        for item in warehouseManager.items where item.customName == nil {
+            result[item.itemId, default: 0] += item.quantity
+        }
+        return result
+    }
+
+    private var canMaintain: Bool {
+        cost.allSatisfy { (itemId, required) in (available[itemId] ?? 0) >= required }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApocalypseTheme.background.ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // 耐久状态卡片
+                        durabilityCard
+
+                        // 所需材料列表
+                        materialsCard
+
+                        // 维护说明
+                        maintenanceNote
+
+                        // 确认按钮
+                        confirmButton
+                    }
+                    .padding(20)
+                }
+            }
+            .navigationTitle(String(localized: "建筑维护"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "取消")) { dismiss() }
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+            }
+            .alert(String(localized: "维护失败"), isPresented: .constant(errorMessage != nil)) {
+                Button(String(localized: "确定")) { errorMessage = nil }
+            } message: { Text(errorMessage ?? "") }
+            .onAppear {
+                Task {
+                    await inventoryManager.refreshInventory()
+                    await warehouseManager.refreshItems()
+                }
+            }
+        }
+    }
+
+    // MARK: - 子视图
+
+    private var durabilityCard: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill((template?.category.color ?? ApocalypseTheme.primary).opacity(0.15))
+                        .frame(width: 52, height: 52)
+                    BuildingIconView(
+                        iconName: template?.icon ?? "building.2.fill",
+                        size: 22,
+                        tintColor: template?.category.color ?? ApocalypseTheme.primary
+                    )
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(template?.localizedName ?? building.buildingName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Text(String(format: String(localized: "Lv.%d · 当前耐久 %d%%"), building.level, durability))
+                        .font(.system(size: 13))
+                        .foregroundColor(durabilityColor)
+                }
+                Spacer()
+            }
+
+            // 耐久度进度条
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.08)).frame(height: 8)
+                    Capsule()
+                        .fill(durabilityColor)
+                        .frame(width: geo.size.width * CGFloat(max(0, durability)) / 100.0, height: 8)
+                        .animation(.easeInOut(duration: 0.4), value: durability)
+                }
+            }
+            .frame(height: 8)
+
+            HStack {
+                Text(String(localized: "维护后恢复至"))
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                Spacer()
+                Text(String(localized: "100%"))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.success)
+            }
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.cardBackground))
+    }
+
+    private var materialsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "所需材料"))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+
+            if cost.isEmpty {
+                Text(String(localized: "无需材料"))
+                    .font(.system(size: 14))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+            } else {
+                ForEach(cost.sorted(by: { $0.key < $1.key }), id: \.key) { itemId, required in
+                    let owned = available[itemId] ?? 0
+                    let sufficient = owned >= required
+                    HStack(spacing: 10) {
+                        Image(systemName: sufficient ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(sufficient ? ApocalypseTheme.success : ApocalypseTheme.danger)
+
+                        Text(LocalizedStringKey(itemId))
+                            .font(.system(size: 14))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+
+                        Spacer()
+
+                        Text("\(owned) / \(required)")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(sufficient ? ApocalypseTheme.textSecondary : ApocalypseTheme.danger)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.cardBackground))
+    }
+
+    private var maintenanceNote: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 13))
+                .foregroundColor(ApocalypseTheme.info)
+            Text(building.templateId == "campfire"
+                 ? String(localized: "篝火约 7 天耐久归零，维护后重置计时")
+                 : String(localized: "建筑约 30 天耐久归零，等级越高衰减越慢"))
+                .font(.system(size: 12))
+                .foregroundColor(ApocalypseTheme.textMuted)
+                .lineSpacing(2)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var confirmButton: some View {
+        Button {
+            Task { await doMaintain() }
+        } label: {
+            Group {
+                if isLoading {
+                    ProgressView().tint(.white)
+                } else {
+                    HStack(spacing: 8) {
+                        Image(systemName: "wrench.fill")
+                        Text(canMaintain ? String(localized: "确认维护") : String(localized: "材料不足"))
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                }
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(canMaintain ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+            )
+        }
+        .disabled(!canMaintain || isLoading)
+    }
+
+    private var durabilityColor: Color {
+        if durability >= 60 { return ApocalypseTheme.success }
+        if durability > 0   { return ApocalypseTheme.warning }
+        return ApocalypseTheme.danger
+    }
+
+    private func doMaintain() async {
+        isLoading = true
+        do {
+            try await BuildingManager.shared.maintainBuilding(buildingId: building.id)
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+}
+
 // MARK: - Preview
 
 #Preview {
@@ -710,7 +988,8 @@ struct BuildingSpeedupSheet: View {
         buildStartedAt: Date().addingTimeInterval(-300),
         buildCompletedAt: Date(),
         createdAt: Date(),
-        updatedAt: Date()
+        updatedAt: Date(),
+        durability: 65
     )
 
     let constructingBuilding = PlayerBuilding(
@@ -726,7 +1005,8 @@ struct BuildingSpeedupSheet: View {
         buildStartedAt: Date().addingTimeInterval(-150),
         buildCompletedAt: Date().addingTimeInterval(150),
         createdAt: Date(),
-        updatedAt: Date()
+        updatedAt: Date(),
+        durability: 100
     )
 
     VStack(spacing: 12) {

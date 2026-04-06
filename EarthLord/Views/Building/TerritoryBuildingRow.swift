@@ -937,6 +937,7 @@ struct BuildingFortifySheet: View {
     var onConfirm: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var inventoryManager = InventoryManager.shared
+    @ObservedObject private var warehouseManager = WarehouseManager.shared
 
     /// 当前升级所需材料（level - 1 为索引）
     private var cost: [String: Int] {
@@ -946,10 +947,13 @@ struct BuildingFortifySheet: View {
         return upgradeResources[building.level - 1]
     }
 
-    /// 背包中拥有的数量
+    /// 背包 + 仓库合计拥有的数量
     private var owned: [String: Int] {
         var result: [String: Int] = [:]
         for item in inventoryManager.items where item.customName == nil {
+            result[item.itemId, default: 0] += item.quantity
+        }
+        for item in warehouseManager.items where item.customName == nil {
             result[item.itemId, default: 0] += item.quantity
         }
         return result
@@ -989,7 +993,10 @@ struct BuildingFortifySheet: View {
                 }
             }
             .onAppear {
-                Task { await inventoryManager.refreshInventory() }
+                Task {
+                    await inventoryManager.refreshInventory()
+                    await warehouseManager.refreshItems()
+                }
             }
         }
     }
@@ -1122,7 +1129,7 @@ struct BuildingFortifySheet: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 12))
                     .foregroundColor(ApocalypseTheme.info)
-                Text(String(localized: "强化逐级进行：Lv1 → Lv2 → Lv3，材料从背包扣除"))
+                Text(String(localized: "强化逐级进行：Lv1 → Lv2 → Lv3，背包优先扣除，不足从仓库补"))
                     .font(.system(size: 12))
                     .foregroundColor(ApocalypseTheme.textMuted)
             }

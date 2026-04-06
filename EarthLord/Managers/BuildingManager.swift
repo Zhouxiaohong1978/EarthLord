@@ -414,22 +414,19 @@ final class BuildingManager: ObservableObject {
             throw BuildingError.maxLevelReached
         }
 
-        // 检查升级所需材料
+        // 检查升级所需材料（背包 + 仓库合计）
         let upgradeIndex = building.level - 1  // Lv1→2 uses index 0, Lv2→3 uses index 1, etc.
         if let upgradeResources = template.upgradeResources,
            upgradeIndex < upgradeResources.count {
             let cost = upgradeResources[upgradeIndex]
-            let inventory = InventoryManager.shared
             var missing: [String: Int] = [:]
             for (itemId, required) in cost {
-                let owned = inventory.items.first(where: { $0.itemId == itemId })?.quantity ?? 0
-                if owned < required {
-                    missing[itemId] = required - owned
-                }
+                let inBackpack  = InventoryManager.shared.items.filter { $0.itemId == itemId && $0.customName == nil }.reduce(0) { $0 + $1.quantity }
+                let inWarehouse = WarehouseManager.shared.items.filter { $0.itemId == itemId && $0.customName == nil }.reduce(0) { $0 + $1.quantity }
+                let total = inBackpack + inWarehouse
+                if total < required { missing[itemId] = required - total }
             }
-            if !missing.isEmpty {
-                throw BuildingError.insufficientResources(missing)
-            }
+            if !missing.isEmpty { throw BuildingError.insufficientResources(missing) }
         }
 
         logger.log("升级建筑: \(building.buildingName) Lv.\(building.level) -> Lv.\(building.level + 1)", type: .info)
@@ -440,12 +437,26 @@ final class BuildingManager: ObservableObject {
         let newLevel = building.level + 1
 
         do {
-            // 扣除升级材料
+            // 扣除升级材料：先从背包扣，不足部分从仓库补
             if let upgradeResources = template.upgradeResources,
                upgradeIndex < upgradeResources.count {
                 let cost = upgradeResources[upgradeIndex]
-                for (itemId, amount) in cost {
-                    try await InventoryManager.shared.removeItem(itemId: itemId, quantity: amount)
+                for (itemId, required) in cost {
+                    var remaining = required
+                    let backpackItems = InventoryManager.shared.items
+                        .filter { $0.itemId == itemId && $0.customName == nil }
+                        .sorted { $0.quantity > $1.quantity }
+                    for item in backpackItems {
+                        guard remaining > 0 else { break }
+                        let use = min(item.quantity, remaining)
+                        try await InventoryManager.shared.useItem(inventoryId: item.id, quantity: use)
+                        remaining -= use
+                        logger.log("强化背包扣除: \(itemId) x\(use)", type: .info)
+                    }
+                    if remaining > 0 {
+                        try await WarehouseManager.shared.deductForConstruction(itemId: itemId, quantity: remaining)
+                        logger.log("强化仓库补扣: \(itemId) x\(remaining)", type: .info)
+                    }
                 }
             }
 

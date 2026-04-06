@@ -20,6 +20,7 @@ struct TerritoryBuildingRow: View {
     @State private var showCollectSheet = false
     @State private var showSpeedupSheet = false
     @State private var showMaintenanceSheet = false
+    @State private var showFortifySheet = false
 
     /// 定时器
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -82,6 +83,9 @@ struct TerritoryBuildingRow: View {
         }
         .sheet(isPresented: $showMaintenanceSheet) {
             BuildingMaintenanceSheet(building: building, template: template)
+        }
+        .sheet(isPresented: $showFortifySheet) {
+            BuildingFortifySheet(building: building, template: template, onConfirm: onUpgrade)
         }
     }
 
@@ -249,7 +253,7 @@ struct TerritoryBuildingRow: View {
                 .disabled(true)
             } else {
                 Button {
-                    onUpgrade?()
+                    showFortifySheet = true
                 } label: {
                     Label(String(localized: "强化"), systemImage: "arrow.up.circle")
                 }
@@ -952,6 +956,188 @@ struct BuildingMaintenanceSheet: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+}
+
+// MARK: - BuildingFortifySheet
+
+/// 建筑强化确认弹窗 - 显示升级所需材料并执行强化
+struct BuildingFortifySheet: View {
+    let building: PlayerBuilding
+    let template: BuildingTemplate?
+    var onConfirm: (() -> Void)?
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var inventoryManager = InventoryManager.shared
+
+    /// 当前升级所需材料（level - 1 为索引）
+    private var cost: [String: Int] {
+        guard let t = template,
+              let upgradeResources = t.upgradeResources,
+              building.level - 1 < upgradeResources.count else { return [:] }
+        return upgradeResources[building.level - 1]
+    }
+
+    /// 背包中拥有的数量
+    private var owned: [String: Int] {
+        var result: [String: Int] = [:]
+        for item in inventoryManager.items where item.customName == nil {
+            result[item.itemId, default: 0] += item.quantity
+        }
+        return result
+    }
+
+    private var canFortify: Bool {
+        cost.allSatisfy { (itemId, required) in (owned[itemId] ?? 0) >= required }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApocalypseTheme.background.ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // 等级升级卡片
+                        levelCard
+
+                        // 所需材料列表
+                        materialsCard
+
+                        // 强化说明
+                        fortifyNote
+
+                        // 确认按钮
+                        confirmButton
+                    }
+                    .padding(20)
+                }
+            }
+            .navigationTitle(String(localized: "建筑强化"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "取消")) { dismiss() }
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+            }
+            .onAppear {
+                Task { await inventoryManager.refreshInventory() }
+            }
+        }
+    }
+
+    // MARK: - 子视图
+
+    private var levelCard: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill((template?.category.color ?? ApocalypseTheme.primary).opacity(0.15))
+                    .frame(width: 56, height: 56)
+                BuildingIconView(
+                    iconName: template?.icon ?? "building.2.fill",
+                    size: 24,
+                    tintColor: template?.category.color ?? ApocalypseTheme.primary
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(template?.localizedName ?? building.buildingName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                HStack(spacing: 8) {
+                    levelBadge(level: building.level, color: ApocalypseTheme.textSecondary)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.primary)
+                    levelBadge(level: building.level + 1, color: ApocalypseTheme.primary)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.cardBackground))
+    }
+
+    private func levelBadge(level: Int, color: Color) -> some View {
+        Text("Lv.\(level)")
+            .font(.system(size: 13, weight: .bold))
+            .foregroundColor(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(color.opacity(0.15)))
+    }
+
+    private var materialsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "所需材料"))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+
+            if cost.isEmpty {
+                Text(String(localized: "无材料要求"))
+                    .font(.system(size: 14))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+            } else {
+                ForEach(cost.sorted(by: { $0.key < $1.key }), id: \.key) { itemId, required in
+                    let have = owned[itemId] ?? 0
+                    let sufficient = have >= required
+                    HStack(spacing: 10) {
+                        Image(systemName: sufficient ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(sufficient ? ApocalypseTheme.success : ApocalypseTheme.danger)
+
+                        Text(LocalizedStringKey(itemId))
+                            .font(.system(size: 14))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+
+                        Spacer()
+
+                        Text("\(have) / \(required)")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(sufficient ? ApocalypseTheme.textSecondary : ApocalypseTheme.danger)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.cardBackground))
+    }
+
+    private var fortifyNote: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 13))
+                .foregroundColor(ApocalypseTheme.info)
+            Text(String(localized: "强化后建筑等级提升，耐久衰减变慢，材料从背包扣除"))
+                .font(.system(size: 12))
+                .foregroundColor(ApocalypseTheme.textMuted)
+                .lineSpacing(2)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var confirmButton: some View {
+        Button {
+            dismiss()
+            onConfirm?()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.up.circle.fill")
+                Text(canFortify ? String(localized: "确认强化") : String(localized: "材料不足"))
+            }
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(canFortify ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+            )
+        }
+        .disabled(!canFortify)
     }
 }
 

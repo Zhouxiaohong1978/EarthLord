@@ -1078,46 +1078,44 @@ struct BuildingFortifySheet: View {
     private var fortifyNote: some View {
         let mgr = BuildingManager.shared
         let tid = building.templateId
-        let curDays = mgr.durabilityLifeDays(templateId: tid, level: building.level)
-        let newDays = mgr.durabilityLifeDays(templateId: tid, level: building.level + 1)
-        // 衰减减慢百分比 = (新时限 - 旧时限) / 旧时限
-        let improvePct = Int(((newDays - curDays) / curDays * 100).rounded())
+        let curLevel = building.level
+        let newLevel = curLevel + 1
 
-        return VStack(spacing: 12) {
-            // 耐久时限对比
-            HStack(spacing: 0) {
-                durabilityStatCell(
-                    label: String(localized: "当前耐久时限"),
-                    value: formatDays(curDays),
-                    color: ApocalypseTheme.textSecondary
+        let curDays   = mgr.durabilityLifeDays(templateId: tid, level: curLevel)
+        let newDays   = mgr.durabilityLifeDays(templateId: tid, level: newLevel)
+        let durPct    = Int(((newDays - curDays) / curDays * 100).rounded())
+
+        let curVital  = mgr.vitalDecayAmount(templateId: tid, level: curLevel)
+        let newVital  = mgr.vitalDecayAmount(templateId: tid, level: newLevel)
+        let hasVital  = newVital > 0
+
+        return VStack(spacing: 10) {
+            // ── 对比卡片 ──
+            VStack(spacing: 0) {
+                // 耐久时限行
+                fortifyCompareRow(
+                    icon: "wrench.and.screwdriver.fill",
+                    iconColor: ApocalypseTheme.warning,
+                    label: String(localized: "耐久时限"),
+                    before: formatDays(curDays),
+                    after: formatDays(newDays),
+                    badge: "+\(durPct)%"
                 )
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(ApocalypseTheme.primary)
-                    .frame(width: 32)
-                durabilityStatCell(
-                    label: String(localized: "强化后耐久时限"),
-                    value: formatDays(newDays),
-                    color: ApocalypseTheme.success
-                )
+
+                if hasVital {
+                    Divider().background(Color.white.opacity(0.06)).padding(.horizontal, 12)
+                    // 体征减缓行
+                    fortifyCompareRow(
+                        icon: "heart.fill",
+                        iconColor: ApocalypseTheme.danger,
+                        label: String(localized: "体征减缓"),
+                        before: "-\(Int((curVital * 100).rounded()))%",
+                        after:  "-\(Int((newVital * 100).rounded()))%",
+                        badge:  "+\(Int(((newVital - curVital) * 100).rounded()))%"
+                    )
+                }
             }
-            .padding(.vertical, 12)
             .background(RoundedRectangle(cornerRadius: 12).fill(ApocalypseTheme.cardBackground))
-
-            // 提升徽章 + 说明
-            HStack(spacing: 8) {
-                Text("+\(improvePct)%")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(ApocalypseTheme.success)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
-                Text(String(localized: "耐久维持更久，维护间隔变长"))
-                    .font(.system(size: 12))
-                    .foregroundColor(ApocalypseTheme.textMuted)
-                Spacer()
-            }
-            .padding(.horizontal, 4)
 
             // 逐级提示
             HStack(spacing: 8) {
@@ -1127,22 +1125,44 @@ struct BuildingFortifySheet: View {
                 Text(String(localized: "强化逐级进行：Lv1 → Lv2 → Lv3，材料从背包扣除"))
                     .font(.system(size: 12))
                     .foregroundColor(ApocalypseTheme.textMuted)
-                    .lineSpacing(2)
             }
             .padding(.horizontal, 4)
         }
     }
 
-    private func durabilityStatCell(label: String, value: String, color: Color) -> some View {
-        VStack(spacing: 4) {
+    private func fortifyCompareRow(
+        icon: String, iconColor: Color,
+        label: String, before: String, after: String, badge: String
+    ) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(iconColor)
+                .frame(width: 20)
+
             Text(label)
-                .font(.system(size: 11))
-                .foregroundColor(ApocalypseTheme.textMuted)
-            Text(value)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(color)
+                .font(.system(size: 13))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+
+            Spacer()
+
+            Text(before)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+            Image(systemName: "arrow.right")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(ApocalypseTheme.primary)
+            Text(after)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(ApocalypseTheme.success)
+            Text(badge)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(ApocalypseTheme.success)
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
         }
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
     }
 
     private func formatDays(_ days: Double) -> String {

@@ -713,20 +713,14 @@ final class BuildingManager: ObservableObject {
     }
 
     /// 计算所有已建成建筑对体征衰减的总降低比例（0.0 ~ 0.50）
-    /// 建造完成后 playerBuildings 立即更新，体征系统下次计算时自动生效
-    /// 耐久度为 0 的建筑不提供加成
+    /// 等级越高加成越强：Lv1=基础，Lv2=1.5×，Lv3=2×
+    /// 耐久度归零的建筑不提供加成
     var vitalDecayReduction: Double {
-        let decayMap: [String: Double] = [
-            "campfire":      0.05,
-            "tent_simple":   0.03,
-            "shelter":       0.10,
-            "lord_command":  0.10
-        ]
         let total = playerBuildings
             .filter { $0.status == .active && computedDurability(for: $0) > 0 }
-            .compactMap { decayMap[$0.templateId] }
+            .map { vitalDecayAmount(templateId: $0.templateId, level: $0.level) }
             .reduce(0, +)
-        return min(total, 0.50)  // 建筑加成上限 50%
+        return min(total, 0.50)
     }
 
     // MARK: - Durability & Maintenance
@@ -743,17 +737,32 @@ final class BuildingManager: ObservableObject {
     }
 
     /// 每天耐久衰减量
+    /// 等级倍率：Lv1=1.0×，Lv2=0.5×（耐久×2），Lv3=0.25×（耐久×4）
     private func durabilityDecayPerDay(templateId: String, level: Int) -> Double {
         let baseDays: Double = templateId == "campfire" ? 7.0 : 30.0
-        let levelMultiplier = [1.0, 0.8, 0.6][min(level - 1, 2)]
+        let levelMultiplier = [1.0, 0.5, 0.25][min(level - 1, 2)]
         return 100.0 / baseDays * levelMultiplier
     }
 
     /// 指定等级下耐久从 100 衰减至 0 需要的天数
     func durabilityLifeDays(templateId: String, level: Int) -> Double {
         let baseDays: Double = templateId == "campfire" ? 7.0 : 30.0
-        let levelMultiplier = [1.0, 0.8, 0.6][min(level - 1, 2)]
+        let levelMultiplier = [1.0, 0.5, 0.25][min(level - 1, 2)]
         return baseDays / levelMultiplier
+    }
+
+    /// 单栋建筑在指定等级下提供的体征衰减减少量
+    /// 等级加成：Lv1=1×，Lv2=1.5×，Lv3=2×
+    func vitalDecayAmount(templateId: String, level: Int) -> Double {
+        let baseMap: [String: Double] = [
+            "campfire":    0.05,
+            "tent_simple": 0.03,
+            "shelter":     0.10,
+            "lord_command":0.10
+        ]
+        guard let base = baseMap[templateId] else { return 0 }
+        let levelMult = 1.0 + Double(level - 1) * 0.5
+        return base * levelMult
     }
 
     /// 计算维护所需材料（约为建造材料的 25%，篝火只需木材）

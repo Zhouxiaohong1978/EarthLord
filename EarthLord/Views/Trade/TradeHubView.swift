@@ -10,6 +10,7 @@ import SwiftUI
 
 struct TradeHubView: View {
     @ObservedObject private var tradeManager = TradeManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     var body: some View {
         ZStack {
@@ -89,7 +90,7 @@ struct TradeHubView: View {
     // MARK: - 头部统计
 
     private var dailyLimit: Int? {
-        SubscriptionManager.shared.dailyTradeLimit
+        subscriptionManager.dailyTradeLimit
     }
 
     private var todayTradeLabel: String {

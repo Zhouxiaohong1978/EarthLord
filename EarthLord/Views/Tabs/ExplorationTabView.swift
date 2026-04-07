@@ -1313,6 +1313,7 @@ struct PlaceholderContentView: View {
 
 struct TradeContentView: View {
     @ObservedObject private var tradeManager = TradeManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     @State private var showCreateSheet = false
 
@@ -1388,34 +1389,106 @@ struct TradeContentView: View {
 
     // MARK: - 头部统计
 
+    private var dailyLimit: Int? {
+        subscriptionManager.dailyTradeLimit
+    }
+
     private var headerStats: some View {
-        HStack(spacing: 16) {
-            tradeStatItem(
-                value: "\(tradeManager.availableOffers.count)",
-                label: LocalizedStringKey("市场挂单"),
-                icon: "cart.fill",
-                color: ApocalypseTheme.primary
-            )
+        VStack(spacing: 12) {
+            // 上行：市场挂单 + 我的挂单
+            HStack(spacing: 0) {
+                tradeStatItem(
+                    value: "\(tradeManager.availableOffers.count)",
+                    label: LocalizedStringKey("市场挂单"),
+                    icon: "cart.fill",
+                    color: ApocalypseTheme.primary
+                )
+                Divider().frame(height: 40).background(ApocalypseTheme.textMuted.opacity(0.3))
+                tradeStatItem(
+                    value: "\(activeOffersCount)",
+                    label: LocalizedStringKey("我的挂单"),
+                    icon: "tag.fill",
+                    color: ApocalypseTheme.info
+                )
+            }
 
-            tradeStatItem(
-                value: "\(activeOffersCount)",
-                label: LocalizedStringKey("我的挂单"),
-                icon: "tag.fill",
-                color: ApocalypseTheme.info
-            )
-
-            tradeStatItem(
-                value: "\(tradeManager.tradeHistory.count)",
-                label: LocalizedStringKey("交易次数"),
-                icon: "arrow.left.arrow.right",
-                color: ApocalypseTheme.success
-            )
+            // 下行：今日交易次数进度条
+            if let limit = dailyLimit {
+                tradeLimitBar(used: tradeManager.todayTradeCount, limit: limit)
+            } else {
+                HStack(spacing: 6) {
+                    Image(systemName: "infinity")
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.success)
+                    Text(String(localized: "今日交易次数不限"))
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(ApocalypseTheme.cardBackground)
         )
+    }
+
+    private func tradeLimitBar(used: Int, limit: Int) -> some View {
+        let ratio = min(Double(used) / Double(limit), 1.0)
+        let remaining = max(0, limit - used)
+        let barColor: Color = ratio >= 1.0 ? ApocalypseTheme.danger
+                            : ratio >= 0.7 ? ApocalypseTheme.warning
+                            : ApocalypseTheme.success
+
+        return VStack(spacing: 6) {
+            HStack {
+                HStack(spacing: 5) {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.system(size: 11))
+                        .foregroundColor(barColor)
+                    Text(String(localized: "今日交易次数"))
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+                Spacer()
+                if remaining > 0 {
+                    Text(String(format: String(localized: "还剩 %d 次"), remaining))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(barColor)
+                } else {
+                    Text(String(localized: "今日已用完"))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(ApocalypseTheme.danger)
+                }
+                Text("(\(used)/\(limit))")
+                    .font(.system(size: 11))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.08)).frame(height: 6)
+                    Capsule()
+                        .fill(barColor)
+                        .frame(width: geo.size.width * ratio, height: 6)
+                        .animation(.easeInOut(duration: 0.3), value: ratio)
+                }
+            }
+            .frame(height: 6)
+
+            if ratio >= 0.7 && ratio < 1.0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 10))
+                    Text(String(localized: "订阅探索者或领主可解锁无限次交易"))
+                        .font(.system(size: 10))
+                }
+                .foregroundColor(ApocalypseTheme.warning.opacity(0.8))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(.top, 4)
     }
 
     private func tradeStatItem(value: String, label: LocalizedStringKey, icon: String, color: Color) -> some View {

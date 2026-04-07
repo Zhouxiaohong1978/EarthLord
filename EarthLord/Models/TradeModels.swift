@@ -345,9 +345,17 @@ struct TradeOfferDB: Codable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        let created = createdAt.flatMap { dateFormatter.date(from: $0) } ?? Date()
-        let expires = dateFormatter.date(from: expiresAt) ?? Date().addingTimeInterval(86400)
-        let completed = completedAt.flatMap { dateFormatter.date(from: $0) }
+        let dateFormatterNoFrac = ISO8601DateFormatter()
+        dateFormatterNoFrac.formatOptions = [.withInternetDateTime]
+
+        func parseDate(_ str: String?) -> Date? {
+            guard let s = str else { return nil }
+            return dateFormatter.date(from: s) ?? dateFormatterNoFrac.date(from: s)
+        }
+
+        let created = parseDate(createdAt) ?? Date()
+        let expires = parseDate(expiresAt) ?? Date().addingTimeInterval(86400)
+        let completed = parseDate(completedAt)
         let completedBy = completedByUserId.flatMap { UUID(uuidString: $0) }
 
         return TradeOffer(

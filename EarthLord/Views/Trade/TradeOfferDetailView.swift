@@ -27,9 +27,20 @@ struct TradeOfferDetailView: View {
         tradeManager.checkInventory(items: offer.requestingItems)
     }
 
+    /// 今日剩余交易次数（nil = 无限制）
+    private var remainingTrades: Int? {
+        guard let limit = SubscriptionManager.shared.dailyTradeLimit else { return nil }
+        return max(0, limit - tradeManager.todayTradeCount)
+    }
+
+    private var isTradeBlocked: Bool {
+        guard let remaining = remainingTrades else { return false }
+        return remaining <= 0
+    }
+
     /// 是否可以接受交易
     private var canAccept: Bool {
-        offer.status == .active && !offer.isExpired && inventoryCheckResult.canAccept && !isAccepting
+        offer.status == .active && !offer.isExpired && inventoryCheckResult.canAccept && !isAccepting && !isTradeBlocked
     }
 
     var body: some View {
@@ -303,28 +314,45 @@ struct TradeOfferDetailView: View {
     // MARK: - 接受交易按钮
 
     private var acceptButton: some View {
-        Button {
-            showConfirmAlert = true
-        } label: {
-            HStack(spacing: 8) {
-                if isAccepting {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .tint(.white)
+        VStack(spacing: 8) {
+            Button {
+                showConfirmAlert = true
+            } label: {
+                HStack(spacing: 8) {
+                    if isAccepting {
+                        ProgressView().scaleEffect(0.8).tint(.white)
+                    }
+                    Text(isAccepting ? String(localized: "处理中...") :
+                         isTradeBlocked ? String(localized: "今日次数已用完") :
+                         String(localized: "接受交易"))
+                        .font(.system(size: 16, weight: .semibold))
                 }
-
-                Text(isAccepting ? "处理中..." : "接受交易")
-                    .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(canAccept ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+                )
             }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(canAccept ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
-            )
+            .disabled(!canAccept)
+
+            // 剩余次数提示
+            if let remaining = remainingTrades {
+                HStack(spacing: 4) {
+                    Image(systemName: remaining > 0 ? "arrow.left.arrow.right" : "xmark.circle.fill")
+                        .font(.system(size: 11))
+                    if remaining > 0 {
+                        Text(String(format: String(localized: "今日还可交易 %d 次"), remaining))
+                            .font(.system(size: 12))
+                    } else {
+                        Text(String(localized: "今日次数已用完，明日重置"))
+                            .font(.system(size: 12))
+                    }
+                }
+                .foregroundColor(remaining > 0 ? ApocalypseTheme.textMuted : ApocalypseTheme.danger)
+            }
         }
-        .disabled(!canAccept)
     }
 
     // MARK: - 辅助方法

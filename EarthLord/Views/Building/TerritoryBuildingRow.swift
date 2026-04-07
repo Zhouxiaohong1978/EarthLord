@@ -668,6 +668,102 @@ struct BuildingSpeedupSheet: View {
     }
 }
 
+// MARK: - MaterialSourceRow
+
+/// 材料需求行：分别显示背包和仓库来源，高亮被调用的仓库
+private struct MaterialSourceRow: View {
+    let itemId: String
+    let required: Int
+    let backpackCount: Int
+    let warehouseCount: Int
+
+    private var total: Int { backpackCount + warehouseCount }
+    private var sufficient: Bool { total >= required }
+    /// 背包不够，仓库需要介入
+    private var usesWarehouse: Bool { backpackCount < required }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 10) {
+                // 状态图标
+                Image(systemName: sufficient ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(sufficient ? ApocalypseTheme.success : ApocalypseTheme.danger)
+
+                // 物品名称
+                Text(LocalizedStringKey(itemId))
+                    .font(.system(size: 14))
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                Spacer()
+
+                // 来源数量区域
+                HStack(spacing: 4) {
+                    // 背包数量徽章
+                    sourceBadge(
+                        icon: "bag.fill",
+                        count: backpackCount,
+                        active: backpackCount > 0,
+                        highlighted: false
+                    )
+
+                    // 仓库数量：仅在仓库有货或背包不足时显示
+                    if usesWarehouse || warehouseCount > 0 {
+                        Text("+")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        sourceBadge(
+                            icon: "archivebox.fill",
+                            count: warehouseCount,
+                            active: warehouseCount > 0,
+                            highlighted: usesWarehouse && warehouseCount > 0
+                        )
+                    }
+
+                    Text("/ \(required)")
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                        .padding(.leading, 2)
+                }
+            }
+
+            // 不足时显示差额提示
+            if !sufficient {
+                HStack {
+                    Spacer()
+                    Text(String(format: String(localized: "还差 %d"), required - total))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.danger)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(Capsule().fill(ApocalypseTheme.danger.opacity(0.12)))
+                }
+            }
+        }
+        .padding(.vertical, 3)
+    }
+
+    private func sourceBadge(icon: String, count: Int, active: Bool, highlighted: Bool) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 9))
+            Text("\(count)")
+                .font(.system(size: 12, weight: .semibold))
+        }
+        .foregroundColor(
+            highlighted ? ApocalypseTheme.info :
+            active      ? ApocalypseTheme.textSecondary :
+                          ApocalypseTheme.textMuted
+        )
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(
+            Capsule().fill(
+                highlighted ? ApocalypseTheme.info.opacity(0.15) :
+                              Color.white.opacity(0.06)
+            )
+        )
+    }
+}
+
 // MARK: - DurabilityBar
 
 /// 耐久度进度条（嵌入建筑行）
@@ -723,12 +819,16 @@ struct BuildingMaintenanceSheet: View {
 
     private var durability: Int { manager.computedDurability(for: building) }
 
-    /// 所有可用资源（背包+仓库合计）
-    private var available: [String: Int] {
+    private var backpackCounts: [String: Int] {
         var result: [String: Int] = [:]
         for item in inventoryManager.items where item.customName == nil {
             result[item.itemId, default: 0] += item.quantity
         }
+        return result
+    }
+
+    private var warehouseCounts: [String: Int] {
+        var result: [String: Int] = [:]
         for item in warehouseManager.items where item.customName == nil {
             result[item.itemId, default: 0] += item.quantity
         }
@@ -736,7 +836,9 @@ struct BuildingMaintenanceSheet: View {
     }
 
     private var canMaintain: Bool {
-        cost.allSatisfy { (itemId, required) in (available[itemId] ?? 0) >= required }
+        cost.allSatisfy { (itemId, required) in
+            (backpackCounts[itemId] ?? 0) + (warehouseCounts[itemId] ?? 0) >= required
+        }
     }
 
     var body: some View {
@@ -833,7 +935,7 @@ struct BuildingMaintenanceSheet: View {
     }
 
     private var materialsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(String(localized: "所需材料"))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(ApocalypseTheme.textSecondary)
@@ -844,24 +946,12 @@ struct BuildingMaintenanceSheet: View {
                     .foregroundColor(ApocalypseTheme.textMuted)
             } else {
                 ForEach(cost.sorted(by: { $0.key < $1.key }), id: \.key) { itemId, required in
-                    let owned = available[itemId] ?? 0
-                    let sufficient = owned >= required
-                    HStack(spacing: 10) {
-                        Image(systemName: sufficient ? "checkmark.circle.fill" : "xmark.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(sufficient ? ApocalypseTheme.success : ApocalypseTheme.danger)
-
-                        Text(LocalizedStringKey(itemId))
-                            .font(.system(size: 14))
-                            .foregroundColor(ApocalypseTheme.textPrimary)
-
-                        Spacer()
-
-                        Text("\(owned) / \(required)")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(sufficient ? ApocalypseTheme.textSecondary : ApocalypseTheme.danger)
-                    }
-                    .padding(.vertical, 2)
+                    MaterialSourceRow(
+                        itemId: itemId,
+                        required: required,
+                        backpackCount: backpackCounts[itemId] ?? 0,
+                        warehouseCount: warehouseCounts[itemId] ?? 0
+                    )
                 }
             }
         }
@@ -947,12 +1037,16 @@ struct BuildingFortifySheet: View {
         return upgradeResources[building.level - 1]
     }
 
-    /// 背包 + 仓库合计拥有的数量
-    private var owned: [String: Int] {
+    private var backpackCounts: [String: Int] {
         var result: [String: Int] = [:]
         for item in inventoryManager.items where item.customName == nil {
             result[item.itemId, default: 0] += item.quantity
         }
+        return result
+    }
+
+    private var warehouseCounts: [String: Int] {
+        var result: [String: Int] = [:]
         for item in warehouseManager.items where item.customName == nil {
             result[item.itemId, default: 0] += item.quantity
         }
@@ -960,7 +1054,9 @@ struct BuildingFortifySheet: View {
     }
 
     private var canFortify: Bool {
-        cost.allSatisfy { (itemId, required) in (owned[itemId] ?? 0) >= required }
+        cost.allSatisfy { (itemId, required) in
+            (backpackCounts[itemId] ?? 0) + (warehouseCounts[itemId] ?? 0) >= required
+        }
     }
 
     var body: some View {
@@ -1046,7 +1142,7 @@ struct BuildingFortifySheet: View {
     }
 
     private var materialsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(String(localized: "所需材料"))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(ApocalypseTheme.textSecondary)
@@ -1057,24 +1153,12 @@ struct BuildingFortifySheet: View {
                     .foregroundColor(ApocalypseTheme.textMuted)
             } else {
                 ForEach(cost.sorted(by: { $0.key < $1.key }), id: \.key) { itemId, required in
-                    let have = owned[itemId] ?? 0
-                    let sufficient = have >= required
-                    HStack(spacing: 10) {
-                        Image(systemName: sufficient ? "checkmark.circle.fill" : "xmark.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(sufficient ? ApocalypseTheme.success : ApocalypseTheme.danger)
-
-                        Text(LocalizedStringKey(itemId))
-                            .font(.system(size: 14))
-                            .foregroundColor(ApocalypseTheme.textPrimary)
-
-                        Spacer()
-
-                        Text("\(have) / \(required)")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(sufficient ? ApocalypseTheme.textSecondary : ApocalypseTheme.danger)
-                    }
-                    .padding(.vertical, 2)
+                    MaterialSourceRow(
+                        itemId: itemId,
+                        required: required,
+                        backpackCount: backpackCounts[itemId] ?? 0,
+                        warehouseCount: warehouseCounts[itemId] ?? 0
+                    )
                 }
             }
         }

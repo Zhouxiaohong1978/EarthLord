@@ -517,7 +517,10 @@ final class BuildingManager: ObservableObject {
 
             logger.log("成功加载 \(buildings.count) 个建筑", type: .success)
 
-            return buildings
+            // 检查并处理超期废弃
+            await checkAndAbandonExpiredBuildings()
+
+            return playerBuildings  // 废弃检查可能已删除部分建筑，返回最新列表
 
         } catch {
             logger.logError("加载建筑失败", error: error)
@@ -847,6 +850,7 @@ final class BuildingManager: ObservableObject {
             .update([
                 "durability": AnyJSON.integer(100),
                 "last_maintained_at": AnyJSON.string(now.ISO8601Format()),
+                "durability_zero_at": AnyJSON.null,   // 维护成功，清除缓冲期计时
                 "status": AnyJSON.string(BuildingStatus.active.rawValue),
                 "updated_at": AnyJSON.string(now.ISO8601Format())
             ])
@@ -855,9 +859,63 @@ final class BuildingManager: ObservableObject {
 
         playerBuildings[index].durability = 100
         playerBuildings[index].lastMaintainedAt = now
+        playerBuildings[index].durabilityZeroAt = nil
         playerBuildings[index].status = .active
         playerBuildings[index].updatedAt = now
         logger.log("建筑维护完成: \(building.buildingName)，耐久恢复至 100", type: .success)
+    }
+
+    /// 记录建筑耐久首次归零时间（仅首次调用，后续忽略）
+    private func recordDurabilityZero(buildingId: UUID) async {
+        guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }),
+              playerBuildings[index].durabilityZeroAt == nil else { return }
+        let now = Date()
+        do {
+            try await supabase
+                .from("player_buildings")
+                .update(["durability_zero_at": AnyJSON.string(now.ISO8601Format())])
+                .eq("id", value: buildingId.uuidString)
+                .execute()
+            playerBuildings[index].durabilityZeroAt = now
+            logger.log("建筑 \(playerBuildings[index].buildingName) 耐久归零，3天缓冲期开始", type: .warning)
+        } catch {
+            logger.logError("记录耐久归零时间失败", error: error)
+        }
+    }
+
+    /// 检查并废弃超过3天未维护的建筑（归零后超期自动删除）
+    func checkAndAbandonExpiredBuildings() async {
+        let gracePeriod: TimeInterval = 3 * 24 * 3600
+        let now = Date()
+
+        // 先收集需要处理的建筑，避免在遍历中修改数组
+        let activeBuildings = playerBuildings.filter { $0.status == .active }
+
+        for building in activeBuildings {
+            let durability = computedDurability(for: building)
+
+            if durability == 0 {
+                if let zeroAt = building.durabilityZeroAt {
+                    // 已记录归零时间：检查是否超过3天
+                    if now.timeIntervalSince(zeroAt) >= gracePeriod {
+                        logger.log("建筑 \(building.buildingName) 超过3天未维护，自动废弃", type: .warning)
+                        try? await deleteBuilding(buildingId: building.id)
+                    }
+                } else {
+                    // 首次检测到归零：写入时间戳，开始缓冲期
+                    await recordDurabilityZero(buildingId: building.id)
+                }
+            }
+        }
+    }
+
+    /// 缓冲期剩余秒数（nil 表示未归零或未到缓冲期）
+    func abandonGraceRemaining(for building: PlayerBuilding) -> TimeInterval? {
+        guard computedDurability(for: building) == 0,
+              let zeroAt = building.durabilityZeroAt else { return nil }
+        let gracePeriod: TimeInterval = 3 * 24 * 3600
+        let remaining = gracePeriod - Date().timeIntervalSince(zeroAt)
+        return remaining > 0 ? remaining : 0
     }
 
     // MARK: - Building Production

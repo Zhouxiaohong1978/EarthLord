@@ -26,8 +26,28 @@ struct TerritoryBuildingRow: View {
     @State private var remainingTime: String = ""
     @State private var canCollectNow: Bool = false
     @State private var productionCountdown: String = ""
+    @State private var abandonCountdown: String = ""   // 耐久归零后的废弃倒计时文字
 
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
+    // MARK: - 耐久视觉状态
+
+    private var activeDurability: Int? {
+        guard building.status == .active else { return nil }
+        return BuildingManager.shared.computedDurability(for: building)
+    }
+
+    private var rowStrokeColor: Color {
+        guard let d = activeDurability else { return ApocalypseTheme.textMuted.opacity(0.3) }
+        if d == 0  { return ApocalypseTheme.danger.opacity(0.85) }
+        if d < 30  { return ApocalypseTheme.warning.opacity(0.7) }
+        return ApocalypseTheme.textMuted.opacity(0.3)
+    }
+
+    private var rowStrokeWidth: CGFloat {
+        guard let d = activeDurability else { return 1 }
+        return d == 0 ? 1.5 : 1
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -54,8 +74,16 @@ struct TerritoryBuildingRow: View {
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .background(RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.cardBackground))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(ApocalypseTheme.textMuted.opacity(0.3), lineWidth: 1))
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 10).fill(ApocalypseTheme.cardBackground)
+                if activeDurability == 0 {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(ApocalypseTheme.danger.opacity(0.06))
+                }
+            }
+        )
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(rowStrokeColor, lineWidth: rowStrokeWidth))
         .onAppear { refreshTimerValues() }
         .onReceive(timer) { _ in refreshTimerValues() }
         .sheet(isPresented: $showCollectSheet) {
@@ -72,7 +100,7 @@ struct TerritoryBuildingRow: View {
         }
     }
 
-    /// 每秒更新动态值，不触发 view 重建
+    /// 定时更新动态值，不触发 view 重建
     private func refreshTimerValues() {
         if building.status == .constructing || building.status == .upgrading {
             buildProgress = building.buildProgress
@@ -87,6 +115,23 @@ struct TerritoryBuildingRow: View {
             } else {
                 productionCountdown = ""
             }
+        }
+        // 废弃倒计时（耐久归零后3天缓冲）
+        if let remaining = BuildingManager.shared.abandonGraceRemaining(for: building) {
+            if remaining <= 0 {
+                abandonCountdown = String(localized: "即将废弃")
+            } else {
+                let days = Int(remaining) / 86400
+                let hours = (Int(remaining) % 86400) / 3600
+                if days > 0 {
+                    abandonCountdown = String(format: String(localized: "还有%d天%d小时，超时将废弃"), days, hours)
+                } else {
+                    let mins = (Int(remaining) % 3600) / 60
+                    abandonCountdown = String(format: String(localized: "还有%d小时%d分，超时将废弃"), hours, mins)
+                }
+            }
+        } else {
+            abandonCountdown = ""
         }
     }
 
@@ -152,6 +197,17 @@ struct TerritoryBuildingRow: View {
                     }
                 }
                 DurabilityBar(durability: durability)
+
+                // 废弃倒计时：耐久归零后显示，督促玩家维护
+                if !abandonCountdown.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock.badge.exclamationmark.fill")
+                            .font(.system(size: 10))
+                        Text(abandonCountdown)
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.danger)
+                }
             }
 
         case .inactive, .damaged:

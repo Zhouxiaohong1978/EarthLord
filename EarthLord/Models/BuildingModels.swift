@@ -234,6 +234,7 @@ struct PlayerBuilding: Identifiable, Codable {
     var lastProducedAt: Date?
     var durability: Int = 100
     var lastMaintainedAt: Date?
+    var durabilityZeroAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -253,6 +254,7 @@ struct PlayerBuilding: Identifiable, Codable {
         case lastProducedAt = "last_produced_at"
         case durability
         case lastMaintainedAt = "last_maintained_at"
+        case durabilityZeroAt = "durability_zero_at"
     }
 
     /// 检查建造是否已完成（根据时间）
@@ -338,6 +340,7 @@ struct PlayerBuildingDB: Codable {
     let lastProducedAt: String?
     let durability: Int?
     let lastMaintainedAt: String?
+    let durabilityZeroAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -357,6 +360,7 @@ struct PlayerBuildingDB: Codable {
         case lastProducedAt = "last_produced_at"
         case durability
         case lastMaintainedAt = "last_maintained_at"
+        case durabilityZeroAt = "durability_zero_at"
     }
 
     /// 转换为 PlayerBuilding
@@ -383,6 +387,7 @@ struct PlayerBuildingDB: Codable {
         let updated = updatedAt.flatMap { parseDate($0) } ?? Date()
         let lastProduced = lastProducedAt.flatMap { parseDate($0) }
         let lastMaintained = lastMaintainedAt.flatMap { parseDate($0) }
+        let durabilityZero = durabilityZeroAt.flatMap { parseDate($0) }
 
         return PlayerBuilding(
             id: id,
@@ -401,7 +406,8 @@ struct PlayerBuildingDB: Codable {
             updatedAt: updated,
             lastProducedAt: lastProduced,
             durability: durability ?? 100,
-            lastMaintainedAt: lastMaintained
+            lastMaintainedAt: lastMaintained,
+            durabilityZeroAt: durabilityZero
         )
     }
 }

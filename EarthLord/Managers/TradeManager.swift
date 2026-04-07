@@ -47,6 +47,9 @@ final class TradeManager: ObservableObject {
     /// 背包管理器
     private let inventoryManager = InventoryManager.shared
 
+    /// 仓库管理器
+    private let warehouseManager = WarehouseManager.shared
+
     /// 今日交易次数（用于限制检查）
     @Published var todayTradeCount: Int = 0
 
@@ -154,6 +157,7 @@ final class TradeManager: ObservableObject {
 
             // 刷新库存数据
             await inventoryManager.refreshInventory()
+            await warehouseManager.refreshItems()
 
             logger.log("交易挂单创建成功: \(offer.id)", type: .success)
 
@@ -163,11 +167,13 @@ final class TradeManager: ObservableObject {
             // 发生错误，尝试退还物品
             await returnItems(offeringItems)
             await inventoryManager.refreshInventory()
+            await warehouseManager.refreshItems()
             throw error
         } catch {
             // 发生错误，尝试退还物品
             await returnItems(offeringItems)
             await inventoryManager.refreshInventory()
+            await warehouseManager.refreshItems()
             logger.logError("创建挂单失败", error: error)
             throw TradeError.saveFailed(error.localizedDescription)
         }
@@ -290,6 +296,7 @@ final class TradeManager: ObservableObject {
 
             // 刷新库存数据
             await inventoryManager.refreshInventory()
+            await warehouseManager.refreshItems()
 
             // 创建本地历史对象
             let historyId = response.historyId.flatMap { UUID(uuidString: $0) } ?? UUID()
@@ -333,12 +340,14 @@ final class TradeManager: ObservableObject {
 
         } catch let error as TradeError {
             await inventoryManager.refreshInventory()
+            await warehouseManager.refreshItems()
             throw error
         } catch {
             // 未知错误（RPC 调用失败、网络错误等），退还买家物品
             logger.logError("交易执行失败，正在退还物品...", error: error)
             await returnItems(deductedItems)
             await inventoryManager.refreshInventory()
+            await warehouseManager.refreshItems()
             throw TradeError.saveFailed(error.localizedDescription)
         }
     }
@@ -388,6 +397,7 @@ final class TradeManager: ObservableObject {
 
         // 刷新库存数据
         await inventoryManager.refreshInventory()
+        await warehouseManager.refreshItems()
 
         logger.log("挂单已取消: \(offerId)", type: .success)
     }
@@ -621,6 +631,7 @@ final class TradeManager: ObservableObject {
         // 如果有处理过期挂单，刷新库存
         if hasProcessed {
             await inventoryManager.refreshInventory()
+            await warehouseManager.refreshItems()
         }
     }
 
@@ -647,15 +658,25 @@ final class TradeManager: ObservableObject {
         }
     }
 
-    /// 获取指定物品的可用数量（支持 AI 命名物品精确匹配）
+    /// 获取指定物品的可用数量（背包 + 仓库合计，支持 AI 命名物品精确匹配）
     private func getAvailableQuantity(itemId: String, quality: ItemQuality?, customName: String? = nil) -> Int {
-        return inventoryManager.items
+        let backpack = inventoryManager.items
             .filter {
                 $0.itemId == itemId &&
                 (quality == nil || $0.quality == quality) &&
                 (customName == nil || $0.customName == customName)
             }
             .reduce(0) { $0 + $1.quantity }
+
+        let warehouse = warehouseManager.items
+            .filter {
+                $0.itemId == itemId &&
+                (quality == nil || $0.quality == quality) &&
+                (customName == nil || $0.customName == customName)
+            }
+            .reduce(0) { $0 + $1.quantity }
+
+        return backpack + warehouse
     }
 
     /// 查找背包中的物品
@@ -667,21 +688,28 @@ final class TradeManager: ObservableObject {
         }
     }
 
-    /// 从库存中扣除物品（支持跨多条记录扣除，AI 命名物品精确匹配）
+    /// 从库存中扣除物品（先背包后仓库，支持跨多条记录扣除，AI 命名物品精确匹配）
     private func deductItemFromInventory(itemId: String, quantity: Int, quality: ItemQuality?, customName: String? = nil) async throws {
         var remainingQuantity = quantity
 
-        let matchingItems = inventoryManager.items.filter {
+        // 1. 先从背包扣除
+        let backpackItems = inventoryManager.items.filter {
             $0.itemId == itemId &&
             (quality == nil || $0.quality == quality) &&
             (customName == nil || $0.customName == customName)
-        }
+        }.sorted { $0.quantity > $1.quantity }
 
-        for item in matchingItems {
+        for item in backpackItems {
             if remainingQuantity <= 0 { break }
             let deductAmount = min(item.quantity, remainingQuantity)
             try await inventoryManager.useItem(inventoryId: item.id, quantity: deductAmount)
             remainingQuantity -= deductAmount
+        }
+
+        // 2. 背包不足时从仓库补扣
+        if remainingQuantity > 0 {
+            try await warehouseManager.deductForConstruction(itemId: itemId, quantity: remainingQuantity)
+            remainingQuantity = 0
         }
 
         if remainingQuantity > 0 {
@@ -712,6 +740,7 @@ final class TradeManager: ObservableObject {
 
         // 强制刷新库存以确保本地缓存同步
         await inventoryManager.refreshInventory()
+        await warehouseManager.refreshItems()
 
         // 如果有失败的物品，记录警告
         if !failedItems.isEmpty {

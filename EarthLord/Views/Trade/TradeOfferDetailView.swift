@@ -14,6 +14,7 @@ struct TradeOfferDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var tradeManager = TradeManager.shared
     @ObservedObject private var inventoryManager = InventoryManager.shared
+    @ObservedObject private var warehouseManager = WarehouseManager.shared
 
     @State private var isAccepting = false
     @State private var showError = false
@@ -212,7 +213,7 @@ struct TradeOfferDetailView: View {
 
             // 库存状态
             VStack(alignment: .trailing, spacing: 2) {
-                Text("库存: \(available)")
+                Text(String(format: String(localized: "库存: %d"), available))
                     .font(.system(size: 11))
                     .foregroundColor(hasEnough ? ApocalypseTheme.success : ApocalypseTheme.danger)
 
@@ -335,13 +336,24 @@ struct TradeOfferDetailView: View {
     }
 
     private func getAvailableQuantity(for item: TradeItem) -> Int {
-        return inventoryManager.items
+        // quality==nil 时匹配所有品质（不区分），customName 精确匹配 AI 物品
+        let backpack = inventoryManager.items
             .filter {
                 $0.itemId == item.itemId
-                && $0.quality == item.quality
-                && $0.customName == item.customName  // AI 物品需精确匹配 customName
+                && (item.quality == nil || $0.quality == item.quality)
+                && $0.customName == item.customName
             }
             .reduce(0) { $0 + $1.quantity }
+
+        let warehouse = warehouseManager.items
+            .filter {
+                $0.itemId == item.itemId
+                && (item.quality == nil || $0.quality == item.quality)
+                && $0.customName == item.customName
+            }
+            .reduce(0) { $0 + $1.quantity }
+
+        return backpack + warehouse
     }
 
     // MARK: - 接受交易

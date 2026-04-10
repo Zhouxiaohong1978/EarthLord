@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import CoreLocation
 
 // MARK: - DeviceType 设备类型
 
@@ -16,7 +17,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
     case radio = "radio"                    // 收音机（被动收听）
     case walkieTalkie = "walkie_talkie"     // 对讲机（短距离通讯）
     case campRadio = "camp_radio"           // 营地电台（中距离通讯）
-    case satellite = "satellite"            // 卫星电话（全球通讯）
+    case satellite = "satellite"            // 卫星通讯（全球通讯）
 
     var id: String { rawValue }
 
@@ -30,7 +31,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .campRadio:
             return String(localized: "营地电台")
         case .satellite:
-            return String(localized: "卫星电话")
+            return String(localized: "卫星通讯")
         }
     }
 
@@ -44,7 +45,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .campRadio:
             return String(localized: "与更远距离的营地联系")
         case .satellite:
-            return String(localized: "全球范围的紧急通讯")
+            return String(localized: "通过卫星网络全球通讯")
         }
     }
 
@@ -58,7 +59,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .campRadio:
             return "antenna.radiowaves.left.and.right.circle"
         case .satellite:
-            return "globe"
+            return "iphone"
         }
     }
 
@@ -72,7 +73,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .campRadio:
             return 30.0       // 营地电台中距离
         case .satellite:
-            return 100.0      // 卫星电话全球
+            return Double.infinity  // 手机全球覆盖，无限制
         }
     }
 
@@ -141,7 +142,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .campRadio:
             return "30km"
         case .satellite:
-            return String(localized: "全球")
+            return String(localized: "全球覆盖")
         }
     }
 
@@ -372,7 +373,7 @@ enum ChannelType: String, Codable, CaseIterable, Identifiable {
     case `public` = "public"        // 公共频道
     case walkie = "walkie"          // 对讲频道
     case camp = "camp"              // 营地频道
-    case satellite = "satellite"    // 卫星频道
+    case satellite = "satellite"    // 手机频道
 
     var id: String { rawValue }
 
@@ -386,9 +387,9 @@ enum ChannelType: String, Codable, CaseIterable, Identifiable {
         case .walkie:
             return String(localized: "对讲频道")
         case .camp:
-            return String(localized: "营地频道")
+            return String(localized: "营地电台")
         case .satellite:
-            return String(localized: "卫星频道")
+            return String(localized: "手机频道")
         }
     }
 
@@ -404,7 +405,7 @@ enum ChannelType: String, Codable, CaseIterable, Identifiable {
         case .camp:
             return "tent.fill"
         case .satellite:
-            return "globe"
+            return "iphone"
         }
     }
 
@@ -436,7 +437,7 @@ enum ChannelType: String, Codable, CaseIterable, Identifiable {
         case .camp:
             return String(localized: "营地内部通讯")
         case .satellite:
-            return String(localized: "全球范围通讯")
+            return String(localized: "通过基站网络全球通讯")
         }
     }
 
@@ -460,6 +461,8 @@ struct CommunicationChannel: Codable, Identifiable, Hashable {
     let memberCount: Int
     let createdAt: Date
     let updatedAt: Date
+    let latitude: Double?   // 创建时的纬度
+    let longitude: Double?  // 创建时的经度
 
     // MARK: - Hashable 实现（基于 id，因为 Date 不是 Hashable）
     func hash(into hasher: inout Hasher) {
@@ -468,6 +471,17 @@ struct CommunicationChannel: Codable, Identifiable, Hashable {
 
     static func == (lhs: CommunicationChannel, rhs: CommunicationChannel) -> Bool {
         lhs.id == rhs.id
+    }
+
+    /// 频道是否有位置信息
+    var hasLocation: Bool { latitude != nil && longitude != nil }
+
+    /// 与指定坐标的距离（公里），无位置信息返回 nil
+    func distance(from location: CLLocationCoordinate2D) -> Double? {
+        guard let lat = latitude, let lon = longitude else { return nil }
+        let channelLoc = CLLocation(latitude: lat, longitude: lon)
+        let playerLoc  = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        return channelLoc.distance(from: playerLoc) / 1000.0
     }
 
     enum CodingKeys: String, CodingKey {
@@ -481,6 +495,8 @@ struct CommunicationChannel: Codable, Identifiable, Hashable {
         case memberCount = "member_count"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case latitude
+        case longitude
     }
 
     init(from decoder: Decoder) throws {
@@ -497,6 +513,8 @@ struct CommunicationChannel: Codable, Identifiable, Hashable {
         description = try container.decodeIfPresent(String.self, forKey: .description)
         isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
         memberCount = try container.decodeIfPresent(Int.self, forKey: .memberCount) ?? 0
+        latitude  = try container.decodeIfPresent(Double.self, forKey: .latitude)
+        longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
 
         // 解析日期
         if let createdString = try? container.decode(String.self, forKey: .createdAt) {
@@ -524,6 +542,8 @@ struct CommunicationChannel: Codable, Identifiable, Hashable {
         try container.encode(memberCount, forKey: .memberCount)
         try container.encode(ISO8601DateFormatter().string(from: createdAt), forKey: .createdAt)
         try container.encode(ISO8601DateFormatter().string(from: updatedAt), forKey: .updatedAt)
+        try container.encodeIfPresent(latitude, forKey: .latitude)
+        try container.encodeIfPresent(longitude, forKey: .longitude)
     }
 }
 
@@ -818,6 +838,12 @@ struct MessageMetadata: Codable, Equatable {
 
 // MARK: - ChannelMessage 频道消息模型
 
+/// 频道消息类型
+enum MessageType: String, Codable {
+    case text = "text"
+    case voice = "voice"
+}
+
 /// 频道消息模型
 struct ChannelMessage: Codable, Identifiable, Equatable {
     let messageId: UUID
@@ -828,8 +854,12 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
     let senderLocation: LocationPoint?
     let metadata: MessageMetadata?
     let createdAt: Date
+    let messageType: MessageType
+    let voiceUrl: String?
+    let voiceDuration: Int?
 
     var id: UUID { messageId }
+    var isVoice: Bool { messageType == .voice }
 
     enum CodingKeys: String, CodingKey {
         case messageId = "message_id"
@@ -840,6 +870,9 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         case senderLocation = "sender_location"
         case metadata
         case createdAt = "created_at"
+        case messageType = "message_type"
+        case voiceUrl = "voice_url"
+        case voiceDuration = "voice_duration"
     }
 
     /// 自定义解码（处理 PostGIS POINT 和日期格式）
@@ -875,6 +908,9 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         }
 
         metadata = try container.decodeIfPresent(MessageMetadata.self, forKey: .metadata)
+        messageType = (try? container.decode(MessageType.self, forKey: .messageType)) ?? .text
+        voiceUrl = try? container.decodeIfPresent(String.self, forKey: .voiceUrl)
+        voiceDuration = try? container.decodeIfPresent(Int.self, forKey: .voiceDuration)
 
         // 多格式日期解析
         if let dateString = try? container.decode(String.self, forKey: .createdAt) {
@@ -1080,5 +1116,25 @@ struct ChannelPreview: Codable, Identifiable {
             lastMessageTime: nil,
             lastMessageSender: nil
         )
+    }
+}
+
+// MARK: - SurvivorBeaconInfo 求生信标
+
+/// 接收到的幸存者求生信标（用于地图上的信标标注 + 底部回应卡片）
+struct SurvivorBeaconInfo: Identifiable {
+    let id = UUID()
+    let channelId: UUID
+    let senderCallsign: String?
+    let coordinate: CLLocationCoordinate2D?
+    let messageId: UUID
+    let receivedAt: Date
+
+    /// 距离描述（相对于玩家当前位置）
+    func distanceText(from userLocation: CLLocationCoordinate2D?) -> String? {
+        guard let coord = coordinate, let user = userLocation else { return nil }
+        let d = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+            .distance(from: CLLocation(latitude: user.latitude, longitude: user.longitude))
+        return d < 1000 ? "\(Int(d))m 外" : String(format: "%.1fkm 外", d / 1000)
     }
 }

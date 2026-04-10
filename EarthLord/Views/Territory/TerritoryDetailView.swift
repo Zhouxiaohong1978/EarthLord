@@ -805,6 +805,16 @@ struct TerritoryDetailView: View {
     private func saveBroadcastMessage() async {
         let trimmed = String(broadcastMessage.prefix(50))
         broadcastMessage = trimmed
+
+        if !trimmed.isEmpty {
+            let result = ContentFilter.check(trimmed)
+            if !result.isClean {
+                errorMessage = String(localized: "内容包含违禁词，请修改后重试")
+                showError = true
+                return
+            }
+        }
+
         do {
             try await TerritoryManager.shared.setBroadcastMessage(trimmed.isEmpty ? nil : trimmed, for: territory.id)
         } catch {

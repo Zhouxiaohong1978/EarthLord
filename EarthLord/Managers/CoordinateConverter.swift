@@ -61,6 +61,22 @@ enum CoordinateConverter {
         return coordinates.map { wgs84ToGcj02($0) }
     }
 
+    /// GCJ-02 转 WGS-84（迭代近似法，精度 < 1m）
+    /// - Parameter coordinate: GCJ-02 坐标（高德/MapKit 返回的中国地图坐标）
+    /// - Returns: WGS-84 坐标（GPS 原始坐标）
+    static func gcj02ToWgs84(_ coordinate: CLLocationCoordinate2D) -> CLLocationCoordinate2D {
+        if isOutOfChina(coordinate) { return coordinate }
+        var wgs = coordinate
+        for _ in 0..<5 {
+            let gcj = wgs84ToGcj02(wgs)
+            let dLat = gcj.latitude  - coordinate.latitude
+            let dLon = gcj.longitude - coordinate.longitude
+            wgs = CLLocationCoordinate2D(latitude:  wgs.latitude  - dLat,
+                                         longitude: wgs.longitude - dLon)
+        }
+        return wgs
+    }
+
     // MARK: - Private Methods
 
     /// 判断是否在中国境外
@@ -93,5 +109,13 @@ enum CoordinateConverter {
         result += (20.0 * sin(x * pi) + 40.0 * sin(x / 3.0 * pi)) * 2.0 / 3.0
         result += (150.0 * sin(x / 12.0 * pi) + 300.0 * sin(x / 30.0 * pi)) * 2.0 / 3.0
         return result
+    }
+}
+
+// MARK: - CLLocationCoordinate2D + Equatable
+
+extension CLLocationCoordinate2D: @retroactive Equatable {
+    public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
+        lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
     }
 }

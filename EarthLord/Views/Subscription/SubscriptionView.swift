@@ -2,116 +2,92 @@
 //  SubscriptionView.swift
 //  EarthLord
 //
-//  订阅页面主界面
-//
 
 import SwiftUI
 import StoreKit
 
 struct SubscriptionView: View {
 
-    // MARK: - State
-
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
-    @ObservedObject private var authManager = AuthManager.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedPeriod: SubscriptionPeriod = .monthly
+    @State private var selectedTier: SubscriptionTier = .explorer
     @State private var isLoading = true
+    @State private var isSubscribing = false
     @State private var showConfirmSheet = false
     @State private var showResultView = false
     @State private var selectedProduct: Product?
-    @State private var selectedTier: SubscriptionTier?
     @State private var subscriptionResult: SubscriptionResultView.ResultType?
 
-    // MARK: - Body
+    private let explorerColor = ApocalypseTheme.primary
+    private let lordColor = Color(red: 1.0, green: 0.75, blue: 0.1)
 
     var body: some View {
         ZStack {
-            // 背景
-            ApocalypseTheme.background
-                .ignoresSafeArea()
+            ApocalypseTheme.background.ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 20) {
-                    // 当前订阅状态卡片
-                    if subscriptionManager.isSubscribed {
-                        currentSubscriptionCard
-                            .padding(.horizontal, 16)
-                            .padding(.top, 20)
-                    }
-
-                    // 标题
-                    headerSection
-                        .padding(.horizontal, 16)
-                        .padding(.top, subscriptionManager.isSubscribed ? 10 : 20)
-
-                    // 周期切换（月卡/年卡）
-                    periodSelector
-                        .padding(.horizontal, 16)
-
-                    // 订阅档位卡片
-                    subscriptionCards
-                        .padding(.horizontal, 16)
-
-                    // 底部说明
-                    footerSection
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 30)
-                }
-            }
-
-            // 加载指示器（自身 loading 或 manager 正在加载时都显示）
-            if isLoading || (subscriptionManager.isLoadingProducts && subscriptionManager.availableSubscriptions.isEmpty) {
+            if isLoading {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
                     .scaleEffect(1.5)
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // 顶部标题区
+                        headerSection
+
+                        VStack(spacing: 20) {
+                            // 月卡/年卡切换
+                            periodToggle
+                                .padding(.horizontal, 20)
+
+                            // 特权对比
+                            comparisonSection
+                                .padding(.horizontal, 20)
+
+                            // 档位选择
+                            tierSelector
+                                .padding(.horizontal, 20)
+
+                            // 底部操作区
+                            bottomActions
+                                .padding(.horizontal, 20)
+
+                            // 订阅说明
+                            subscriptionNotice
+                                .padding(.horizontal, 20)
+
+                            // 隐私政策 & 用户协议
+                            legalLinks
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 32)
+                        }
+                        .padding(.top, 24)
+                    }
+                }
             }
         }
-        .navigationTitle("幸存者特权")
+        .navigationTitle("订阅服务")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("关闭") {
-                    dismiss()
-                }
-                .foregroundColor(ApocalypseTheme.primary)
+                Button("关闭") { dismiss() }
+                    .foregroundColor(ApocalypseTheme.primary)
             }
         }
-        .onAppear {
-            // 如果商品已经预加载完成，直接使用缓存数据
-            if !subscriptionManager.availableSubscriptions.isEmpty {
-                isLoading = false
-                return
-            }
-            // 如果预加载正在进行中，等待它完成即可（onChange 会响应）
-            if subscriptionManager.isLoadingProducts {
-                return
-            }
-            // 未预加载时延迟1秒再请求，避免NavigationLink转场期间的GCD并发崩溃
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                Task {
-                    await loadData()
-                }
-            }
-        }
+        .onAppear { Task { await loadData() } }
         .onChange(of: subscriptionManager.availableSubscriptions.count) { _ in
-            // 预加载完成后自动更新加载状态
-            if !subscriptionManager.availableSubscriptions.isEmpty {
-                isLoading = false
-            }
+            if !subscriptionManager.availableSubscriptions.isEmpty { isLoading = false }
         }
         .sheet(isPresented: $showConfirmSheet) {
-            if let product = selectedProduct, let tier = selectedTier {
+            if let product = selectedProduct {
                 SubscriptionConfirmSheet(
                     product: product,
-                    tier: tier,
-                    onConfirm: {
-                        await confirmSubscribe()
-                    },
-                    onCancel: {
-                        cancelSubscribe()
-                    }
+                    tier: selectedTier,
+                    onConfirm: { await confirmSubscribe() },
+                    onCancel: { cancelSubscribe() }
                 )
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
@@ -119,365 +95,421 @@ struct SubscriptionView: View {
         }
         .fullScreenCover(isPresented: $showResultView) {
             if let result = subscriptionResult {
-                SubscriptionResultView(
-                    result: result,
-                    onDismiss: {
-                        showResultView = false
-                        subscriptionResult = nil
-                    }
-                )
+                SubscriptionResultView(result: result, onDismiss: {
+                    showResultView = false
+                    subscriptionResult = nil
+                })
             }
         }
     }
 
-    // MARK: - 当前订阅状态卡片
-
-    private var currentSubscriptionCard: some View {
-        VStack(spacing: 12) {
-            HStack {
-                // 档位徽章
-                Text(subscriptionManager.currentTier.badgeIcon)
-                    .font(.system(size: 32))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(subscriptionManager.currentTier.displayName)
-                        .font(.headline)
-                        .foregroundColor(ApocalypseTheme.textPrimary)
-
-                    if let subscription = subscriptionManager.currentSubscription {
-                        if subscription.isExpired {
-                            Text("已过期")
-                                .font(.caption)
-                                .foregroundColor(ApocalypseTheme.danger)
-                        } else {
-                            Text("到期时间: \(formatDate(subscription.expiresAt))")
-                                .font(.caption)
-                                .foregroundColor(ApocalypseTheme.textSecondary)
-
-                            Text("剩余 \(subscription.daysRemaining) 天")
-                                .font(.caption)
-                                .foregroundColor(subscriptionManager.isExpiringSoon ? ApocalypseTheme.warning : ApocalypseTheme.success)
-                        }
-                    }
-                }
-
-                Spacer()
-
-                // 管理按钮
-                Button("管理") {
-                    // TODO: 跳转到订阅管理页面
-                }
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.primary)
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(ApocalypseTheme.cardBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(ApocalypseTheme.primary.opacity(0.3), lineWidth: 1)
-                )
-        )
-    }
-
-    // MARK: - 标题部分
+    // MARK: - 顶部标题
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Text("解锁专属特权")
+            Text("解锁更多特权")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
-
-            Text("成为探索者或领主，畅享末日生存之旅")
+            Text("加速探索进程")
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
-                .multilineTextAlignment(.center)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(ApocalypseTheme.cardBackground)
     }
 
-    // MARK: - 周期选择器
+    // MARK: - 月卡/年卡切换
 
-    private var periodSelector: some View {
+    private var periodToggle: some View {
         HStack(spacing: 0) {
             ForEach(SubscriptionPeriod.allCases, id: \.self) { period in
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedPeriod = period
-                    }
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedPeriod = period }
                 }) {
-                    VStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Text(period.rawValue)
-                            .font(.system(size: 15, weight: selectedPeriod == period ? .semibold : .medium))
-                            .foregroundColor(selectedPeriod == period ? ApocalypseTheme.textPrimary : ApocalypseTheme.textSecondary)
-
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(selectedPeriod == period ? .white : ApocalypseTheme.textSecondary)
                         if period == .yearly {
                             Text("更划算")
                                 .font(.caption2)
-                                .foregroundColor(ApocalypseTheme.primary)
-                                .opacity(selectedPeriod == period ? 1 : 0.6)
+                                .fontWeight(.bold)
+                                .foregroundColor(selectedPeriod == period ? .white.opacity(0.85) : ApocalypseTheme.success)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(
+                                    selectedPeriod == period
+                                        ? Color.white.opacity(0.2)
+                                        : ApocalypseTheme.success.opacity(0.15)
+                                )
+                                .cornerRadius(4)
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 10)
                     .background(
-                        selectedPeriod == period ?
-                            ApocalypseTheme.cardBackground :
-                            Color.clear
+                        selectedPeriod == period
+                            ? ApocalypseTheme.primary
+                            : Color.clear
                     )
                     .cornerRadius(8)
                 }
             }
         }
         .padding(4)
-        .background(ApocalypseTheme.background)
+        .background(ApocalypseTheme.cardBackground)
+        .cornerRadius(10)
+    }
+
+    // MARK: - 特权对比
+
+    private var comparisonSection: some View {
+        VStack(spacing: 0) {
+            // 列标题
+            HStack(spacing: 0) {
+                Text("特权")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("免费")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .frame(width: 60, alignment: .center)
+
+                Text("探索者")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(explorerColor)
+                    .frame(width: 60, alignment: .center)
+
+                Text("领主")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(lordColor)
+                    .frame(width: 60, alignment: .center)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(ApocalypseTheme.cardBackground)
+            .cornerRadius(10, corners: [.topLeft, .topRight])
+
+            Divider().background(Color.white.opacity(0.06))
+
+            // 对比行
+            Group {
+                comparisonRow("backpack.fill",   "背包容量",  "100",  "500",    "1000",  highlight: false)
+                comparisonRow("map.fill",         "探索范围",  "1km",  "2km",    "3km",   highlight: false)
+                comparisonRow("building.2.fill",  "建造速度",  "1x",   "2x",     "2x",    highlight: false)
+                comparisonRow("figure.walk",      "探索次数",  "10/天", "无限",   "无限",  highlight: true)
+                comparisonRow("arrow.triangle.2.circlepath", "交易次数", "10/天", "无限", "无限", highlight: true)
+                comparisonRow("gift.fill",        "每日礼包",  "—",   "5件",    "7件",   highlight: true)
+                comparisonRow("tag.fill",         "呼号前缀",  "—",   "✓",      "✓",     highlight: true)
+                comparisonRow("crown.fill",       "领主头衔",  "—",   "—",      "✓",     highlight: true)
+            }
+        }
+        .background(ApocalypseTheme.cardBackground)
         .cornerRadius(10)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(ApocalypseTheme.textMuted.opacity(0.3), lineWidth: 1)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
         )
     }
 
-    // MARK: - 订阅卡片列表
+    private func comparisonRow(_ icon: String, _ label: String, _ free: String, _ explorer: String, _ lord: String, highlight: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.system(size: 12))
+                        .foregroundColor(highlight ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+                        .frame(width: 16)
+                    Text(label)
+                        .font(.subheadline)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-    private var subscriptionCards: some View {
-        VStack(spacing: 16) {
-            // 免费档位（仅展示，不可购买）
-            freeTierCard
+                Text(free)
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .frame(width: 60, alignment: .center)
 
-            // 探索者档位
-            if let explorerProduct = getProduct(for: selectedPeriod, tier: .explorer) {
-                SubscriptionCard(
-                    product: explorerProduct,
-                    tier: .explorer,
-                    isCurrentTier: subscriptionManager.currentTier == .explorer,
-                    isRecommended: false,
-                    onSubscribe: {
-                        await handleSubscribe(explorerProduct)
-                    }
-                )
+                Text(explorer)
+                    .font(.caption)
+                    .fontWeight(explorer == "—" ? .regular : .semibold)
+                    .foregroundColor(explorer == "—" ? ApocalypseTheme.textMuted : explorerColor)
+                    .frame(width: 60, alignment: .center)
+
+                Text(lord)
+                    .font(.caption)
+                    .fontWeight(lord == "—" ? .regular : .semibold)
+                    .foregroundColor(lord == "—" ? ApocalypseTheme.textMuted : lordColor)
+                    .frame(width: 60, alignment: .center)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
 
-            // 领主档位（推荐）
-            if let lordProduct = getProduct(for: selectedPeriod, tier: .lord) {
-                SubscriptionCard(
-                    product: lordProduct,
-                    tier: .lord,
-                    isCurrentTier: subscriptionManager.currentTier == .lord,
-                    isRecommended: true,
-                    onSubscribe: {
-                        await handleSubscribe(lordProduct)
-                    }
-                )
-            }
+            Divider().background(Color.white.opacity(0.04))
         }
     }
 
-    // MARK: - 免费档位卡片
+    // MARK: - 档位选择
 
-    private var freeTierCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // 标题
-            HStack {
-                Text("🆓 幸存者")
-                    .font(.headline)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
+    private var tierSelector: some View {
+        VStack(spacing: 12) {
+            tierCard(.explorer)
+            tierCard(.lord)
+        }
+    }
+
+    private func tierCard(_ tier: SubscriptionTier) -> some View {
+        let color: Color = tier == .explorer ? explorerColor : lordColor
+        let product = getProduct(for: selectedPeriod, tier: tier)
+        let isSelected = selectedTier == tier
+
+        return Button(action: { selectedTier = tier }) {
+            HStack(spacing: 14) {
+                // 左侧图标
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.15))
+                        .frame(width: 48, height: 48)
+                    Text(tier.badgeIcon)
+                        .font(.system(size: 22))
+                }
+
+                // 中间信息
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(tier.displayName)
+                        .font(.headline)
+                        .foregroundColor(color)
+                    Text(tier.tagline)
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                    // 权益亮点
+                    HStack(spacing: 8) {
+                        ForEach(tier.highlights, id: \.self) { h in
+                            Text(h)
+                                .font(.caption2)
+                                .foregroundColor(color)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(color.opacity(0.12))
+                                .cornerRadius(4)
+                        }
+                    }
+                }
 
                 Spacer()
 
-                if subscriptionManager.currentTier == .free {
-                    Text("当前档位")
-                        .font(.caption)
-                        .foregroundColor(ApocalypseTheme.textSecondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill(ApocalypseTheme.textMuted.opacity(0.2))
-                        )
+                // 右侧价格 + 选中指示
+                VStack(alignment: .trailing, spacing: 2) {
+                    if let p = product {
+                        Text(p.displayPrice)
+                            .font(.headline)
+                            .foregroundColor(color)
+                        Text(selectedPeriod == .monthly ? "/月" : "/年")
+                            .font(.caption2)
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 20))
+                        .foregroundColor(isSelected ? color : ApocalypseTheme.textMuted)
+                        .padding(.top, 4)
                 }
             }
-
-            // 价格
-            Text("免费")
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            Divider()
-                .background(ApocalypseTheme.textMuted.opacity(0.3))
-
-            // 权益列表
-            VStack(alignment: .leading, spacing: 8) {
-                benefitRow(icon: "backpack.fill", text: "背包容量 \(SubscriptionTier.free.backpackCapacity)")
-                benefitRow(icon: "map.fill", text: "探索范围 1km")
-                benefitRow(icon: "building.2.fill", text: "建造速度 1倍")
-                benefitRow(icon: "figure.walk", text: "探索次数 10次/天")
-                benefitRow(icon: "arrow.triangle.2.circlepath", text: "交易次数 10次/天")
-            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(ApocalypseTheme.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? color : Color.white.opacity(0.06),
+                                    lineWidth: isSelected ? 2 : 1)
+                    )
+            )
+            .shadow(color: isSelected ? color.opacity(0.2) : .clear, radius: 6, x: 0, y: 3)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(ApocalypseTheme.cardBackground)
-        )
+        .buttonStyle(PlainButtonStyle())
     }
 
-    // MARK: - 底部说明
+    // MARK: - 底部操作
 
-    private var footerSection: some View {
+    private var bottomActions: some View {
         VStack(spacing: 12) {
-            Text("订阅说明")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("• 订阅将自动续费，可随时取消")
-                Text("• 取消后订阅将在当前周期结束时失效")
-                Text("• 价格可能因地区而异")
-                Text("• 订阅特权立即生效")
+            // 立即订阅
+            Button(action: { Task { await handleSubscribe() } }) {
+                HStack(spacing: 8) {
+                    if isSubscribing {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.85)
+                    } else {
+                        Image(systemName: "checkmark.seal.fill")
+                        Text("立即订阅 \(selectedTier.displayName)\(selectedPeriod.rawValue)")
+                            .fontWeight(.bold)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .foregroundColor(.white)
+                .background(
+                    LinearGradient(
+                        colors: [selectedTier == .explorer ? explorerColor : lordColor,
+                                 (selectedTier == .explorer ? explorerColor : lordColor).opacity(0.75)],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
             }
-            .font(.caption2)
-            .foregroundColor(ApocalypseTheme.textSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+            .disabled(isSubscribing || getProduct(for: selectedPeriod, tier: selectedTier) == nil)
 
-    // MARK: - Helper Views
-
-    private func benefitRow(icon: String, text: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textSecondary)
-                .frame(width: 16)
-
-            Text(LocalizedStringKey(text))
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textSecondary)
+            // 恢复购买
+            Button(action: { Task { try? await subscriptionManager.restorePurchases() } }) {
+                Text("恢复购买")
+                    .font(.subheadline)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
         }
     }
 
-    // MARK: - Methods
+    // MARK: - 订阅说明
+
+    private var subscriptionNotice: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("• 订阅将自动续费，可随时取消")
+            Text("• 取消后订阅将在当前周期结束时失效")
+            Text("• 价格可能因地区而异")
+            Text("• 订阅特权立即生效")
+        }
+        .font(.caption2)
+        .foregroundColor(ApocalypseTheme.textSecondary)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
+    }
+
+    // MARK: - 法律链接
+
+    private var legalLinks: some View {
+        HStack(spacing: 16) {
+            Spacer()
+            Link("隐私政策", destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/privacy.html")!)
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
+            Text("·")
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
+            Link("用户协议", destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!)
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
+            Spacer()
+        }
+    }
+
+    // MARK: - 方法
 
     private func loadData() async {
-        isLoading = true
-
-        print("📦 [SubscriptionView] 开始加载订阅商品...")
-
-        // 加载订阅商品
-        await subscriptionManager.loadSubscriptions()
-
-        print("📦 [SubscriptionView] 商品加载完成，数量: \(subscriptionManager.availableSubscriptions.count)")
-
-        // 商品加载完成后立即关闭loading，让用户能看到界面
-        isLoading = false
-
-        print("📦 [SubscriptionView] 开始刷新订阅状态...")
-
-        // 后台刷新订阅状态（不阻塞UI）
-        await subscriptionManager.refreshSubscriptionStatus()
-
-        print("📦 [SubscriptionView] 订阅状态刷新完成")
+        if !subscriptionManager.availableSubscriptions.isEmpty {
+            isLoading = false; return
+        }
+        if subscriptionManager.isLoadingProducts { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            Task { await subscriptionManager.loadSubscriptions(); isLoading = false }
+        }
     }
 
     private func getProduct(for period: SubscriptionPeriod, tier: SubscriptionTier) -> Product? {
-        let productId: String
+        let id: String
         switch (tier, period) {
-        case (.explorer, .monthly):
-            productId = SubscriptionProduct.explorerMonthly.rawValue
-        case (.explorer, .yearly):
-            productId = SubscriptionProduct.explorerYearly.rawValue
-        case (.lord, .monthly):
-            productId = SubscriptionProduct.lordMonthly.rawValue
-        case (.lord, .yearly):
-            productId = SubscriptionProduct.lordYearly.rawValue
-        default:
-            return nil
+        case (.explorer, .monthly): id = SubscriptionProduct.explorerMonthly.rawValue
+        case (.explorer, .yearly):  id = SubscriptionProduct.explorerYearly.rawValue
+        case (.lord, .monthly):     id = SubscriptionProduct.lordMonthly.rawValue
+        case (.lord, .yearly):      id = SubscriptionProduct.lordYearly.rawValue
+        default: return nil
         }
-
-        return subscriptionManager.getProduct(for: productId)
+        return subscriptionManager.getProduct(for: id)
     }
 
-    private func handleSubscribe(_ product: Product) async {
-        // 显示确认弹窗
+    private func handleSubscribe() async {
+        guard let product = getProduct(for: selectedPeriod, tier: selectedTier) else { return }
         selectedProduct = product
-
-        // 确定档位
-        if product.id.contains("basic") || product.id.contains("explorer") {
-            selectedTier = .explorer
-        } else if product.id.contains("premium") || product.id.contains("lord") {
-            selectedTier = .lord
-        }
-
         showConfirmSheet = true
     }
 
     private func confirmSubscribe() async {
         guard let product = selectedProduct else { return }
-
+        isSubscribing = true
         do {
             try await subscriptionManager.subscribe(product)
-
-            // 订阅成功
             showConfirmSheet = false
-
-            // 获取订阅信息
-            let tier = selectedTier ?? .free
-            let expiresAt: Date
-            if product.id.contains("yearly") {
-                expiresAt = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
-            } else {
-                expiresAt = Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date()
-            }
-
-            subscriptionResult = .success(tier: tier, expiresAt: expiresAt)
+            let expires = product.id.contains("yearly")
+                ? Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
+                : Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date()
+            subscriptionResult = .success(tier: selectedTier, expiresAt: expires)
             showResultView = true
-
         } catch {
-            // 订阅失败
             showConfirmSheet = false
-
-            // 判断错误类型
-            if let subscriptionError = error as? SubscriptionError {
-                switch subscriptionError {
-                case .subscribeFailed(let message) where message.contains("取消"):
-                    subscriptionResult = .cancelled
-                default:
-                    subscriptionResult = .failure(error: error.localizedDescription)
-                }
+            if let e = error as? SubscriptionError, case .subscribeFailed(let msg) = e, msg.contains("取消") {
+                subscriptionResult = .cancelled
             } else {
                 subscriptionResult = .failure(error: error.localizedDescription)
             }
-
             showResultView = true
         }
+        isSubscribing = false
     }
 
     private func cancelSubscribe() {
         showConfirmSheet = false
         selectedProduct = nil
-        selectedTier = nil
-    }
-
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
     }
 }
 
-// MARK: - Supporting Types
+// MARK: - SubscriptionTier 扩展
+
+extension SubscriptionTier {
+    var tagline: String {
+        switch self {
+        case .free:     return "基础生存能力"
+        case .explorer: return "深入废土的探索者"
+        case .lord:     return "末日世界的统治者"
+        }
+    }
+
+    var highlights: [String] {
+        switch self {
+        case .free:     return []
+        case .explorer: return ["探索×1.5", "无限交易", "礼包5件"]
+        case .lord:     return ["探索×2.0", "全局解锁", "礼包7件"]
+        }
+    }
+}
+
+// MARK: - RoundedCorner 辅助
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat
+    var corners: UIRectCorner
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners,
+                                cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
 
 enum SubscriptionPeriod: String, CaseIterable {
     case monthly = "月卡"
-    case yearly = "年卡"
+    case yearly  = "年卡"
 }
-
-// MARK: - Preview
 
 #Preview {
     NavigationStack {

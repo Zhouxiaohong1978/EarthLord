@@ -141,6 +141,7 @@ struct BuildingTemplate: Identifiable, Codable {
     let buildTimeSeconds: Int
     let maxPerTerritory: Int
     let maxLevel: Int
+    var defaultPublicVisible: Bool = false
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -159,6 +160,7 @@ struct BuildingTemplate: Identifiable, Codable {
         case buildTimeSeconds = "build_time_seconds"
         case maxPerTerritory = "max_per_territory"
         case maxLevel = "max_level"
+        case defaultPublicVisible = "defaultPublicVisible"
     }
 
     /// 根据当前语言返回本地化名称
@@ -235,6 +237,7 @@ struct PlayerBuilding: Identifiable, Codable {
     var durability: Int = 100
     var lastMaintainedAt: Date?
     var durabilityZeroAt: Date?
+    var showToOthers: Bool = false
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -255,6 +258,7 @@ struct PlayerBuilding: Identifiable, Codable {
         case durability
         case lastMaintainedAt = "last_maintained_at"
         case durabilityZeroAt = "durability_zero_at"
+        case showToOthers = "show_to_others"
     }
 
     /// 检查建造是否已完成（根据时间）

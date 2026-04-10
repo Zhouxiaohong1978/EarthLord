@@ -29,6 +29,9 @@ final class BuildingManager: ObservableObject {
     /// 当前领地的建筑
     @Published var playerBuildings: [PlayerBuilding] = []
 
+    /// 附近其他玩家对外可见的建筑
+    @Published var otherPlayersBuildings: [PlayerBuilding] = []
+
     /// 是否正在加载
     @Published var isLoading: Bool = false
 
@@ -298,7 +301,8 @@ final class BuildingManager: ObservableObject {
             "location_lat": location != nil ? .double(location!.latitude) : .null,
             "location_lon": location != nil ? .double(location!.longitude) : .null,
             "build_started_at": .string(now.ISO8601Format()),
-            "build_completed_at": .string(completedAt.ISO8601Format())
+            "build_completed_at": .string(completedAt.ISO8601Format()),
+            "show_to_others": .bool(template.defaultPublicVisible)
         ]
 
         do {
@@ -513,9 +517,13 @@ final class BuildingManager: ObservableObject {
                 .value
 
             let buildings = response.compactMap { $0.toPlayerBuilding() }
-            self.playerBuildings = buildings
 
-            logger.log("成功加载 \(buildings.count) 个建筑", type: .success)
+            // 只替换该领地的建筑，保留其他领地的建筑
+            var merged = playerBuildings.filter { $0.territoryId != territoryId }
+            merged.append(contentsOf: buildings)
+            self.playerBuildings = merged
+
+            logger.log("成功加载 \(buildings.count) 个建筑（该领地），共 \(self.playerBuildings.count) 个建筑", type: .success)
 
             // 检查并处理超期废弃
             await checkAndAbandonExpiredBuildings()
@@ -574,6 +582,46 @@ final class BuildingManager: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    // MARK: - Visibility Methods
+
+    /// 切换建筑对外可见性
+    func toggleBuildingVisibility(buildingId: UUID) async throws {
+        guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }) else { return }
+        let newValue = !playerBuildings[index].showToOthers
+        try await supabase
+            .from("player_buildings")
+            .update(["show_to_others": newValue])
+            .eq("id", value: buildingId.uuidString)
+            .execute()
+        playerBuildings[index].showToOthers = newValue
+    }
+
+    /// 加载附近其他玩家对外可见的建筑（500m 范围内）
+    @discardableResult
+    func loadNearbyOtherPlayersBuildings(lat: Double, lon: Double) async throws -> [PlayerBuilding] {
+        guard let userId = AuthManager.shared.currentUser?.id.uuidString else { return [] }
+
+        let buildings: [PlayerBuilding] = try await supabase
+            .from("player_buildings")
+            .select()
+            .eq("show_to_others", value: true)
+            .eq("status", value: "active")
+            .neq("user_id", value: userId)
+            .execute()
+            .value
+
+        // 客户端按距离过滤 500m
+        let userCL = CLLocation(latitude: lat, longitude: lon)
+        let nearby = buildings.filter { building in
+            guard let bLat = building.locationLat, let bLon = building.locationLon else { return false }
+            let bCL = CLLocation(latitude: bLat, longitude: bLon)
+            return userCL.distance(from: bCL) <= 500
+        }
+
+        otherPlayersBuildings = nearby
+        return nearby
     }
 
     // MARK: - Delete Methods

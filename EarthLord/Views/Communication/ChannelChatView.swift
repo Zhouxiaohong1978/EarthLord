@@ -8,6 +8,7 @@
 import SwiftUI
 import Auth
 import CoreLocation
+import AVFoundation
 
 struct ChannelChatView: View {
     let channel: CommunicationChannel
@@ -39,6 +40,18 @@ struct ChannelChatView: View {
         VStack(spacing: 0) {
             // 消息列表
             messageListView
+
+            // 错误提示
+            if let error = errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(ApocalypseTheme.danger)
+                    .onTapGesture { errorMessage = nil }
+            }
 
             // 底部输入栏或提示
             bottomBar
@@ -210,6 +223,13 @@ struct ChannelChatView: View {
         let content = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else { return }
 
+        let filterResult = ContentFilter.check(content)
+        guard filterResult.isClean else {
+            errorMessage = String(localized: "内容包含违禁词，请修改后重试")
+            Task { try? await Task.sleep(nanoseconds: 3_000_000_000); errorMessage = nil }
+            return
+        }
+
         let textToSend = content
         messageText = ""
 
@@ -262,9 +282,7 @@ struct MessageBubbleView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            if isOwnMessage {
-                Spacer(minLength: 60)
-            }
+            if isOwnMessage { Spacer(minLength: 60) }
 
             VStack(alignment: isOwnMessage ? .trailing : .leading, spacing: 4) {
                 // 发送者信息（仅他人消息显示）
@@ -284,18 +302,20 @@ struct MessageBubbleView: View {
                     }
                 }
 
-                // 消息气泡
-                HStack {
+                // 消息气泡（语音 / 文字）
+                if message.isVoice, let voiceUrl = message.voiceUrl {
+                    VoiceMessageBubble(
+                        voiceUrl: voiceUrl,
+                        duration: message.voiceDuration ?? 0,
+                        isOwnMessage: isOwnMessage
+                    )
+                } else {
                     Text(message.content)
                         .font(.body)
                         .foregroundColor(isOwnMessage ? .white : ApocalypseTheme.textPrimary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(
-                            isOwnMessage
-                            ? ApocalypseTheme.primary
-                            : ApocalypseTheme.cardBackground
-                        )
+                        .background(isOwnMessage ? ApocalypseTheme.primary : ApocalypseTheme.cardBackground)
                         .cornerRadius(18)
                 }
 
@@ -305,10 +325,117 @@ struct MessageBubbleView: View {
                     .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.7))
             }
 
-            if !isOwnMessage {
-                Spacer(minLength: 60)
+            if !isOwnMessage { Spacer(minLength: 60) }
+        }
+    }
+}
+
+// MARK: - VoiceMessageBubble
+
+struct VoiceMessageBubble: View {
+    let voiceUrl: String
+    let duration: Int
+    let isOwnMessage: Bool
+
+    @AppStorage("voiceBroadcastEnabled") private var autoPlay: Bool = false
+    @State private var player: AVAudioPlayer?
+    @State private var isPlaying = false
+    @State private var progress: Double = 0
+    @State private var playTimer: Timer?
+    @State private var hasAutoPlayed = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            // 播放/暂停按钮
+            Button(action: togglePlay) {
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(isOwnMessage ? .white : ApocalypseTheme.primary)
+                    .frame(width: 32, height: 32)
+            }
+
+            // 进度条
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(isOwnMessage ? Color.white.opacity(0.3) : ApocalypseTheme.textMuted.opacity(0.3))
+                        .frame(height: 3)
+                    Capsule()
+                        .fill(isOwnMessage ? Color.white : ApocalypseTheme.primary)
+                        .frame(width: geo.size.width * progress, height: 3)
+                }
+            }
+            .frame(height: 3)
+
+            // 时长
+            Text(formatDuration(isPlaying ? Int(progress * Double(duration)) : duration))
+                .font(.system(size: 12, weight: .medium).monospacedDigit())
+                .foregroundColor(isOwnMessage ? .white.opacity(0.8) : ApocalypseTheme.textSecondary)
+                .frame(minWidth: 28, alignment: .trailing)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(minWidth: 160)
+        .background(isOwnMessage ? ApocalypseTheme.primary : ApocalypseTheme.cardBackground)
+        .cornerRadius(18)
+        .onAppear {
+            if autoPlay && !isOwnMessage && !hasAutoPlayed {
+                hasAutoPlayed = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    togglePlay()
+                }
             }
         }
+        .onDisappear { stopPlay() }
+    }
+
+    private func togglePlay() {
+        if isPlaying {
+            stopPlay()
+        } else {
+            startPlay()
+        }
+    }
+
+    private func startPlay() {
+        guard let url = URL(string: voiceUrl) else { return }
+
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                await MainActor.run {
+                    try? AVAudioSession.sharedInstance().setCategory(.playback)
+                    try? AVAudioSession.sharedInstance().setActive(true)
+                    player = try? AVAudioPlayer(data: data)
+                    player?.play()
+                    isPlaying = true
+                    progress = 0
+
+                    playTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+                        guard let p = player else { return }
+                        if p.isPlaying {
+                            progress = p.currentTime / p.duration
+                        } else {
+                            stopPlay()
+                        }
+                    }
+                }
+            } catch {
+                print("语音播放失败: \(error)")
+            }
+        }
+    }
+
+    private func stopPlay() {
+        player?.stop()
+        player = nil
+        playTimer?.invalidate()
+        playTimer = nil
+        withAnimation { isPlaying = false; progress = 0 }
+    }
+
+    private func formatDuration(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 }
 

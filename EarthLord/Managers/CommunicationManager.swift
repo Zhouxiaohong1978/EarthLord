@@ -10,6 +10,8 @@ import Supabase
 import Realtime
 import Combine
 import CoreLocation
+import AVFoundation
+import CoreMedia
 
 // MARK: - CommunicationManager
 
@@ -59,6 +61,55 @@ final class CommunicationManager: ObservableObject {
 
     /// 是否正在发送消息
     @Published var isSendingMessage: Bool = false
+
+    /// 接收到的幸存者求生信标（最新一条，30秒后自动清除）
+    @Published var incomingSurvivorBeacon: SurvivorBeaconInfo?
+
+    // MARK: - 语音播报
+    private let speechSynthesizer = AVSpeechSynthesizer()
+    private var voiceBroadcastEnabled = false
+
+    func setVoiceBroadcast(enabled: Bool) {
+        voiceBroadcastEnabled = enabled
+    }
+
+    /// 直接朗读一段文字（用于测试语音播报是否正常）
+    func speakText(_ text: String) {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
+        try? session.setActive(true)
+
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+            ?? AVSpeechSynthesisVoice(language: "zh")
+        utterance.rate = 0.5
+        utterance.volume = 1.0
+        speechSynthesizer.stopSpeaking(at: .immediate)
+        speechSynthesizer.speak(utterance)
+        print("🔊 [语音播报] 朗读: \(text)")
+    }
+
+    private func speakMessage(_ message: ChannelMessage) {
+        guard voiceBroadcastEnabled else { return }
+
+        // 配置音频会话，确保不受静音键影响
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
+        try? session.setActive(true)
+
+        let callsign = message.senderCallsign ?? "未知"
+        let text = "\(callsign) 说：\(message.content)"
+        let utterance = AVSpeechUtterance(string: text)
+
+        // zh-CN 优先，找不到则用系统默认
+        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+            ?? AVSpeechSynthesisVoice(language: "zh")
+        utterance.rate = 0.5
+        utterance.volume = 1.0
+
+        speechSynthesizer.stopSpeaking(at: .immediate)
+        speechSynthesizer.speak(utterance)
+    }
 
     // MARK: - Day 36 Properties
 
@@ -536,19 +587,23 @@ final class CommunicationManager: ObservableObject {
         creatorId: UUID,
         channelType: ChannelType,
         name: String,
-        description: String? = nil
+        description: String? = nil,
+        latitude: Double? = nil,
+        longitude: Double? = nil
     ) async throws -> UUID {
         logger.log("创建频道: \(name)", type: .info)
         isLoading = true
         defer { isLoading = false }
 
         do {
-            let params: [String: AnyJSON] = [
+            var params: [String: AnyJSON] = [
                 "p_creator_id": .string(creatorId.uuidString),
                 "p_channel_type": .string(channelType.rawValue),
                 "p_name": .string(name),
                 "p_description": description != nil ? .string(description!) : .null
             ]
+            if let lat = latitude  { params["p_latitude"]  = .double(lat) }
+            if let lon = longitude { params["p_longitude"] = .double(lon) }
 
             let channelIdString: String = try await supabase
                 .rpc("create_channel_with_subscription", params: params)
@@ -748,7 +803,8 @@ final class CommunicationManager: ObservableObject {
             var params: [String: AnyJSON] = [
                 "p_channel_id": .string(channelId.uuidString),
                 "p_content": .string(content),
-                "p_device_type": .string(deviceTypeString)
+                "p_device_type": .string(deviceTypeString),
+                "p_callsign": .string(displayCallsign)
             ]
 
             // 🐛 DEBUG: 检查RPC参数
@@ -782,6 +838,74 @@ final class CommunicationManager: ObservableObject {
         }
     }
 
+    // MARK: - Voice Message
+
+    /// 上传语音文件到 Supabase Storage，返回公开 URL
+    func uploadVoiceFile(_ fileURL: URL, channelId: UUID) async throws -> (url: String, duration: Int) {
+        let messageId = UUID()
+        let path = "\(channelId.uuidString)/\(messageId.uuidString).m4a"
+
+        let data = try Data(contentsOf: fileURL)
+
+        try await supabase.storage
+            .from("voice-messages")
+            .upload(path, data: data, options: FileOptions(contentType: "audio/m4a", upsert: false))
+
+        let publicURL = try supabase.storage
+            .from("voice-messages")
+            .getPublicURL(path: path)
+
+        // 计算时长
+        let asset = AVURLAsset(url: fileURL)
+        let duration = Int(CMTimeGetSeconds(try await asset.load(.duration)))
+
+        return (publicURL.absoluteString, max(1, duration))
+    }
+
+    /// 发送语音消息
+    @discardableResult
+    func sendVoiceMessage(
+        channelId: UUID,
+        fileURL: URL,
+        latitude: Double? = nil,
+        longitude: Double? = nil
+    ) async throws -> UUID {
+        logger.log("上传语音消息...", type: .info)
+        isSendingMessage = true
+        defer { isSendingMessage = false }
+
+        let (voiceUrl, duration) = try await uploadVoiceFile(fileURL, channelId: channelId)
+
+        let deviceTypeString = currentDevice?.deviceType.rawValue ?? "unknown"
+
+        var params: [String: AnyJSON] = [
+            "p_channel_id": .string(channelId.uuidString),
+            "p_content": .string("[语音消息]"),
+            "p_device_type": .string(deviceTypeString),
+            "p_callsign": .string(displayCallsign),
+            "p_message_type": .string("voice"),
+            "p_voice_url": .string(voiceUrl),
+            "p_voice_duration": .integer(duration)
+        ]
+
+        if let lat = latitude, let lon = longitude {
+            params["p_latitude"] = .double(lat)
+            params["p_longitude"] = .double(lon)
+        }
+
+        let messageIdString: String = try await supabase
+            .rpc("send_channel_message", params: params)
+            .execute()
+            .value
+
+        guard let messageId = UUID(uuidString: messageIdString) else {
+            throw CommunicationError.saveFailed("无效的消息ID")
+        }
+
+        logger.log("成功发送语音消息: \(messageId)", type: .success)
+        return messageId
+    }
+
     /// 获取频道消息列表
     /// - Parameter channelId: 频道ID
     /// - Returns: 消息列表
@@ -801,9 +925,9 @@ final class CommunicationManager: ObservableObject {
             return true
         }
 
-        // 1. 私有频道（非 public 类型）不应用距离过滤
-        if let ch = channel, ch.channelType != .public {
-            print("📌 [距离过滤] 非公共频道，跳过过滤")
+        // 1. 官方频道不应用距离过滤（全球广播）
+        if let ch = channel, ch.channelType == .official {
+            print("📌 [距离过滤] 官方频道，跳过过滤")
             return true
         }
 
@@ -968,13 +1092,47 @@ final class CommunicationManager: ObservableObject {
                 if !channelMessages[message.channelId]!.contains(where: { $0.messageId == message.messageId }) {
                     channelMessages[message.channelId]?.append(message)
                     logger.log("收到新消息: \(message.messageId)", type: .info)
+                    speakMessage(message)
+                    detectSurvivorBeacon(message)
                 }
             } else {
                 channelMessages[message.channelId] = [message]
+                speakMessage(message)
+                detectSurvivorBeacon(message)
             }
 
         } catch {
             logger.logError("解析新消息失败", error: error)
+        }
+    }
+
+    /// 检测是否是幸存者呼叫，如是则发布信标
+    private func detectSurvivorBeacon(_ message: ChannelMessage) {
+        guard message.content.hasPrefix("【求生信号】") else { return }
+        let myId = AuthManager.shared.currentUser?.id
+        guard message.senderId != myId else { return }
+
+        let coord = message.senderLocation.map {
+            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        let beacon = SurvivorBeaconInfo(
+            channelId: message.channelId,
+            senderCallsign: message.senderCallsign,
+            coordinate: coord,
+            messageId: message.messageId,
+            receivedAt: Date()
+        )
+
+        incomingSurvivorBeacon = beacon
+
+        // 30 秒后自动清除
+        Task {
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            await MainActor.run {
+                if self.incomingSurvivorBeacon?.messageId == message.messageId {
+                    self.incomingSurvivorBeacon = nil
+                }
+            }
         }
     }
 
@@ -1087,6 +1245,25 @@ final class CommunicationManager: ObservableObject {
             logger.log("呼号加载成功: \(userCallsign ?? "无")", type: .success)
         } catch {
             logger.logError("加载呼号失败", error: error)
+        }
+    }
+
+    /// 检查呼号是否可用（不区分大小写，排除自己当前呼号）
+    func isCallsignAvailable(_ callsign: String) async -> Bool {
+        do {
+            struct Row: Codable { let callsign: String? }
+            let rows: [Row] = try await supabase
+                .from("profiles")
+                .select("callsign")
+                .ilike("callsign", value: callsign)
+                .execute()
+                .value
+            // 只有结果为空，或结果就是自己当前的呼号，才算可用
+            return rows.isEmpty || rows.allSatisfy {
+                $0.callsign?.lowercased() == userCallsign?.lowercased()
+            }
+        } catch {
+            return true // 查询失败时保守放行，交给DB约束兜底
         }
     }
 

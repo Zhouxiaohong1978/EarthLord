@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct TradeMarketView: View {
     @ObservedObject private var tradeManager = TradeManager.shared
@@ -15,24 +16,46 @@ struct TradeMarketView: View {
     @State private var selectedOffer: TradeOffer?
     @State private var isFirstLoad = true
 
-    /// 筛选后的挂单列表
+    // MARK: - 领地距离过滤
+
+    /// 100m 内、允许交易的领地对应的 userId 集合
+    private var nearbyTradingOwnerIds: Set<String> {
+        guard let userLocation = LocationManager.shared.userLocation else {
+            // 未定位时不限制
+            return Set(TerritoryManager.shared.territories.map { $0.userId })
+        }
+        let user = CLLocation(latitude: userLocation.latitude, longitude: userLocation.longitude)
+
+        return Set(
+            TerritoryManager.shared.territories
+                .filter { $0.isActive == true && ($0.allowTrading ?? true) }
+                .filter { territory in
+                    // 用领地路径点的平均值作为质心
+                    let points = territory.path
+                    guard !points.isEmpty else { return false }
+                    let avgLat = points.compactMap { $0["lat"] }.reduce(0, +) / Double(points.count)
+                    let avgLon = points.compactMap { $0["lon"] }.reduce(0, +) / Double(points.count)
+                    let centroid = CLLocation(latitude: avgLat, longitude: avgLon)
+                    return user.distance(from: centroid) <= 100
+                }
+                .map { $0.userId }
+        )
+    }
+
+    /// 筛选后的挂单列表（先过滤距离，再过滤搜索词）
     private var filteredOffers: [TradeOffer] {
-        guard !searchText.isEmpty else {
-            return tradeManager.availableOffers
+        let ownerIds = nearbyTradingOwnerIds
+        let nearbyOffers = tradeManager.availableOffers.filter { offer in
+            ownerIds.contains(offer.ownerId.uuidString.lowercased()) ||
+            ownerIds.contains(offer.ownerId.uuidString)
         }
 
-        return tradeManager.availableOffers.filter { offer in
-            // 搜索出售物品
-            let offeringMatch = offer.offeringItems.contains { item in
-                item.itemName.localizedCaseInsensitiveContains(searchText)
-            }
-            // 搜索求购物品
-            let requestingMatch = offer.requestingItems.contains { item in
-                item.itemName.localizedCaseInsensitiveContains(searchText)
-            }
-            // 搜索用户名
-            let userMatch = offer.ownerUsername.localizedCaseInsensitiveContains(searchText)
+        guard !searchText.isEmpty else { return nearbyOffers }
 
+        return nearbyOffers.filter { offer in
+            let offeringMatch = offer.offeringItems.contains { $0.itemName.localizedCaseInsensitiveContains(searchText) }
+            let requestingMatch = offer.requestingItems.contains { $0.itemName.localizedCaseInsensitiveContains(searchText) }
+            let userMatch = offer.ownerUsername.localizedCaseInsensitiveContains(searchText)
             return offeringMatch || requestingMatch || userMatch
         }
     }
@@ -134,26 +157,24 @@ struct TradeMarketView: View {
     private var marketStats: some View {
         HStack {
             HStack(spacing: 6) {
-                Image(systemName: "chart.bar.fill")
+                Image(systemName: "location.circle.fill")
                     .font(.system(size: 14))
                     .foregroundColor(ApocalypseTheme.primary)
 
-                Text("可用挂单")
+                Text("附近挂单")
                     .font(.system(size: 13))
                     .foregroundColor(ApocalypseTheme.textSecondary)
 
-                Text("\(tradeManager.availableOffers.count)")
+                Text("\(filteredOffers.count)")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.textPrimary)
             }
 
             Spacer()
 
-            if !searchText.isEmpty && filteredOffers.count != tradeManager.availableOffers.count {
-                Text("匹配 \(filteredOffers.count) 个")
-                    .font(.system(size: 12))
-                    .foregroundColor(ApocalypseTheme.textMuted)
-            }
+            Text("100m 范围内可见")
+                .font(.system(size: 12))
+                .foregroundColor(ApocalypseTheme.textMuted)
         }
     }
 
@@ -200,13 +221,14 @@ struct TradeMarketView: View {
                 .font(.system(size: 50))
                 .foregroundColor(ApocalypseTheme.textMuted)
 
-            Text(searchText.isEmpty ? "市场暂无挂单" : "没有找到匹配的挂单")
+            Text(searchText.isEmpty ? "附近暂无交易" : "没有找到匹配的挂单")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-            Text(searchText.isEmpty ? "等待其他玩家发布交易" : "尝试更换搜索关键词")
+            Text(searchText.isEmpty ? "靠近其他玩家领地（100m内）可发现挂单" : "尝试更换搜索关键词")
                 .font(.system(size: 14))
                 .foregroundColor(ApocalypseTheme.textMuted)
+                .multilineTextAlignment(.center)
 
             Spacer()
         }

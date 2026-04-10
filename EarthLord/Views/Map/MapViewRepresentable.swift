@@ -66,6 +66,18 @@ struct MapViewRepresentable: UIViewRepresentable {
     /// 建筑模板列表
     var buildingTemplates: [BuildingTemplate] = []
 
+    /// 其他玩家对外可见的建筑
+    var otherPlayersBuildings: [PlayerBuilding] = []
+
+    /// 营地痕迹：探索中附近的他人活跃领地
+    var campTerritories: [Territory] = []
+
+    /// 点击营地痕迹标注时的回调
+    var onCampTerritoryTapped: ((Territory) -> Void)? = nil
+
+    /// 幸存者呼叫信标坐标（nil = 无信标）
+    var survivorBeaconCoordinate: CLLocationCoordinate2D? = nil
+
     // MARK: - UIViewRepresentable
 
     /// 创建 MKMapView
@@ -130,6 +142,12 @@ struct MapViewRepresentable: UIViewRepresentable {
 
         // 更新建筑标记
         updateBuildingAnnotations(on: uiView, context: context)
+
+        // 更新营地痕迹标记
+        updateCampTraceAnnotations(on: uiView, context: context)
+
+        // 更新幸存者信标标记
+        updateSurvivorBeaconAnnotation(on: uiView)
     }
 
     /// 创建 Coordinator 代理
@@ -442,6 +460,8 @@ struct MapViewRepresentable: UIViewRepresentable {
 
                     annotationView.annotation = annotation
                     annotationView.canShowCallout = true
+                    // 他人建筑半透明显示
+                    annotationView.alpha = buildingAnnotation.isOtherPlayer ? 0.55 : 1.0
 
                     if let source = UIImage(named: iconName) {
                         let latDelta = mapView.region.span.latitudeDelta
@@ -485,6 +505,34 @@ struct MapViewRepresentable: UIViewRepresentable {
 
                     return annotationView
                 }
+            }
+
+            // 处理营地痕迹标注
+            if annotation is CampTraceAnnotation {
+                let identifier = "CampTrace"
+                let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                view.annotation = annotation
+                view.markerTintColor = UIColor.systemOrange
+                let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+                view.glyphImage = UIImage(systemName: "flame.fill", withConfiguration: config)
+                view.canShowCallout = true
+                view.displayPriority = .defaultHigh
+                return view
+            }
+
+            // 处理幸存者信标标注
+            if annotation is SurvivorBeaconAnnotation {
+                let identifier = "SurvivorBeacon"
+                let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                view.annotation = annotation
+                view.markerTintColor = UIColor.systemBlue
+                let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .bold)
+                view.glyphImage = UIImage(systemName: "person.wave.2.fill", withConfiguration: config)
+                view.canShowCallout = false
+                view.displayPriority = .required
+                return view
             }
 
             // 处理 POI 标注
@@ -555,6 +603,14 @@ struct MapViewRepresentable: UIViewRepresentable {
         /// 地图旋转过程中持续触发（实时更新图标方向）
         func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
             updateBuildingIconRotations(in: mapView)
+        }
+
+        /// 标注点击回调
+        func mapView(_ mapView: MKMapView, didSelect annotation: MKAnnotation) {
+            if let campAnnotation = annotation as? CampTraceAnnotation {
+                parent.onCampTerritoryTapped?(campAnnotation.territory)
+                mapView.deselectAnnotation(annotation, animated: false)
+            }
         }
 
         /// 对所有建筑图标的内部 iconView 施加反向旋转，使其始终朝上
@@ -637,6 +693,28 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapView.addAnnotations(newAnnotations)
     }
 
+    // MARK: - 营地痕迹标记管理
+
+    /// 更新营地痕迹标注（探索中显示他人领地的火光图标）
+    private func updateCampTraceAnnotations(on mapView: MKMapView, context: Context) {
+        let old = mapView.annotations.filter { $0 is CampTraceAnnotation }
+        mapView.removeAnnotations(old)
+        for territory in campTerritories {
+            mapView.addAnnotation(CampTraceAnnotation(territory: territory))
+        }
+    }
+
+    // MARK: - 幸存者信标标记管理
+
+    /// 更新幸存者求生信标标注
+    private func updateSurvivorBeaconAnnotation(on mapView: MKMapView) {
+        let old = mapView.annotations.filter { $0 is SurvivorBeaconAnnotation }
+        mapView.removeAnnotations(old)
+        if let coord = survivorBeaconCoordinate {
+            mapView.addAnnotation(SurvivorBeaconAnnotation(coordinate: coord))
+        }
+    }
+
     // MARK: - 建筑标记管理
 
     /// 更新建筑标记
@@ -652,11 +730,20 @@ struct MapViewRepresentable: UIViewRepresentable {
         let oldBuildingAnnotations = mapView.annotations.filter { $0 is BuildingAnnotation }
         mapView.removeAnnotations(oldBuildingAnnotations)
 
-        // 添加新的建筑标记
+        // 添加自己的建筑标记
         for building in buildings {
             guard let coord = building.coordinate else { continue }
             let template = buildingTemplates.first { $0.templateId == building.templateId }
-            let annotation = BuildingAnnotation(building: building, template: template)
+            let annotation = BuildingAnnotation(building: building, template: template, isOtherPlayer: false)
+            annotation.coordinate = coord
+            mapView.addAnnotation(annotation)
+        }
+
+        // 添加他人对外可见的建筑标记（半透明）
+        for building in otherPlayersBuildings {
+            guard let coord = building.coordinate else { continue }
+            let template = buildingTemplates.first { $0.templateId == building.templateId }
+            let annotation = BuildingAnnotation(building: building, template: template, isOtherPlayer: true)
             annotation.coordinate = coord
             mapView.addAnnotation(annotation)
         }
@@ -668,7 +755,7 @@ struct MapViewRepresentable: UIViewRepresentable {
         }
 
         if !buildings.isEmpty {
-            print("🏗️ 更新建筑标记: \(buildings.count) 个")
+            print("🏗️ 更新建筑标记: \(buildings.count) 个（自己），\(otherPlayersBuildings.count) 个（他人）")
         }
     }
 }
@@ -694,6 +781,7 @@ class POIAnnotation: NSObject, MKAnnotation {
 class BuildingAnnotation: NSObject, MKAnnotation {
     let building: PlayerBuilding
     let template: BuildingTemplate?
+    let isOtherPlayer: Bool
 
     /// 建筑坐标（数据库保存的已经是 GCJ-02 坐标）
     dynamic var coordinate: CLLocationCoordinate2D
@@ -703,15 +791,17 @@ class BuildingAnnotation: NSObject, MKAnnotation {
     }
 
     var subtitle: String? {
+        if isOtherPlayer { return "幸存者建筑" }
         var parts: [String] = []
         parts.append("Lv.\(building.level)")
         parts.append(building.status.displayName)
         return parts.joined(separator: " · ")
     }
 
-    init(building: PlayerBuilding, template: BuildingTemplate?) {
+    init(building: PlayerBuilding, template: BuildingTemplate?, isOtherPlayer: Bool = false) {
         self.building = building
         self.template = template
+        self.isOtherPlayer = isOtherPlayer
         self.coordinate = building.coordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
         super.init()
     }
@@ -750,6 +840,44 @@ class BuildingAnnotationView: MKAnnotationView {
 private extension CGFloat {
     func clamped(to range: ClosedRange<CGFloat>) -> CGFloat {
         Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
+    }
+}
+
+// MARK: - 营地痕迹标注
+
+/// 营地痕迹地图标注（探索中显示他人活跃领地位置）
+class CampTraceAnnotation: NSObject, MKAnnotation {
+    var coordinate: CLLocationCoordinate2D
+    let territory: Territory
+
+    var title: String? { territory.name ?? "无名营地" }
+    var subtitle: String? {
+        var parts: [String] = []
+        if let count = territory.buildingCount, count > 0 {
+            parts.append("\(count)座建筑")
+        }
+        return parts.isEmpty ? "幸存者营地" : parts.joined(separator: " · ")
+    }
+
+    init(territory: Territory) {
+        self.territory = territory
+        let points = territory.path
+        let count = Double(max(points.count, 1))
+        let avgLat = points.compactMap { $0["lat"] }.reduce(0, +) / count
+        let avgLon = points.compactMap { $0["lon"] }.reduce(0, +) / count
+        self.coordinate = CLLocationCoordinate2D(latitude: avgLat, longitude: avgLon)
+    }
+}
+
+// MARK: - 幸存者信标标注
+
+/// 幸存者求生信标地图标注（收到幸存者呼叫时显示）
+class SurvivorBeaconAnnotation: NSObject, MKAnnotation {
+    var coordinate: CLLocationCoordinate2D
+    var title: String? { "求生信号" }
+
+    init(coordinate: CLLocationCoordinate2D) {
+        self.coordinate = coordinate
     }
 }
 

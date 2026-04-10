@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 struct PTTCallView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -22,6 +23,20 @@ struct PTTCallView: View {
     @State private var showChannelPicker = false
     @State private var sentToChannel: String?
     @State private var navigateToChannel: CommunicationChannel?
+
+    // MARK: - 录音状态
+    @State private var audioRecorder: AVAudioRecorder?
+    @State private var isRecording = false
+    @State private var recordingDuration: TimeInterval = 0
+    @State private var recordingTimer: Timer?
+    @State private var recordingFileURL: URL?
+    @State private var isCancelled = false      // 上滑取消标志
+    @State private var dragOffset: CGFloat = 0  // 按钮拖动偏移
+
+    // MARK: - 幸存者呼叫状态
+    @State private var isSendingSurvivorCall = false
+    @State private var showSurvivorCallSent = false
+    @State private var survivorCallPulse = false
 
     // Quick message templates
     private var quickMessages: [String] {
@@ -65,6 +80,10 @@ struct PTTCallView: View {
 
                 // Emergency toggle
                 emergencyToggle
+                    .padding(.bottom, 8)
+
+                // 幸存者呼叫
+                survivorCallButton
                     .padding(.bottom, 16)
             }
         }
@@ -281,9 +300,9 @@ struct PTTCallView: View {
 
     private var pttButtonArea: some View {
         VStack(spacing: 16) {
-            // Text input (optional)
+            // 文字输入框（可选）
             HStack {
-                TextField(String(localized: "输入消息（可选）"), text: $messageText)
+                TextField(String(localized: "输入文字消息（可选）"), text: $messageText)
                     .textFieldStyle(.plain)
                     .padding(12)
                     .background(ApocalypseTheme.cardBackground)
@@ -299,47 +318,98 @@ struct PTTCallView: View {
             }
             .padding(.horizontal, 20)
 
-            // PTT Button
+            // 录音时长 / 取消提示
+            if isRecording {
+                HStack(spacing: 8) {
+                    if isCancelled {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(ApocalypseTheme.danger)
+                        Text("松开取消")
+                            .foregroundColor(ApocalypseTheme.danger)
+                    } else {
+                        Circle()
+                            .fill(ApocalypseTheme.danger)
+                            .frame(width: 8, height: 8)
+                            .opacity(recordingDuration.truncatingRemainder(dividingBy: 1) < 0.5 ? 1 : 0.3)
+                        Text(String(format: "%.0f\"", recordingDuration))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                            .monospacedDigit()
+                        Text("上滑取消")
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                    }
+                }
+                .font(.system(size: 14, weight: .medium))
+                .transition(.opacity)
+            }
+
+            // PTT 按钮（按住录音 / 文字有内容时点击发送文字）
             ZStack {
+                // 外圈脉冲（录音中）
+                if isRecording && !isCancelled {
+                    Circle()
+                        .stroke(ApocalypseTheme.danger.opacity(0.4), lineWidth: 2)
+                        .frame(width: 130, height: 130)
+                        .scaleEffect(isRecording ? 1.15 : 1.0)
+                        .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: isRecording)
+                }
+
                 Circle()
                     .fill(
-                        isPressing
-                        ? (isEmergencyMode ? ApocalypseTheme.danger : ApocalypseTheme.primary)
-                        : ApocalypseTheme.cardBackground
+                        isCancelled ? ApocalypseTheme.danger.opacity(0.3) :
+                        isRecording ? ApocalypseTheme.danger :
+                        isEmergencyMode ? ApocalypseTheme.danger.opacity(0.8) :
+                        ApocalypseTheme.cardBackground
                     )
                     .frame(width: 100, height: 100)
-                    .shadow(color: isPressing ? (isEmergencyMode ? Color.red : Color.orange).opacity(0.5) : Color.clear, radius: 20)
+                    .shadow(color: isRecording ? Color.red.opacity(0.5) : Color.clear, radius: 20)
+                    .offset(y: dragOffset)
 
-                Image(systemName: isPressing ? "waveform" : "mic.fill")
+                Image(systemName: isRecording ? "waveform" : "mic.fill")
                     .font(.system(size: 36))
-                    .foregroundColor(isPressing ? .white : ApocalypseTheme.primary)
+                    .foregroundColor(isRecording ? .white : ApocalypseTheme.primary)
+                    .offset(y: dragOffset)
             }
             .opacity(canSend && !isSending ? 1.0 : 0.5)
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        if canSend && !isSending && !isPressing {
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                isPressing = true
-                            }
-                            // Haptic feedback
-                            let generator = UIImpactFeedbackGenerator(style: .medium)
-                            generator.impactOccurred()
+                    .onChanged { value in
+                        guard canSend && !isSending else { return }
+                        if !isRecording {
+                            startRecording()
+                        }
+                        // 上滑距离 > 60pt 进入取消模式
+                        dragOffset = min(0, value.translation.height)
+                        let newCancelled = value.translation.height < -60
+                        if newCancelled != isCancelled {
+                            isCancelled = newCancelled
+                            let gen = UIImpactFeedbackGenerator(style: .rigid)
+                            gen.impactOccurred()
                         }
                     }
                     .onEnded { _ in
-                        if isPressing {
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                isPressing = false
-                            }
-                            sendMessage()
+                        guard isRecording else { return }
+                        dragOffset = 0
+                        if isCancelled {
+                            cancelRecording()
+                        } else {
+                            stopAndSendRecording()
                         }
                     }
             )
 
-            Text(canSend ? String(localized: "按住发送") : cannotSendReason)
-                .font(.caption)
-                .foregroundColor(ApocalypseTheme.textSecondary)
+            // 提示文字
+            if !isRecording {
+                VStack(spacing: 4) {
+                    Text(canSend ? "按住录音 · 上滑取消" : cannotSendReason)
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                    if canSend && !messageText.isEmpty {
+                        Button("发送文字消息") { sendMessage() }
+                            .font(.caption)
+                            .foregroundColor(ApocalypseTheme.primary)
+                    }
+                }
+            }
         }
     }
 
@@ -405,6 +475,120 @@ struct PTTCallView: View {
         .padding(.horizontal, 20)
     }
 
+    // MARK: - 幸存者呼叫
+
+    private var survivorCallButton: some View {
+        VStack(spacing: 8) {
+            Divider()
+                .background(ApocalypseTheme.textMuted.opacity(0.3))
+                .padding(.horizontal, 20)
+
+            Button(action: sendSurvivorCall) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        // 脉冲光环
+                        if survivorCallPulse {
+                            Circle()
+                                .stroke(ApocalypseTheme.info.opacity(0.4), lineWidth: 2)
+                                .frame(width: 44, height: 44)
+                                .scaleEffect(survivorCallPulse ? 1.4 : 1.0)
+                                .opacity(survivorCallPulse ? 0 : 1)
+                                .animation(
+                                    .easeOut(duration: 1.0).repeatForever(autoreverses: false),
+                                    value: survivorCallPulse
+                                )
+                        }
+
+                        Circle()
+                            .fill(ApocalypseTheme.info.opacity(0.12))
+                            .frame(width: 36, height: 36)
+
+                        Image(systemName: "person.wave.2.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(ApocalypseTheme.info)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("幸存者呼叫")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                        Text("向频道广播求生信号")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
+
+                    Spacer()
+
+                    if isSendingSurvivorCall {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else if showSurvivorCallSent {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(ApocalypseTheme.success)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(ApocalypseTheme.cardBackground)
+                .cornerRadius(12)
+                .padding(.horizontal, 20)
+            }
+            .disabled(!canSend || isSendingSurvivorCall || isSending)
+            .opacity((canSend && !isSendingSurvivorCall) ? 1.0 : 0.5)
+        }
+    }
+
+    private func sendSurvivorCall() {
+        guard canSend, let channelId = targetChannel?.id else { return }
+        let channelName = targetChannel?.name
+
+        isSendingSurvivorCall = true
+        survivorCallPulse = true
+
+        let location = LocationManager.shared.userLocation
+        let latitude = location?.latitude
+        let longitude = location?.longitude
+
+        Task {
+            do {
+                try await communicationManager.sendChannelMessage(
+                    channelId: channelId,
+                    content: "【求生信号】有人吗？",
+                    latitude: latitude,
+                    longitude: longitude
+                )
+
+                await MainActor.run {
+                    isSendingSurvivorCall = false
+                    showSurvivorCallSent = true
+                    sentMessage = "【求生信号】有人吗？"
+                    sentToChannel = channelName
+                    withAnimation { showSentFeedback = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                        withAnimation {
+                            showSentFeedback = false
+                            showSurvivorCallSent = false
+                            survivorCallPulse = false
+                        }
+                    }
+                }
+
+                let gen = UINotificationFeedbackGenerator()
+                gen.notificationOccurred(.success)
+
+            } catch {
+                await MainActor.run {
+                    isSendingSurvivorCall = false
+                    survivorCallPulse = false
+                }
+            }
+        }
+    }
+
     // MARK: - Sent Feedback Overlay
 
     private func sentFeedbackOverlay(_ message: String) -> some View {
@@ -462,6 +646,117 @@ struct PTTCallView: View {
         }
         .background(Color.black.opacity(0.5))
         .transition(.opacity)
+    }
+
+    // MARK: - Recording Methods
+
+    private func startRecording() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playAndRecord, mode: .default, options: .defaultToSpeaker)
+        try? session.setActive(true)
+
+        let fileName = UUID().uuidString + ".m4a"
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        recordingFileURL = fileURL
+
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 12000,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ]
+
+        audioRecorder = try? AVAudioRecorder(url: fileURL, settings: settings)
+        audioRecorder?.record(forDuration: 30)
+
+        isRecording = true
+        isCancelled = false
+        recordingDuration = 0
+
+        // 计时器
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            Task { @MainActor in
+                recordingDuration += 0.1
+                if recordingDuration >= 30 {
+                    stopAndSendRecording()
+                }
+            }
+        }
+
+        let gen = UIImpactFeedbackGenerator(style: .medium)
+        gen.impactOccurred()
+
+        withAnimation { isPressing = true }
+    }
+
+    private func stopRecording() {
+        audioRecorder?.stop()
+        audioRecorder = nil
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        withAnimation {
+            isRecording = false
+            isPressing = false
+            dragOffset = 0
+        }
+    }
+
+    private func cancelRecording() {
+        stopRecording()
+        isCancelled = false
+        if let url = recordingFileURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        recordingFileURL = nil
+
+        let gen = UINotificationFeedbackGenerator()
+        gen.notificationOccurred(.warning)
+    }
+
+    private func stopAndSendRecording() {
+        guard let fileURL = recordingFileURL, recordingDuration > 0.5 else {
+            cancelRecording()
+            return
+        }
+        stopRecording()
+
+        let channelName = targetChannel?.name
+        isSending = true
+
+        let location = LocationManager.shared.userLocation
+        let latitude = location?.latitude
+        let longitude = location?.longitude
+
+        Task {
+            do {
+                guard let channelId = targetChannel?.id else { return }
+                try await communicationManager.sendVoiceMessage(
+                    channelId: channelId,
+                    fileURL: fileURL,
+                    latitude: latitude,
+                    longitude: longitude
+                )
+                try? FileManager.default.removeItem(at: fileURL)
+                recordingFileURL = nil
+
+                await MainActor.run {
+                    isSending = false
+                    sentMessage = "🎤 语音消息"
+                    sentToChannel = channelName
+                    withAnimation { showSentFeedback = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation { showSentFeedback = false }
+                    }
+                }
+
+                let gen = UINotificationFeedbackGenerator()
+                gen.notificationOccurred(.success)
+
+            } catch {
+                await MainActor.run { isSending = false }
+                print("语音消息发送失败: \(error)")
+            }
+        }
     }
 
     // MARK: - Methods

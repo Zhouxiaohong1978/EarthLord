@@ -79,6 +79,9 @@ struct MapTabView: View {
     /// 体征管理器（用于濒死状态检测）
     @ObservedObject private var physiqueManager = PhysiqueManager.shared
 
+    /// 通讯管理器（用于监听幸存者信标）
+    @ObservedObject private var communicationManager = CommunicationManager.shared
+
     /// 是否显示探索结果弹窗
     @State private var showExplorationResult = false
 
@@ -100,11 +103,48 @@ struct MapTabView: View {
     /// 自动停止原因弹窗
     @State private var showAutoStopAlert = false
 
+    /// 探索中：附近发现可交易领地
+    @State private var nearbyTradingTerritory: Territory?
+
+    /// 是否显示附近交易市场 Sheet
+    @State private var showNearbyTradeSheet = false
+
+    /// 玩家手动关闭了附近交易提示的领地 ID（离开范围后自动重置）
+    @State private var dismissedTradingTerritoryId: String?
+
+    // MARK: - 信号捕获状态
+
+    /// 信号捕获：截获到的消息片段
+    @State private var capturedSignalText: String?
+
+    /// 是否显示信号捕获全屏干扰
+    @State private var showCapturedSignal = false
+
+    /// 信号捕获定时器
+    @State private var signalCaptureTimer: Timer?
+
+    /// 信号干扰屏幕抖动偏移量
+    @State private var glitchOffsetX: CGFloat = 0
+
+    // MARK: - 营地痕迹状态（地图标注）
+
+    /// 点击地图营地火光图标后选中的领地（用于显示详情 Sheet）
+    @State private var selectedCampTerritory: Territory?
+
     // MARK: - 计算属性
 
     /// 当前用户 ID
     private var currentUserId: String? {
         AuthManager.shared.currentUser?.id.uuidString
+    }
+
+    /// 探索中的营地痕迹领地列表（传给地图标注）
+    private var campTerritories: [Territory] {
+        guard explorationManager.isExploring else { return [] }
+        let myId = currentUserId?.lowercased() ?? ""
+        return TerritoryManager.shared.territories.filter {
+            $0.isActive == true && $0.userId.lowercased() != myId
+        }
     }
 
     // MARK: - Body
@@ -131,15 +171,18 @@ struct MapTabView: View {
                         .map { explorationManager.coordKey(for: $0.coordinate) }
                 ),
                 buildings: buildingManager.playerBuildings,
-                buildingTemplates: buildingManager.buildingTemplates
+                buildingTemplates: buildingManager.buildingTemplates,
+                otherPlayersBuildings: buildingManager.otherPlayersBuildings,
+                campTerritories: campTerritories,
+                onCampTerritoryTapped: { territory in
+                    selectedCampTerritory = territory
+                },
+                survivorBeaconCoordinate: communicationManager.incomingSurvivorBeacon?.coordinate
             )
             .ignoresSafeArea()
 
             // MARK: 覆盖层 UI
             VStack {
-                // 顶部状态栏
-                topStatusBar
-
                 // 濒死警告横幅（探索时持续显示）
                 if PhysiqueManager.shared.status == .dying {
                     dyingWarningBanner
@@ -164,6 +207,14 @@ struct MapTabView: View {
                 if explorationManager.isExploring {
                     explorationStatusOverlay
                 }
+
+                // 探索中：附近可交易领地入口
+                if explorationManager.isExploring, let nearby = nearbyTradingTerritory {
+                    nearbyTradeButton(territory: nearby)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .padding(.top, 4)
+                }
+
 
                 // 验证结果横幅
                 if showValidationBanner {
@@ -260,6 +311,34 @@ struct MapTabView: View {
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: explorationManager.showTaxInfo)
             }
+
+            // 信号捕获：全屏干扰效果
+            if showCapturedSignal, let text = capturedSignalText {
+                signalGlitchOverlay(text: text)
+                    .offset(x: glitchOffsetX)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .onAppear {
+                        // 触发屏幕抖动
+                        withAnimation(.linear(duration: 0.04).repeatCount(10, autoreverses: true)) {
+                            glitchOffsetX = 6
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            withAnimation(.linear(duration: 0.1)) { glitchOffsetX = 0 }
+                        }
+                    }
+            }
+
+            // 幸存者信标：底部回应卡片
+            if let beacon = communicationManager.incomingSurvivorBeacon {
+                VStack {
+                    Spacer()
+                    survivorBeaconCard(beacon: beacon)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .padding(.bottom, 100)
+                }
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: communicationManager.incomingSurvivorBeacon?.id)
+            }
         }
         .onAppear {
             // 首次出现时请求定位权限
@@ -335,6 +414,23 @@ struct MapTabView: View {
         .onReceive(explorationManager.$explorationState) { state in
             handleExplorationStateChange(state)
         }
+        // 探索中：位置变化时检测附近可交易领地 + 加载他人可见建筑
+        .onChange(of: userLocation) { location in
+            guard explorationManager.isExploring else {
+                if nearbyTradingTerritory != nil {
+                    withAnimation { nearbyTradingTerritory = nil }
+                }
+                return
+            }
+            checkNearbyTradingTerritories(at: location)
+            if let loc = location {
+                Task {
+                    try? await buildingManager.loadNearbyOtherPlayersBuildings(
+                        lat: loc.latitude, lon: loc.longitude
+                    )
+                }
+            }
+        }
         // 日志查看器（显示圈地日志，崩溃后重启仍可查看）
         .sheet(isPresented: $showLogViewer) {
             TerritoryLogView()
@@ -344,6 +440,19 @@ struct MapTabView: View {
             ExplorationGuideView {
                 explorationManager.startExploration()
             }
+        }
+        // 附近交易市场 Sheet
+        .sheet(isPresented: $showNearbyTradeSheet) {
+            NavigationStack {
+                TradeMarketView()
+            }
+            .presentationDetents([.large])
+        }
+        // 营地痕迹详情 Sheet（点击地图火光图标触发）
+        .sheet(item: $selectedCampTerritory) { territory in
+            campTraceDetailSheet(territory: territory)
+                .presentationDetents([.fraction(0.45)])
+                .presentationDragIndicator(.visible)
         }
         // 圈地规则说明 Sheet
         .sheet(isPresented: $showClaimingRules) {
@@ -383,57 +492,6 @@ struct MapTabView: View {
         } message: {
             Text("给这块新领地起个名字吧，之后可以随时修改")
         }
-    }
-
-    // MARK: - 顶部状态栏
-
-    private var topStatusBar: some View {
-        HStack {
-            // 定位状态指示
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(locationManager.isAuthorized ? ApocalypseTheme.success : ApocalypseTheme.warning)
-                    .frame(width: 8, height: 8)
-
-                Text(locationStatusText)
-                    .font(.caption)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(ApocalypseTheme.cardBackground.opacity(0.9))
-            .cornerRadius(20)
-
-            Spacer()
-
-            // 调试日志按钮
-            Button(action: { showLogViewer = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.caption)
-                    Text("日志")
-                        .font(.caption)
-                }
-                .foregroundColor(ApocalypseTheme.textPrimary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(ApocalypseTheme.cardBackground.opacity(0.9))
-                .cornerRadius(12)
-            }
-
-            // 坐标显示
-            if let location = userLocation {
-                Text(String(format: "%.4f, %.4f", location.latitude, location.longitude))
-                    .font(.caption.monospacedDigit())
-                    .foregroundColor(ApocalypseTheme.textSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(ApocalypseTheme.cardBackground.opacity(0.9))
-                    .cornerRadius(20)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
     }
 
     /// 定位状态文字
@@ -556,6 +614,367 @@ struct MapTabView: View {
         }
     }
 
+    // MARK: - 附近交易入口
+
+    private func nearbyTradeButton(territory: Territory) -> some View {
+        HStack(spacing: 10) {
+            // 点击进入交易市场
+            Button {
+                showNearbyTradeSheet = true
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "storefront.fill")
+                        .font(.system(size: 15))
+                        .foregroundColor(ApocalypseTheme.primary)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(territory.name ?? "附近领地")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                        Text("发现交易，点击查看挂单")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+
+            // 关闭按钮
+            Button {
+                dismissedTradingTerritoryId = nearbyTradingTerritory?.id
+                withAnimation { nearbyTradingTerritory = nil }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .frame(width: 28, height: 28)
+                    .background(ApocalypseTheme.cardBackground)
+                    .clipShape(Circle())
+            }
+            .padding(.trailing, 10)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(ApocalypseTheme.cardBackground.opacity(0.95))
+                .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 2)
+        )
+        .padding(.horizontal, 16)
+    }
+
+    /// 检测玩家位置附近 100m 内是否有开启交易的他人领地
+    private func checkNearbyTradingTerritories(at location: CLLocationCoordinate2D?) {
+        guard let location else {
+            withAnimation { nearbyTradingTerritory = nil }
+            return
+        }
+        let userCL = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        let myId = currentUserId?.lowercased() ?? ""
+
+        let found = TerritoryManager.shared.territories.first { territory in
+            guard territory.isActive == true,
+                  territory.allowTrading ?? false,
+                  territory.userId.lowercased() != myId else { return false }
+            let points = territory.path
+            guard !points.isEmpty else { return false }
+            let avgLat = points.compactMap { $0["lat"] }.reduce(0, +) / Double(points.count)
+            let avgLon = points.compactMap { $0["lon"] }.reduce(0, +) / Double(points.count)
+            let centroid = CLLocation(latitude: avgLat, longitude: avgLon)
+            return userCL.distance(from: centroid) <= 100
+        }
+
+        // 若玩家已关闭该领地提示且仍在范围内，不再显示；离开范围则重置关闭记录
+        if let found {
+            if found.id == dismissedTradingTerritoryId { return }
+        } else {
+            // 离开所有领地范围，重置关闭记录
+            dismissedTradingTerritoryId = nil
+        }
+
+        withAnimation {
+            nearbyTradingTerritory = found
+        }
+    }
+
+    // MARK: - 营地痕迹详情 Sheet
+
+    /// 点击地图火光图标后显示的营地详情面板
+    private func campTraceDetailSheet(territory: Territory) -> some View {
+        VStack(spacing: 0) {
+            // 顶部把手
+            RoundedRectangle(cornerRadius: 3)
+                .fill(ApocalypseTheme.textMuted.opacity(0.4))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
+
+            // 主内容
+            VStack(spacing: 20) {
+                // 图标 + 标题
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(ApocalypseTheme.warning.opacity(0.12))
+                            .frame(width: 52, height: 52)
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(ApocalypseTheme.warning)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(territory.name ?? "无名营地")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                        Text("营地痕迹")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ApocalypseTheme.warning)
+                            .tracking(1.2)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+
+                Divider().background(ApocalypseTheme.textMuted.opacity(0.2))
+
+                // 数据行
+                VStack(spacing: 14) {
+                    campDetailRow(icon: "clock.fill", label: "最后活动",
+                                  value: formatLastActive(territory.lastActiveAt))
+                    if let count = territory.buildingCount {
+                        campDetailRow(icon: "house.fill", label: "建筑",
+                                      value: count > 0 ? "\(count) 座" : "尚未建造")
+                    }
+                    if territory.area > 0 {
+                        campDetailRow(icon: "map.fill", label: "领地面积",
+                                      value: String(format: "%.0f m²", territory.area))
+                    }
+                    if let msg = territory.broadcastMessage, !msg.isEmpty {
+                        campDetailRow(icon: "megaphone.fill", label: "领主留言", value: msg)
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+
+            Spacer()
+        }
+        .background(ApocalypseTheme.background)
+    }
+
+    private func campDetailRow(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(ApocalypseTheme.warning.opacity(0.7))
+                .frame(width: 20)
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(ApocalypseTheme.textPrimary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    /// 格式化最后活跃时间
+    private func formatLastActive(_ dateStr: String?) -> String {
+        guard let str = dateStr else { return "未知" }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = formatter.date(from: str)
+        if date == nil {
+            formatter.formatOptions = [.withInternetDateTime]
+            date = formatter.date(from: str)
+        }
+        guard let date else { return "未知" }
+        let days = Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
+        if days == 0 { return "今日" }
+        if days < 7 { return "\(days) 天前" }
+        return "\(days / 7) 周前"
+    }
+
+    // MARK: - 信号捕获
+
+    /// 启动信号捕获定时器（探索开始时调用）
+    private func startSignalCaptureTimer() {
+        stopSignalCaptureTimer()
+        scheduleNextSignalCapture(initial: true)
+    }
+
+    /// 停止信号捕获定时器（探索结束时调用）
+    private func stopSignalCaptureTimer() {
+        signalCaptureTimer?.invalidate()
+        signalCaptureTimer = nil
+        withAnimation { showCapturedSignal = false }
+    }
+
+    /// 安排下一次信号捕获
+    private func scheduleNextSignalCapture(initial: Bool = false) {
+        let delay = initial ? Double.random(in: 60...120) : Double.random(in: 300...600)
+        signalCaptureTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
+            Task { @MainActor in
+                attemptSignalCapture()
+                scheduleNextSignalCapture()
+            }
+        }
+    }
+
+    /// 尝试截获一条频道消息并以屏幕干扰方式呈现
+    private func attemptSignalCapture() {
+        guard explorationManager.isExploring else { return }
+
+        let allMessages = communicationManager.channelMessages.values
+            .flatMap { $0 }
+            .filter { !$0.content.trimmingCharacters(in: .whitespaces).isEmpty && !$0.isVoice }
+
+        guard !allMessages.isEmpty, let randomMsg = allMessages.randomElement() else { return }
+
+        // 用噪声字符随机替换原文约 25% 的字符，制造干扰效果
+        let noise: [Character] = ["█", "▓", "▒", "░", "▌", "■", "▐"]
+        let raw = String(randomMsg.content.prefix(24))
+        let garbled = String(raw.map { c in
+            Double.random(in: 0...1) < 0.28 ? (noise.randomElement() ?? c) : c
+        })
+        capturedSignalText = garbled + (randomMsg.content.count > 24 ? "..." : "")
+
+        withAnimation(.easeIn(duration: 0.15)) { showCapturedSignal = true }
+        // 1.5 秒后自动消失，无需关闭按钮
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeOut(duration: 0.2)) { showCapturedSignal = false }
+        }
+    }
+
+    /// 全屏干扰效果视图（替代原蓝色浮层）
+    private func signalGlitchOverlay(text: String) -> some View {
+        ZStack {
+            // 暗色底幕
+            Color.black.opacity(0.78)
+
+            // 静电噪声纹理
+            VStack(spacing: 0) {
+                ForEach(0..<22, id: \.self) { i in
+                    Text(noiseLine(index: i))
+                        .font(.system(size: 8, design: .monospaced))
+                        .foregroundColor(.white.opacity(Double.random(in: 0.03...0.09)))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                }
+            }
+
+            // 中央截获内容
+            VStack(spacing: 10) {
+                Text("▒ 信  号  截  获 ▒")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundColor(ApocalypseTheme.info.opacity(0.75))
+                    .tracking(3)
+
+                Text(text)
+                    .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.92))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .lineLimit(3)
+            }
+        }
+    }
+
+    /// 生成一行随机静噪字符
+    private func noiseLine(index: Int) -> String {
+        let pool = "▓▒░█▌▐■□▪▫◆◇●○"
+        let len = 50 + (index * 3) % 20
+        return String((0..<len).map { _ in pool.randomElement()! })
+    }
+
+    // MARK: - 幸存者信标回应卡片
+
+    /// 幸存者呼叫信标底部卡片（接收到求生信号时显示）
+    private func survivorBeaconCard(beacon: SurvivorBeaconInfo) -> some View {
+        HStack(spacing: 14) {
+            // 脉冲图标
+            ZStack {
+                Circle()
+                    .fill(ApocalypseTheme.info.opacity(0.15))
+                    .frame(width: 40, height: 40)
+                Image(systemName: "person.wave.2.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(ApocalypseTheme.info)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text("求生信号")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    if let dist = beacon.distanceText(from: userLocation) {
+                        Text(dist)
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.info)
+                    }
+                }
+                Text(beacon.senderCallsign.map { "「\($0)」" } ?? "有幸存者在呼叫")
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+
+            Spacer()
+
+            // 回应按钮
+            Button {
+                sendBeaconReply(to: beacon)
+            } label: {
+                Text("回应")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(ApocalypseTheme.info)
+                    .cornerRadius(8)
+            }
+
+            // 忽略
+            Button {
+                withAnimation { communicationManager.incomingSurvivorBeacon = nil }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12))
+                    .foregroundColor(ApocalypseTheme.textMuted)
+                    .frame(width: 28, height: 28)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(ApocalypseTheme.cardBackground.opacity(0.97))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(ApocalypseTheme.info.opacity(0.4), lineWidth: 1.5)
+                )
+                .shadow(color: ApocalypseTheme.info.opacity(0.15), radius: 12, x: 0, y: 4)
+        )
+        .padding(.horizontal, 16)
+    }
+
+    /// 发送信标回应消息
+    private func sendBeaconReply(to beacon: SurvivorBeaconInfo) {
+        let location = LocationManager.shared.userLocation
+        Task {
+            try? await communicationManager.sendChannelMessage(
+                channelId: beacon.channelId,
+                content: "【收到信号】我在这里！",
+                latitude: location?.latitude,
+                longitude: location?.longitude
+            )
+        }
+        withAnimation { communicationManager.incomingSurvivorBeacon = nil }
+    }
+
     // MARK: - 底部控制栏
 
     private var bottomControlBar: some View {
@@ -596,37 +1015,38 @@ struct MapTabView: View {
 
     /// 圈地实时统计条
     private var trackingStatsBar: some View {
-        HStack(spacing: 0) {
-            // 左：GPS 点数
-            VStack(spacing: 2) {
-                Text("\(locationManager.pathPointCount)")
-                    .font(.system(size: 22, weight: .bold).monospacedDigit())
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-                Text("起始点")
-                    .font(.system(size: 11))
-                    .foregroundColor(ApocalypseTheme.textSecondary)
+        HStack(spacing: 10) {
+            // 节点数
+            HStack(spacing: 6) {
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(ApocalypseTheme.primary)
+                Text("\(locationManager.pathPointCount) 节点")
+                    .font(.system(size: 16, weight: .bold).monospacedDigit())
+                    .foregroundColor(ApocalypseTheme.primary)
             }
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(ApocalypseTheme.primary.opacity(0.15))
+            .cornerRadius(20)
 
-            Divider()
-                .frame(height: 32)
-                .background(ApocalypseTheme.textMuted.opacity(0.4))
-
-            // 右：步行距离
-            VStack(spacing: 2) {
+            // 步行距离
+            HStack(spacing: 6) {
+                Image(systemName: "figure.walk")
+                    .font(.system(size: 16))
+                    .foregroundColor(ApocalypseTheme.success)
                 Text(formatTrackingDistance(locationManager.trackingDistance))
-                    .font(.system(size: 22, weight: .bold).monospacedDigit())
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-                Text("步行距离")
-                    .font(.system(size: 11))
-                    .foregroundColor(ApocalypseTheme.textSecondary)
+                    .font(.system(size: 16, weight: .bold).monospacedDigit())
+                    .foregroundColor(ApocalypseTheme.success)
             }
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(ApocalypseTheme.success.opacity(0.15))
+            .cornerRadius(20)
+
+            Spacer()
         }
-        .padding(.vertical, 10)
-        .background(ApocalypseTheme.cardBackground.opacity(0.92))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
+        .padding(.horizontal, 4)
     }
 
     /// 格式化追踪距离显示
@@ -669,25 +1089,12 @@ struct MapTabView: View {
             .padding(.vertical, 10)
             .background(
                 Capsule()
-                    .fill(locationManager.isTracking ? Color.red : ApocalypseTheme.primary)
+                    .fill(locationManager.isTracking ? Color.red : Color.green)
             )
             .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
         }
         .disabled(!locationManager.isAuthorized)
         .opacity(locationManager.isAuthorized ? 1 : 0.5)
-        // 追踪时添加脉冲动画
-        .overlay(
-            Capsule()
-                .stroke(Color.red, lineWidth: 2)
-                .scaleEffect(locationManager.isTracking ? 1.2 : 1.0)
-                .opacity(locationManager.isTracking ? 0 : 1)
-                .animation(
-                    locationManager.isTracking ?
-                        Animation.easeOut(duration: 1.0).repeatForever(autoreverses: false) :
-                        .default,
-                    value: locationManager.isTracking
-                )
-        )
     }
 
     // MARK: - 探索按钮
@@ -710,7 +1117,7 @@ struct MapTabView: View {
                     Image(systemName: "figure.walk")
                         .font(.system(size: 16))
 
-                    Text("探索")
+                    Text("开始探索")
                         .font(.subheadline.bold())
                 }
             }
@@ -719,7 +1126,7 @@ struct MapTabView: View {
             .padding(.vertical, 10)
             .background(
                 Capsule()
-                    .fill(explorationManager.isExploring ? Color.orange : ApocalypseTheme.primary)
+                    .fill(explorationManager.isExploring ? Color.orange : Color.blue)
             )
             .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
         }
@@ -1535,8 +1942,8 @@ struct MapTabView: View {
             break
 
         case .exploring:
-            // 探索中，不需要特殊处理
-            break
+            // 开始信号捕获定时器
+            startSignalCaptureTimer()
 
         case .overSpeedWarning:
             // 超速警告，触发震动
@@ -1545,6 +1952,8 @@ struct MapTabView: View {
             generator.notificationOccurred(.warning)
 
         case .completed:
+            // 停止信号捕获
+            stopSignalCaptureTimer()
             // 探索完成，先获取统计数据再显示结果
             Task {
                 do {
@@ -1560,6 +1969,8 @@ struct MapTabView: View {
             }
 
         case .failed(let reason):
+            // 停止信号捕获
+            stopSignalCaptureTimer()
             // 探索失败，显示失败弹窗
             explorationFailReason = reason.description
             showExplorationFailed = true

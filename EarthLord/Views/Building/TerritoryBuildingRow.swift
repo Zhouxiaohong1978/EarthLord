@@ -286,6 +286,21 @@ struct TerritoryBuildingRow: View {
 
             Divider()
 
+            // 对外可见开关（显示当前状态，点击切换）
+            Button {
+                Task {
+                    try? await BuildingManager.shared.toggleBuildingVisibility(buildingId: building.id)
+                }
+            } label: {
+                if building.showToOthers {
+                    Label(String(localized: "对外展示中（点击关闭）"), systemImage: "eye.fill")
+                } else {
+                    Label(String(localized: "未对外展示（点击开启）"), systemImage: "eye.slash")
+                }
+            }
+
+            Divider()
+
             // 拆除按钮
             Button(role: .destructive) {
                 onDemolish?()

@@ -141,10 +141,9 @@ struct MapTabView: View {
     /// 探索中的营地痕迹领地列表（玩家在领地内部，或距领地边界任意一段 100m 以内即显示）
     private var campTerritories: [Territory] {
         guard explorationManager.isExploring, let userCoord = userLocation else { return [] }
-        let myId = currentUserId?.lowercased() ?? ""
-        return TerritoryManager.shared.territories.filter { territory in
+        return territories.filter { territory in
             guard territory.isActive == true,
-                  territory.userId.lowercased() != myId else { return false }
+                  !AuthManager.shared.isLinkedUser(territory.userId) else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
             // 1. 玩家在领地多边形内部
@@ -749,12 +748,11 @@ struct MapTabView: View {
             return
         }
         let userCL = CLLocation(latitude: location.latitude, longitude: location.longitude)
-        let myId = currentUserId?.lowercased() ?? ""
 
-        let found = TerritoryManager.shared.territories.first { territory in
+        let found = territories.first { territory in
             guard territory.isActive == true,
                   territory.allowTrading ?? true,
-                  territory.userId.lowercased() != myId else { return false }
+                  !AuthManager.shared.isLinkedUser(territory.userId) else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
             // 玩家在领地内部，或距领地边界（任意边线段）100m 以内

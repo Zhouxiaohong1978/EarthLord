@@ -140,17 +140,26 @@ struct MapTabView: View {
 
     /// 探索中的营地痕迹领地列表（玩家在领地内部，或距领地边界任意一段 100m 以内即显示）
     private var campTerritories: [Territory] {
-        guard explorationManager.isExploring, let userCoord = userLocation else { return [] }
-        return territories.filter { territory in
-            guard territory.isActive == true,
+        guard explorationManager.isExploring, let userCoord = userLocation else {
+            print("🏕️ campTerritories: 返回空 — isExploring=\(explorationManager.isExploring) userLocation=\(String(describing: userLocation))")
+            return []
+        }
+        let result = territories.filter { territory in
+            guard territory.isActive != false,
                   !AuthManager.shared.isLinkedUser(territory.userId) else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
-            // 1. 玩家在领地多边形内部
             if MapTabView.isPoint(userCoord, insidePolygon: points) { return true }
-            // 2. 玩家到领地边界（任意边线段）的最近距离 ≤ 100m
             return MapTabView.minDistanceToBoundary(userCoord, path: points) <= 100
         }
+        print("🏕️ campTerritories: isExploring=true coord=(\(String(format:"%.6f",userCoord.latitude)),\(String(format:"%.6f",userCoord.longitude))) territories=\(territories.count) result=\(result.count)")
+        for t in territories {
+            let inside = MapTabView.isPoint(userCoord, insidePolygon: t.path)
+            let dist = MapTabView.minDistanceToBoundary(userCoord, path: t.path)
+            let mine = AuthManager.shared.isLinkedUser(t.userId)
+            print("  领地[\(t.name ?? t.id)] mine=\(mine) active=\(String(describing:t.isActive)) inside=\(inside) dist=\(Int(dist))m points=\(t.path.count)")
+        }
+        return result
     }
 
     /// 探索中可见的他人建筑（仅属于 campTerritories 范围内领地的建筑）
@@ -489,6 +498,7 @@ struct MapTabView: View {
         }
         // 探索中：位置变化时检测附近可交易领地 + 加载他人可见建筑
         .onChange(of: userLocation) { location in
+            print("📍 onChange(userLocation): \(String(describing: location)) isExploring=\(explorationManager.isExploring)")
             guard explorationManager.isExploring else {
                 if nearbyTradingTerritory != nil {
                     withAnimation { nearbyTradingTerritory = nil }

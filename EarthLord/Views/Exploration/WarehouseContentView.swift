@@ -275,7 +275,7 @@ struct WarehouseItemCard: View {
                         .font(.system(size: 11))
                         .foregroundColor(ApocalypseTheme.textMuted)
                 }
-                Text(LanguageManager.shared.localizedString(for: definition.rarity.rawValue))
+                Text(definition.rarity.displayName)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(definition.rarity.color)
                     .padding(.horizontal, 6)

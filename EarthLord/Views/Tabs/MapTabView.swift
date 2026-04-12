@@ -138,13 +138,54 @@ struct MapTabView: View {
         AuthManager.shared.currentUser?.id.uuidString
     }
 
-    /// 探索中的营地痕迹领地列表（传给地图标注）
+    /// 探索中的营地痕迹领地列表（玩家在领地内部或距任意顶点 100m 内即显示）
     private var campTerritories: [Territory] {
-        guard explorationManager.isExploring else { return [] }
+        guard explorationManager.isExploring, let userCoord = userLocation else { return [] }
+        let playerLocation = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
         let myId = currentUserId?.lowercased() ?? ""
-        return TerritoryManager.shared.territories.filter {
-            $0.isActive == true && $0.userId.lowercased() != myId
+        return TerritoryManager.shared.territories.filter { territory in
+            guard territory.isActive == true,
+                  territory.userId.lowercased() != myId else { return false }
+            let points = territory.path
+            guard !points.isEmpty else { return false }
+            // 1. 玩家是否在领地多边形内部
+            if MapTabView.isPoint(userCoord, insidePolygon: points) { return true }
+            // 2. 玩家是否距任意顶点 100m 内
+            return points.contains { p in
+                guard let lat = p["lat"], let lon = p["lon"] else { return false }
+                return playerLocation.distance(from: CLLocation(latitude: lat, longitude: lon)) <= 100
+            }
         }
+    }
+
+    /// 探索中可见的他人建筑（仅属于 campTerritories 范围内领地的建筑）
+    private var visibleOtherPlayersBuildings: [PlayerBuilding] {
+        guard explorationManager.isExploring else { return [] }
+        let nearbyUserIds = Set(campTerritories.map { $0.userId.lowercased() })
+        return buildingManager.otherPlayersBuildings.filter {
+            nearbyUserIds.contains($0.userId.uuidString.lowercased())
+        }
+    }
+
+    /// 点是否在多边形内（射线法，WGS-84 坐标）
+    private static func isPoint(_ coord: CLLocationCoordinate2D, insidePolygon path: [[String: Double]]) -> Bool {
+        let verts = path.compactMap { p -> CLLocationCoordinate2D? in
+            guard let lat = p["lat"], let lon = p["lon"] else { return nil }
+            return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        }
+        guard verts.count >= 3 else { return false }
+        var inside = false
+        var j = verts.count - 1
+        for i in 0..<verts.count {
+            let xi = verts[i].longitude, yi = verts[i].latitude
+            let xj = verts[j].longitude, yj = verts[j].latitude
+            if ((yi > coord.latitude) != (yj > coord.latitude)) &&
+                (coord.longitude < (xj - xi) * (coord.latitude - yi) / (yj - yi) + xi) {
+                inside.toggle()
+            }
+            j = i
+        }
+        return inside
     }
 
     // MARK: - Body
@@ -172,7 +213,7 @@ struct MapTabView: View {
                 ),
                 buildings: buildingManager.playerBuildings,
                 buildingTemplates: buildingManager.buildingTemplates,
-                otherPlayersBuildings: buildingManager.otherPlayersBuildings,
+                otherPlayersBuildings: visibleOtherPlayersBuildings,
                 campTerritories: campTerritories,
                 onCampTerritoryTapped: { territory in
                     selectedCampTerritory = territory
@@ -497,11 +538,11 @@ struct MapTabView: View {
     /// 定位状态文字
     private var locationStatusText: String {
         if locationManager.isDenied {
-            return "定位已禁用"
+            return String(localized: "定位已禁用")
         } else if locationManager.isAuthorized {
-            return hasLocatedUser ? "已定位" : "定位中..."
+            return hasLocatedUser ? String(localized: "已定位") : String(localized: "定位中...")
         } else {
-            return "等待授权"
+            return String(localized: "等待授权")
         }
     }
 
@@ -516,11 +557,11 @@ struct MapTabView: View {
                 .font(.body)
 
             if locationManager.territoryValidationPassed {
-                Text("圈地成功！领地面积: \(String(format: "%.0f", locationManager.calculatedArea))m²")
+                Text(String(format: String(localized: "圈地成功！领地面积: %@m²"), String(format: "%.0f", locationManager.calculatedArea)))
                     .font(.subheadline)
                     .fontWeight(.medium)
             } else {
-                Text(locationManager.territoryValidationError ?? "验证失败")
+                Text(locationManager.territoryValidationError ?? String(localized: "验证失败"))
                     .font(.subheadline)
                     .fontWeight(.medium)
             }
@@ -628,10 +669,10 @@ struct MapTabView: View {
                         .foregroundColor(ApocalypseTheme.primary)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(territory.name ?? "附近领地")
+                        Text(territory.name ?? String(localized: "camp.nearby_territory"))
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(ApocalypseTheme.textPrimary)
-                        Text("发现交易，点击查看挂单")
+                        Text(LocalizedStringKey("camp.trade_found"))
                             .font(.system(size: 11))
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }
@@ -679,14 +720,16 @@ struct MapTabView: View {
 
         let found = TerritoryManager.shared.territories.first { territory in
             guard territory.isActive == true,
-                  territory.allowTrading ?? false,
+                  territory.allowTrading ?? true,
                   territory.userId.lowercased() != myId else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
-            let avgLat = points.compactMap { $0["lat"] }.reduce(0, +) / Double(points.count)
-            let avgLon = points.compactMap { $0["lon"] }.reduce(0, +) / Double(points.count)
-            let centroid = CLLocation(latitude: avgLat, longitude: avgLon)
-            return userCL.distance(from: centroid) <= 100
+            // 玩家在领地内部，或距任意顶点 100m 内
+            if MapTabView.isPoint(location, insidePolygon: points) { return true }
+            return points.contains { p in
+                guard let lat = p["lat"], let lon = p["lon"] else { return false }
+                return userCL.distance(from: CLLocation(latitude: lat, longitude: lon)) <= 100
+            }
         }
 
         // 若玩家已关闭该领地提示且仍在范围内，不再显示；离开范围则重置关闭记录
@@ -727,10 +770,10 @@ struct MapTabView: View {
                             .foregroundColor(ApocalypseTheme.warning)
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(territory.name ?? "无名营地")
+                        Text(territory.name ?? String(localized: "camp.unnamed"))
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(ApocalypseTheme.textPrimary)
-                        Text("营地痕迹")
+                        Text(LocalizedStringKey("camp.trace_label"))
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(ApocalypseTheme.warning)
                             .tracking(1.2)
@@ -743,18 +786,18 @@ struct MapTabView: View {
 
                 // 数据行
                 VStack(spacing: 14) {
-                    campDetailRow(icon: "clock.fill", label: "最后活动",
+                    campDetailRow(icon: "clock.fill", label: String(localized: "camp.last_active"),
                                   value: formatLastActive(territory.lastActiveAt))
                     if let count = territory.buildingCount {
-                        campDetailRow(icon: "house.fill", label: "建筑",
-                                      value: count > 0 ? "\(count) 座" : "尚未建造")
+                        campDetailRow(icon: "house.fill", label: String(localized: "camp.buildings"),
+                                      value: count > 0 ? String(format: String(localized: "camp.buildings_count"), count) : String(localized: "camp.not_built"))
                     }
                     if territory.area > 0 {
-                        campDetailRow(icon: "map.fill", label: "领地面积",
+                        campDetailRow(icon: "map.fill", label: String(localized: "camp.area"),
                                       value: String(format: "%.0f m²", territory.area))
                     }
                     if let msg = territory.broadcastMessage, !msg.isEmpty {
-                        campDetailRow(icon: "megaphone.fill", label: "领主留言", value: msg)
+                        campDetailRow(icon: "megaphone.fill", label: String(localized: "camp.lord_message"), value: msg)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -784,7 +827,7 @@ struct MapTabView: View {
 
     /// 格式化最后活跃时间
     private func formatLastActive(_ dateStr: String?) -> String {
-        guard let str = dateStr else { return "未知" }
+        guard let str = dateStr else { return String(localized: "camp.unknown") }
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         var date = formatter.date(from: str)
@@ -792,11 +835,11 @@ struct MapTabView: View {
             formatter.formatOptions = [.withInternetDateTime]
             date = formatter.date(from: str)
         }
-        guard let date else { return "未知" }
+        guard let date else { return String(localized: "camp.unknown") }
         let days = Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
-        if days == 0 { return "今日" }
-        if days < 7 { return "\(days) 天前" }
-        return "\(days / 7) 周前"
+        if days == 0 { return String(localized: "camp.today") }
+        if days < 7 { return String(format: String(localized: "camp.days_ago"), days) }
+        return String(format: String(localized: "camp.weeks_ago"), days / 7)
     }
 
     // MARK: - 信号捕获
@@ -1021,7 +1064,7 @@ struct MapTabView: View {
                 Image(systemName: "mappin.circle.fill")
                     .font(.system(size: 16))
                     .foregroundColor(ApocalypseTheme.primary)
-                Text("\(locationManager.pathPointCount) 节点")
+                Text(String(format: String(localized: "%d 路径点"), locationManager.pathPointCount))
                     .font(.system(size: 16, weight: .bold).monospacedDigit())
                     .foregroundColor(ApocalypseTheme.primary)
             }
@@ -1054,7 +1097,7 @@ struct MapTabView: View {
         if meters >= 1000 {
             return String(format: "%.2f km", meters / 1000)
         } else {
-            return String(format: "%.0f 米", meters)
+            return String(format: "%.0f m", meters)
         }
     }
 
@@ -1757,7 +1800,7 @@ struct MapTabView: View {
                         Image(systemName: "arrow.up.circle")
                             .font(.system(size: 11))
                             .foregroundColor(ApocalypseTheme.textSecondary)
-                        Text("距\(nextTier.displayName)还需")
+                        Text(String(format: String(localized: "距%@还需"), nextTier.displayName))
                             .font(.system(size: 11))
                             .foregroundColor(ApocalypseTheme.textSecondary)
                         Text(formatExplorationDistance(distance))
@@ -1785,7 +1828,7 @@ struct MapTabView: View {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 11))
                         .foregroundColor(ApocalypseTheme.warning)
-                    Text("「\(hint.name)」附近")
+                    Text(String(format: String(localized: "「%@」附近"), hint.name))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textSecondary)
                         .lineLimit(1)
@@ -1809,12 +1852,12 @@ struct MapTabView: View {
                     Image(systemName: "mappin.and.ellipse")
                         .font(.system(size: 11))
                         .foregroundColor(ApocalypseTheme.success)
-                    Text("下一目标：\(hint.name)")
+                    Text(String(format: String(localized: "下一目标：%@"), hint.name))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(ApocalypseTheme.textSecondary)
                         .lineLimit(1)
                     Spacer()
-                    Text("距你 \(hint.distance)m")
+                    Text(String(format: String(localized: "距你 %dm"), hint.distance))
                         .font(.system(size: 11, weight: .bold).monospacedDigit())
                         .foregroundColor(ApocalypseTheme.success)
                 }
@@ -1890,7 +1933,7 @@ struct MapTabView: View {
                     Text("· 剩余")
                         .font(.system(size: 13))
                         .foregroundColor(.white.opacity(0.8))
-                    Text("\(countdown)秒")
+                    Text(String(format: String(localized: "%ds"), countdown))
                         .font(.system(size: 13, weight: .bold).monospacedDigit())
                         .foregroundColor(.yellow)
                 }

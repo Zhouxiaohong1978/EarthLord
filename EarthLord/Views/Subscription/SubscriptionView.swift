@@ -68,12 +68,12 @@ struct SubscriptionView: View {
                 }
             }
         }
-        .navigationTitle("订阅服务")
+        .navigationTitle(String(localized: "sub.title"))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("关闭") { dismiss() }
+                Button(String(localized: "关闭")) { dismiss() }
                     .foregroundColor(ApocalypseTheme.primary)
             }
         }
@@ -107,11 +107,11 @@ struct SubscriptionView: View {
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Text("解锁更多特权")
+            Text(LocalizedStringKey("sub.header.title"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
-            Text("加速探索进程")
+            Text(LocalizedStringKey("sub.header.subtitle"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
         }
@@ -129,11 +129,11 @@ struct SubscriptionView: View {
                     withAnimation(.easeInOut(duration: 0.2)) { selectedPeriod = period }
                 }) {
                     HStack(spacing: 6) {
-                        Text(period.rawValue)
+                        Text(period.displayName)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(selectedPeriod == period ? .white : ApocalypseTheme.textSecondary)
                         if period == .yearly {
-                            Text("更划算")
+                            Text(LocalizedStringKey("sub.better.value"))
                                 .font(.caption2)
                                 .fontWeight(.bold)
                                 .foregroundColor(selectedPeriod == period ? .white.opacity(0.85) : ApocalypseTheme.success)
@@ -169,23 +169,23 @@ struct SubscriptionView: View {
         VStack(spacing: 0) {
             // 列标题
             HStack(spacing: 0) {
-                Text("特权")
+                Text(LocalizedStringKey("sub.perk.header"))
                     .font(.caption)
                     .foregroundColor(ApocalypseTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text("免费")
+                Text(LocalizedStringKey("sub.tier.free"))
                     .font(.caption)
                     .foregroundColor(ApocalypseTheme.textMuted)
                     .frame(width: 60, alignment: .center)
 
-                Text("探索者")
+                Text(LocalizedStringKey("sub.tier.explorer.label"))
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(explorerColor)
                     .frame(width: 60, alignment: .center)
 
-                Text("领主")
+                Text(LocalizedStringKey("sub.tier.lord.label"))
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(lordColor)
@@ -200,14 +200,14 @@ struct SubscriptionView: View {
 
             // 对比行
             Group {
-                comparisonRow("backpack.fill",   "背包容量",  "100",  "500",    "1000",  highlight: false)
-                comparisonRow("map.fill",         "探索范围",  "1km",  "2km",    "3km",   highlight: false)
-                comparisonRow("building.2.fill",  "建造速度",  "1x",   "2x",     "2x",    highlight: false)
-                comparisonRow("figure.walk",      "探索次数",  "10/天", "无限",   "无限",  highlight: true)
-                comparisonRow("arrow.triangle.2.circlepath", "交易次数", "10/天", "无限", "无限", highlight: true)
-                comparisonRow("gift.fill",        "每日礼包",  "—",   "5件",    "7件",   highlight: true)
-                comparisonRow("tag.fill",         "呼号前缀",  "—",   "✓",      "✓",     highlight: true)
-                comparisonRow("crown.fill",       "领主头衔",  "—",   "—",      "✓",     highlight: true)
+                comparisonRow("backpack.fill",   String(localized: "sub.perk.backpack"),      "100",                                 "500",                                   "1000",                                  highlight: false)
+                comparisonRow("map.fill",         String(localized: "sub.perk.range"),         "1km",                                 "2km",                                   "3km",                                   highlight: false)
+                comparisonRow("building.2.fill",  String(localized: "sub.perk.build_speed"),   "1x",                                  "2x",                                    "2x",                                    highlight: false)
+                comparisonRow("figure.walk",      String(localized: "sub.perk.explorations"),  String(localized: "sub.value.10perday"), String(localized: "sub.value.unlimited"), String(localized: "sub.value.unlimited"), highlight: true)
+                comparisonRow("arrow.triangle.2.circlepath", String(localized: "sub.perk.trades"), String(localized: "sub.value.10perday"), String(localized: "sub.value.unlimited"), String(localized: "sub.value.unlimited"), highlight: true)
+                comparisonRow("gift.fill",        String(localized: "sub.perk.daily_gift"),    "—",                                   String(localized: "sub.value.5items"),   String(localized: "sub.value.7items"),   highlight: true)
+                comparisonRow("tag.fill",         String(localized: "sub.perk.callsign"),      "—",                                   "✓",                                     "✓",                                     highlight: true)
+                comparisonRow("crown.fill",       String(localized: "sub.perk.lord_title"),    "—",                                   "—",                                     "✓",                                     highlight: true)
             }
         }
         .background(ApocalypseTheme.cardBackground)
@@ -311,7 +311,7 @@ struct SubscriptionView: View {
                         Text(p.displayPrice)
                             .font(.headline)
                             .foregroundColor(color)
-                        Text(selectedPeriod == .monthly ? "/月" : "/年")
+                        Text(selectedPeriod == .monthly ? String(localized: "period.mo.suffix") : String(localized: "period.yr.suffix"))
                             .font(.caption2)
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }
@@ -349,7 +349,7 @@ struct SubscriptionView: View {
                             .scaleEffect(0.85)
                     } else {
                         Image(systemName: "checkmark.seal.fill")
-                        Text("立即订阅 \(selectedTier.displayName)\(selectedPeriod.rawValue)")
+                        Text(String(format: String(localized: "sub.button.subscribe"), selectedTier.displayName, selectedPeriod.displayName))
                             .fontWeight(.bold)
                     }
                 }
@@ -369,7 +369,7 @@ struct SubscriptionView: View {
 
             // 恢复购买
             Button(action: { Task { try? await subscriptionManager.restorePurchases() } }) {
-                Text("恢复购买")
+                Text(LocalizedStringKey("sub.restore"))
                     .font(.subheadline)
                     .foregroundColor(ApocalypseTheme.textSecondary)
             }
@@ -380,10 +380,10 @@ struct SubscriptionView: View {
 
     private var subscriptionNotice: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("• 订阅将自动续费，可随时取消")
-            Text("• 取消后订阅将在当前周期结束时失效")
-            Text("• 价格可能因地区而异")
-            Text("• 订阅特权立即生效")
+            Text(LocalizedStringKey("sub.notice.1"))
+            Text(LocalizedStringKey("sub.notice.2"))
+            Text(LocalizedStringKey("sub.notice.3"))
+            Text(LocalizedStringKey("sub.notice.4"))
         }
         .font(.caption2)
         .foregroundColor(ApocalypseTheme.textSecondary)
@@ -396,13 +396,13 @@ struct SubscriptionView: View {
     private var legalLinks: some View {
         HStack(spacing: 16) {
             Spacer()
-            Link("隐私政策", destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/privacy.html")!)
+            Link(String(localized: "sub.privacy_policy"), destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/privacy.html")!)
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textMuted)
             Text("·")
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textMuted)
-            Link("用户协议", destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!)
+            Link(String(localized: "sub.terms"), destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!)
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textMuted)
             Spacer()
@@ -473,17 +473,25 @@ struct SubscriptionView: View {
 extension SubscriptionTier {
     var tagline: String {
         switch self {
-        case .free:     return "基础生存能力"
-        case .explorer: return "深入废土的探索者"
-        case .lord:     return "末日世界的统治者"
+        case .free:     return String(localized: "tier.free.tagline")
+        case .explorer: return String(localized: "tier.explorer.tagline")
+        case .lord:     return String(localized: "tier.lord.tagline")
         }
     }
 
     var highlights: [String] {
         switch self {
         case .free:     return []
-        case .explorer: return ["探索×1.5", "无限交易", "礼包5件"]
-        case .lord:     return ["探索×2.0", "全局解锁", "礼包7件"]
+        case .explorer: return [
+            String(localized: "tier.explorer.h1"),
+            String(localized: "tier.explorer.h2"),
+            String(localized: "tier.explorer.h3")
+        ]
+        case .lord:     return [
+            String(localized: "tier.lord.h1"),
+            String(localized: "tier.lord.h2"),
+            String(localized: "tier.lord.h3")
+        ]
         }
     }
 }
@@ -507,8 +515,15 @@ struct RoundedCorner: Shape {
 }
 
 enum SubscriptionPeriod: String, CaseIterable {
-    case monthly = "月卡"
-    case yearly  = "年卡"
+    case monthly = "monthly"
+    case yearly  = "yearly"
+
+    var displayName: String {
+        switch self {
+        case .monthly: return String(localized: "period.monthly")
+        case .yearly:  return String(localized: "period.yearly")
+        }
+    }
 }
 
 #Preview {

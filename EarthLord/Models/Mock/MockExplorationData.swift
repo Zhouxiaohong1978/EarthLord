@@ -202,6 +202,16 @@ enum ItemRarity: String, CaseIterable {
     case rare = "稀有"             // 蓝色 - 需要特定地点
     case epic = "史诗"             // 紫色 - 非常罕见
     case legendary = "传说"        // 橙色 - 极其珍贵
+
+    var displayName: String {
+        switch self {
+        case .common:    return String(localized: "rarity.common")
+        case .uncommon:  return String(localized: "rarity.uncommon")
+        case .rare:      return String(localized: "rarity.rare")
+        case .epic:      return String(localized: "rarity.epic")
+        case .legendary: return String(localized: "rarity.legendary")
+        }
+    }
 }
 
 /// 物品品质枚举
@@ -272,8 +282,10 @@ struct BackpackItem: Identifiable, Equatable, Codable {
     let quality: ItemQuality?       // 品质（可选，部分物品无品质）
     let obtainedAt: Date            // 获得时间
     let obtainedFrom: String?       // 获得来源（如：废弃超市）
-    let customName: String?         // AI 生成的物品名（可选）
-    let customDescription: String?  // AI 生成的背景故事（可选）
+    let customName: String?         // AI 生成的物品名（中文）
+    let customNameEn: String?       // AI 生成的物品名（英文）
+    let customDescription: String?  // AI 生成的背景故事（中文）
+    let customDescriptionEn: String? // AI 生成的背景故事（英文）
 
     init(
         id: UUID = UUID(),
@@ -283,7 +295,9 @@ struct BackpackItem: Identifiable, Equatable, Codable {
         obtainedAt: Date = Date(),
         obtainedFrom: String? = nil,
         customName: String? = nil,
-        customDescription: String? = nil
+        customNameEn: String? = nil,
+        customDescription: String? = nil,
+        customDescriptionEn: String? = nil
     ) {
         self.id = id
         self.itemId = itemId
@@ -292,7 +306,27 @@ struct BackpackItem: Identifiable, Equatable, Codable {
         self.obtainedAt = obtainedAt
         self.obtainedFrom = obtainedFrom
         self.customName = customName
+        self.customNameEn = customNameEn
         self.customDescription = customDescription
+        self.customDescriptionEn = customDescriptionEn
+    }
+
+    /// 根据当前语言返回本地化显示名称
+    var localizedCustomName: String? {
+        if let en = customNameEn, !en.isEmpty,
+           Locale.current.language.languageCode?.identifier == "en" {
+            return en
+        }
+        return customName
+    }
+
+    /// 根据当前语言返回本地化描述
+    var localizedCustomDescription: String? {
+        if let en = customDescriptionEn, !en.isEmpty,
+           Locale.current.language.languageCode?.identifier == "en" {
+            return en
+        }
+        return customDescription
     }
 
     /// 计算该物品的总重量

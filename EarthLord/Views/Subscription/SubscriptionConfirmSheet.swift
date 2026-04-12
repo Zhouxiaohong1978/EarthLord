@@ -25,12 +25,12 @@ struct SubscriptionConfirmSheet: View {
         product.id.contains("yearly")
     }
 
-    private var period: String {
-        isYearly ? "年" : "月"
+    private var periodSuffix: String {
+        isYearly ? String(localized: "period.yr.suffix") : String(localized: "period.mo.suffix")
     }
 
     private var autoRenewText: String {
-        isYearly ? "每年自动续费" : "每月自动续费"
+        isYearly ? String(localized: "sub.confirm.autorenew.yearly") : String(localized: "sub.confirm.autorenew.monthly")
     }
 
     // MARK: - Body
@@ -49,7 +49,7 @@ struct SubscriptionConfirmSheet: View {
                         Text(tier.badgeIcon)
                             .font(.system(size: 48))
 
-                        Text("确认订阅\(tier.displayName)?")
+                        Text(String(format: String(localized: "sub.confirm.title"), tier.displayName))
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(ApocalypseTheme.textPrimary)
@@ -67,14 +67,14 @@ struct SubscriptionConfirmSheet: View {
                                 .font(.system(size: 36, weight: .bold))
                                 .foregroundColor(ApocalypseTheme.primary)
 
-                            Text("/ \(period)")
+                            Text(periodSuffix)
                                 .font(.body)
                                 .foregroundColor(ApocalypseTheme.textSecondary)
                         }
 
                         if isYearly,
                            let savingsPercent = SubscriptionProduct(rawValue: product.id)?.savingsPercent {
-                            Text("比月卡节省 \(savingsPercent)%")
+                            Text(String(format: String(localized: "sub.confirm.save"), savingsPercent))
                                 .font(.caption)
                                 .foregroundColor(ApocalypseTheme.success)
                                 .padding(.horizontal, 12)
@@ -98,10 +98,10 @@ struct SubscriptionConfirmSheet: View {
 
                     // 订阅说明
                     VStack(alignment: .leading, spacing: 12) {
-                        infoRow(icon: "checkmark.circle.fill", text: "订阅立即生效，权益即刻享受")
+                        infoRow(icon: "checkmark.circle.fill", text: String(localized: "sub.confirm.active"))
                         infoRow(icon: "arrow.clockwise.circle.fill", text: autoRenewText)
-                        infoRow(icon: "xmark.circle.fill", text: "可随时取消，到期后自动停止")
-                        infoRow(icon: "creditcard.circle.fill", text: "通过 Apple 账户安全支付")
+                        infoRow(icon: "xmark.circle.fill", text: String(localized: "sub.confirm.cancel_policy"))
+                        infoRow(icon: "creditcard.circle.fill", text: String(localized: "sub.confirm.payment"))
                     }
                     .padding(16)
                     .background(
@@ -111,23 +111,23 @@ struct SubscriptionConfirmSheet: View {
 
                     // 权益预览
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("即将解锁")
+                        Text(LocalizedStringKey("sub.confirm.coming_soon"))
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(ApocalypseTheme.textSecondary)
 
                         VStack(alignment: .leading, spacing: 6) {
-                            benefitBadge("背包容量 \(tier.backpackCapacity)")
-                            benefitBadge("探索范围 \(String(format: "%.0f", tier.explorationRadius))km")
-                            benefitBadge("建造速度 \(String(format: "%.0f", tier.buildSpeedMultiplier))倍")
+                            benefitBadge(String(format: String(localized: "sub.benefit.backpack"), tier.backpackCapacity))
+                            benefitBadge(String(format: String(localized: "sub.benefit.range"), tier.explorationRadius))
+                            benefitBadge(String(format: String(localized: "sub.benefit.build_speed"), tier.buildSpeedMultiplier))
 
                             if tier != .free {
-                                benefitBadge("每日专属礼包")
-                                benefitBadge("专属呼号前缀")
+                                benefitBadge(String(localized: "sub.benefit.daily_gift"))
+                                benefitBadge(String(localized: "sub.benefit.callsign"))
                             }
 
                             if tier == .lord {
-                                benefitBadge("领主专属头衔")
+                                benefitBadge(String(localized: "sub.benefit.lord_title"))
                             }
                         }
                     }
@@ -139,26 +139,22 @@ struct SubscriptionConfirmSheet: View {
 
                     // 法律条款
                     VStack(spacing: 6) {
-                        Text("订阅即表示同意")
+                        Text(LocalizedStringKey("sub.confirm.agree"))
                             .font(.caption2)
                             .foregroundColor(ApocalypseTheme.textSecondary)
 
                         HStack(spacing: 4) {
-                            Button("《服务条款》") {
-                                // TODO: 打开服务条款
-                            }
-                            .font(.caption2)
-                            .foregroundColor(ApocalypseTheme.primary)
+                            Link(String(localized: "sub.terms"), destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!)
+                                .font(.caption2)
+                                .foregroundColor(ApocalypseTheme.primary)
 
-                            Text("和")
+                            Text(LocalizedStringKey("sub.confirm.and"))
                                 .font(.caption2)
                                 .foregroundColor(ApocalypseTheme.textSecondary)
 
-                            Button("《隐私政策》") {
-                                // TODO: 打开隐私政策
-                            }
-                            .font(.caption2)
-                            .foregroundColor(ApocalypseTheme.primary)
+                            Link(String(localized: "sub.privacy_policy"), destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/privacy.html")!)
+                                .font(.caption2)
+                                .foregroundColor(ApocalypseTheme.primary)
                         }
                     }
                     .padding(.bottom, 20)
@@ -173,7 +169,6 @@ struct SubscriptionConfirmSheet: View {
                     Task {
                         isProcessing = true
                         await onConfirm()
-                        // 注意：成功后由父视图关闭sheet，这里不设置 isProcessing = false
                     }
                 }) {
                     HStack {
@@ -181,9 +176,9 @@ struct SubscriptionConfirmSheet: View {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.8)
-                            Text("处理中...")
+                            Text(LocalizedStringKey("sub.confirm.processing"))
                         } else {
-                            Text("确认订阅")
+                            Text(LocalizedStringKey("sub.confirm.confirm"))
                                 .fontWeight(.semibold)
                         }
                     }
@@ -198,7 +193,7 @@ struct SubscriptionConfirmSheet: View {
                 .disabled(isProcessing)
 
                 // 取消按钮
-                Button("取消") {
+                Button(String(localized: "取消")) {
                     onCancel()
                 }
                 .font(.body)
@@ -220,7 +215,7 @@ struct SubscriptionConfirmSheet: View {
                 .foregroundColor(ApocalypseTheme.primary)
                 .frame(width: 20)
 
-            Text(LocalizedStringKey(text))
+            Text(text)
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textPrimary)
         }
@@ -232,7 +227,7 @@ struct SubscriptionConfirmSheet: View {
                 .font(.caption2)
                 .foregroundColor(ApocalypseTheme.primary)
 
-            Text(LocalizedStringKey(text))
+            Text(text)
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textPrimary)
         }

@@ -510,14 +510,19 @@ struct MapViewRepresentable: UIViewRepresentable {
             // 处理营地痕迹标注
             if annotation is CampTraceAnnotation {
                 let identifier = "CampTrace"
-                let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
-                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? BuildingAnnotationView
+                    ?? BuildingAnnotationView(annotation: annotation, reuseIdentifier: identifier)
                 view.annotation = annotation
-                view.markerTintColor = UIColor.systemOrange
-                let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
-                view.glyphImage = UIImage(systemName: "flame.fill", withConfiguration: config)
                 view.canShowCallout = true
                 view.displayPriority = .defaultHigh
+                if let image = UIImage(named: "building_tent_simple") {
+                    let latDelta = mapView.region.span.latitudeDelta
+                    let referenceSpan: CLLocationDegrees = 0.004
+                    let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.05), 5.0))
+                    let iconSize = max(60 * scaleFactor, 8)
+                    view.configure(image: image, size: iconSize)
+                    view.updateHeading(mapView.camera.heading)
+                }
                 return view
             }
 
@@ -787,11 +792,11 @@ class BuildingAnnotation: NSObject, MKAnnotation {
     dynamic var coordinate: CLLocationCoordinate2D
 
     var title: String? {
-        template?.name ?? building.buildingName
+        template?.localizedName ?? building.buildingName
     }
 
     var subtitle: String? {
-        if isOtherPlayer { return "幸存者建筑" }
+        if isOtherPlayer { return String(localized: "camp.other_building") }
         var parts: [String] = []
         parts.append("Lv.\(building.level)")
         parts.append(building.status.displayName)
@@ -850,13 +855,13 @@ class CampTraceAnnotation: NSObject, MKAnnotation {
     var coordinate: CLLocationCoordinate2D
     let territory: Territory
 
-    var title: String? { territory.name ?? "无名营地" }
+    var title: String? { territory.name ?? String(localized: "camp.unnamed") }
     var subtitle: String? {
         var parts: [String] = []
         if let count = territory.buildingCount, count > 0 {
-            parts.append("\(count)座建筑")
+            parts.append(String(format: String(localized: "camp.buildings_count"), count))
         }
-        return parts.isEmpty ? "幸存者营地" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "camp.survivor_camp") : parts.joined(separator: " · ")
     }
 
     init(territory: Territory) {
@@ -865,7 +870,9 @@ class CampTraceAnnotation: NSObject, MKAnnotation {
         let count = Double(max(points.count, 1))
         let avgLat = points.compactMap { $0["lat"] }.reduce(0, +) / count
         let avgLon = points.compactMap { $0["lon"] }.reduce(0, +) / count
-        self.coordinate = CLLocationCoordinate2D(latitude: avgLat, longitude: avgLon)
+        // 路径点存储为 WGS-84，MapKit 在中国需要 GCJ-02，与多边形 overlay 保持一致
+        let rawCoord = CLLocationCoordinate2D(latitude: avgLat, longitude: avgLon)
+        self.coordinate = CoordinateConverter.wgs84ToGcj02(rawCoord)
     }
 }
 

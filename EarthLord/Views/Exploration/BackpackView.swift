@@ -402,7 +402,7 @@ struct BackpackView: View {
                 HStack(spacing: 10) {
                     ForEach(BackpackFilterType.allCases) { filter in
                         CategoryChip(
-                            title: filter.title,
+                            title: LocalizedStringKey(filter.title),
                             icon: filter.icon,
                             isSelected: selectedFilter == filter
                         ) {
@@ -522,7 +522,7 @@ struct BackpackView: View {
 // MARK: - 分类按钮组件
 
 struct CategoryChip: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
     let isSelected: Bool
     let action: () -> Void
@@ -686,7 +686,7 @@ struct BackpackItemCard: View {
     // MARK: - 稀有度标签
 
     private var rarityBadge: some View {
-        Text(definition.rarity.rawValue)
+        Text(definition.rarity.displayName)
             .font(.system(size: 11, weight: .medium))
             .foregroundColor(definition.rarity.color)
             .padding(.horizontal, 6)

@@ -345,6 +345,7 @@ struct PlayerBuildingDB: Codable {
     let durability: Int?
     let lastMaintainedAt: String?
     let durabilityZeroAt: String?
+    let showToOthers: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -365,6 +366,7 @@ struct PlayerBuildingDB: Codable {
         case durability
         case lastMaintainedAt = "last_maintained_at"
         case durabilityZeroAt = "durability_zero_at"
+        case showToOthers = "show_to_others"
     }
 
     /// 转换为 PlayerBuilding
@@ -411,7 +413,8 @@ struct PlayerBuildingDB: Codable {
             lastProducedAt: lastProduced,
             durability: durability ?? 100,
             lastMaintainedAt: lastMaintained,
-            durabilityZeroAt: durabilityZero
+            durabilityZeroAt: durabilityZero,
+            showToOthers: showToOthers ?? false
         )
     }
 }

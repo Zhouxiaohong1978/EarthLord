@@ -455,7 +455,7 @@ struct ExplorationResultView: View {
                         if let definition = MockExplorationData.getItemDefinition(by: item.itemId) {
                             SelectableRewardItemRow(
                                 item: item,
-                                name: definition.name,
+                                name: NSLocalizedString("item.\(definition.id)", comment: definition.name),
                                 icon: definition.category.icon,
                                 color: definition.category.color,
                                 isSelected: selectedItemIds.contains(item.id)

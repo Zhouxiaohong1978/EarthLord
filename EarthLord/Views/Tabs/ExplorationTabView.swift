@@ -1232,7 +1232,7 @@ struct BackpackItemCardNew: View {
                             .font(.system(size: 11))
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     } else {
-                        Text(LanguageManager.shared.localizedString(for: definition.rarity.rawValue))
+                        Text(definition.rarity.displayName)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(definition.rarity.color)
                             .padding(.horizontal, 6)
@@ -1282,30 +1282,6 @@ struct BackpackItemCardNew: View {
                         .strokeBorder(isAIItem ? ApocalypseTheme.warning.opacity(0.4) : Color.clear, lineWidth: 1)
                 )
         )
-    }
-}
-
-// MARK: - 占位内容视图
-
-struct PlaceholderContentView: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: icon)
-                .font(.system(size: 60))
-                .foregroundColor(ApocalypseTheme.textMuted)
-
-            Text("\(title)功能开发中...")
-                .font(.system(size: 17, weight: .medium))
-                .foregroundColor(ApocalypseTheme.textSecondary)
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 

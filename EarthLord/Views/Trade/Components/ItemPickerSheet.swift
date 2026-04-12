@@ -20,18 +20,24 @@ struct SelectableItem: Identifiable {
     let definition: ItemDefinition
     let availableQuantity: Int?  // 库存数量（仅库存模式）
     let quality: ItemQuality?
-    let customName: String?      // AI 命名物品
+    let customName: String?      // AI 命名物品（中文）
+    let customNameEn: String?    // AI 命名物品（英文）
 
-    init(id: String, definition: ItemDefinition, availableQuantity: Int?, quality: ItemQuality?, customName: String? = nil) {
+    init(id: String, definition: ItemDefinition, availableQuantity: Int?, quality: ItemQuality?, customName: String? = nil, customNameEn: String? = nil) {
         self.id = id
         self.definition = definition
         self.availableQuantity = availableQuantity
         self.quality = quality
         self.customName = customName
+        self.customNameEn = customNameEn
     }
 
-    /// UI 展示名称
-    var displayName: String { customName ?? definition.name }
+    /// UI 展示名称（按语言选择）
+    var displayName: String {
+        let isEnglish = Locale.current.language.languageCode?.identifier == "en"
+        if isEnglish, let en = customNameEn, !en.isEmpty { return en }
+        return customName ?? NSLocalizedString(definition.name, comment: "")
+    }
 }
 
 struct ItemPickerSheet: View {
@@ -71,7 +77,8 @@ struct ItemPickerSheet: View {
                     definition: definition,
                     availableQuantity: item.quantity,
                     quality: item.quality,
-                    customName: item.customName
+                    customName: item.customName,
+                    customNameEn: item.customNameEn
                 )
             }
             result.append(contentsOf: aiItems)
@@ -232,7 +239,7 @@ struct ItemPickerSheet: View {
                 // 各分类
                 ForEach(ItemCategory.allCases, id: \.self) { category in
                     CategoryChip(
-                        title: category.rawValue,
+                        title: LocalizedStringKey(category.rawValue),
                         icon: category.icon,
                         isSelected: !showAIOnly && selectedCategory == category
                     ) {
@@ -328,7 +335,7 @@ struct ItemPickerSheet: View {
                                 .foregroundColor(ApocalypseTheme.textSecondary)
                         }
 
-                        Text(item.definition.rarity.rawValue)
+                        Text(item.definition.rarity.displayName)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(item.definition.rarity.color)
                             .padding(.horizontal, 6)
@@ -488,10 +495,11 @@ struct ItemPickerSheet: View {
                         // 确认按钮
                         Button {
                             let tradeItem = TradeItem(
-                                itemId: item.definition.id,   // 始终用 definition.id，customName 区分 AI 物品
+                                itemId: item.definition.id,
                                 quantity: pendingQuantity,
                                 quality: item.quality,
-                                customName: item.customName
+                                customName: item.customName,
+                                customNameEn: item.customNameEn
                             )
                             selectedItems.append(tradeItem)
                             showQuantityPicker = false

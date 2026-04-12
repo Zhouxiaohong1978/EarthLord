@@ -484,7 +484,7 @@ struct ItemRow: View {
                 HStack(spacing: 8) {
                     // 稀有度
                     if let definition = itemDefinition {
-                        Text(definition.rarity.rawValue)
+                        Text(definition.rarity.displayName)
                             .font(.system(size: 12))
                             .foregroundColor(rarityColor)
                     }

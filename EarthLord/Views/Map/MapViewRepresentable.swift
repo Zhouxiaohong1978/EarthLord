@@ -613,7 +613,18 @@ struct MapViewRepresentable: UIViewRepresentable {
         /// 标注点击回调
         func mapView(_ mapView: MKMapView, didSelect annotation: MKAnnotation) {
             if let campAnnotation = annotation as? CampTraceAnnotation {
+                // 点击帐篷图标：直接拿到领地
                 parent.onCampTerritoryTapped?(campAnnotation.territory)
+                mapView.deselectAnnotation(annotation, animated: false)
+            } else if let buildingAnnotation = annotation as? BuildingAnnotation,
+                      buildingAnnotation.isOtherPlayer {
+                // 点击他人建筑图标：用 territoryId 精确匹配所属领地
+                // 不能用 userId，因为一个玩家可能拥有多个领地，会命中错误的那个
+                let tid = buildingAnnotation.building.territoryId
+                if let territory = parent.campTerritories.first(where: { $0.id == tid })
+                    ?? parent.territories.first(where: { $0.id == tid }) {
+                    parent.onCampTerritoryTapped?(territory)
+                }
                 mapView.deselectAnnotation(annotation, animated: false)
             }
         }
@@ -724,10 +735,14 @@ struct MapViewRepresentable: UIViewRepresentable {
 
     /// 更新建筑标记
     private func updateBuildingAnnotations(on mapView: MKMapView, context: Context) {
-        // 用 ID+坐标 哈希检测数量和位置变化
-        let currentHash = buildings.map {
+        // 用 ID+坐标 哈希检测自己和他人建筑的数量/位置变化
+        let ownHash = buildings.map {
             "\($0.id)-\(String(format: "%.6f", $0.locationLat ?? 0))-\(String(format: "%.6f", $0.locationLon ?? 0))"
-        }.joined(separator: ",")
+        }
+        let otherHash = otherPlayersBuildings.map {
+            "o-\($0.id)-\(String(format: "%.6f", $0.locationLat ?? 0))-\(String(format: "%.6f", $0.locationLon ?? 0))"
+        }
+        let currentHash = (ownHash + otherHash).joined(separator: ",")
         guard context.coordinator.lastBuildingsHash != currentHash else { return }
         context.coordinator.lastBuildingsHash = currentHash
 
@@ -759,7 +774,7 @@ struct MapViewRepresentable: UIViewRepresentable {
             context.coordinator.updateBuildingIconRotations(in: mapView)
         }
 
-        if !buildings.isEmpty {
+        if !buildings.isEmpty || !otherPlayersBuildings.isEmpty {
             print("🏗️ 更新建筑标记: \(buildings.count) 个（自己），\(otherPlayersBuildings.count) 个（他人）")
         }
     }

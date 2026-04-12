@@ -139,9 +139,11 @@ struct MapTabView: View {
     }
 
     /// 探索中的营地痕迹领地列表（玩家在领地内部，或距领地边界任意一段 100m 以内即显示）
+    /// ⚠️ 必须使用 locationManager.userLocation（CLLocationManager WGS-84）做几何判断
+    /// MapTabView.userLocation 来自 MKUserLocation，中国设备返回 GCJ-02，与 territory.path（WGS-84）不同坐标系
     private var campTerritories: [Territory] {
-        guard explorationManager.isExploring, let userCoord = userLocation else {
-            print("🏕️ campTerritories: 返回空 — isExploring=\(explorationManager.isExploring) userLocation=\(String(describing: userLocation))")
+        guard explorationManager.isExploring,
+              let userCoord = locationManager.userLocation else {
             return []
         }
         let result = territories.filter { territory in
@@ -152,13 +154,7 @@ struct MapTabView: View {
             if MapTabView.isPoint(userCoord, insidePolygon: points) { return true }
             return MapTabView.minDistanceToBoundary(userCoord, path: points) <= 100
         }
-        print("🏕️ campTerritories: isExploring=true coord=(\(String(format:"%.6f",userCoord.latitude)),\(String(format:"%.6f",userCoord.longitude))) territories=\(territories.count) result=\(result.count)")
-        for t in territories {
-            let inside = MapTabView.isPoint(userCoord, insidePolygon: t.path)
-            let dist = MapTabView.minDistanceToBoundary(userCoord, path: t.path)
-            let mine = AuthManager.shared.isLinkedUser(t.userId)
-            print("  领地[\(t.name ?? t.id)] mine=\(mine) active=\(String(describing:t.isActive)) inside=\(inside) dist=\(Int(dist))m points=\(t.path.count)")
-        }
+        print("🏕️ campTerritories: coord=(\(String(format:"%.6f",userCoord.latitude)),\(String(format:"%.6f",userCoord.longitude))) territories=\(territories.count) result=\(result.count)")
         return result
     }
 
@@ -496,16 +492,15 @@ struct MapTabView: View {
         .onReceive(explorationManager.$explorationState) { state in
             handleExplorationStateChange(state)
         }
-        // 探索中：位置变化时检测附近可交易领地 + 加载他人可见建筑
+        // 探索中：MapKit 位置变化时加载他人可见建筑
+        // 注意：建筑坐标数据库存储为 GCJ-02，userLocation（来自 MKUserLocation）也是 GCJ-02，坐标系一致
         .onChange(of: userLocation) { location in
-            print("📍 onChange(userLocation): \(String(describing: location)) isExploring=\(explorationManager.isExploring)")
             guard explorationManager.isExploring else {
                 if nearbyTradingTerritory != nil {
                     withAnimation { nearbyTradingTerritory = nil }
                 }
                 return
             }
-            checkNearbyTradingTerritories(at: location)
             if let loc = location {
                 Task {
                     try? await buildingManager.loadNearbyOtherPlayersBuildings(
@@ -513,6 +508,12 @@ struct MapTabView: View {
                     )
                 }
             }
+        }
+        // 探索中：GPS 位置（WGS-84）变化时检测附近可交易领地
+        // territory.path 存储为 WGS-84，必须用 locationManager.userLocation 做几何判断
+        .onReceive(locationManager.$userLocation) { _ in
+            guard explorationManager.isExploring else { return }
+            checkNearbyTradingTerritories()
         }
         // 日志查看器（显示圈地日志，崩溃后重启仍可查看）
         .sheet(isPresented: $showLogViewer) {
@@ -752,12 +753,12 @@ struct MapTabView: View {
     }
 
     /// 检测玩家位置附近 100m 内是否有开启交易的他人领地
-    private func checkNearbyTradingTerritories(at location: CLLocationCoordinate2D?) {
-        guard let location else {
+    /// ⚠️ 使用 locationManager.userLocation（WGS-84）做几何判断，与 territory.path 坐标系一致
+    private func checkNearbyTradingTerritories() {
+        guard let wgsCoord = locationManager.userLocation else {
             withAnimation { nearbyTradingTerritory = nil }
             return
         }
-        let userCL = CLLocation(latitude: location.latitude, longitude: location.longitude)
 
         let found = territories.first { territory in
             guard territory.isActive == true,
@@ -766,15 +767,14 @@ struct MapTabView: View {
             let points = territory.path
             guard !points.isEmpty else { return false }
             // 玩家在领地内部，或距领地边界（任意边线段）100m 以内
-            if MapTabView.isPoint(location, insidePolygon: points) { return true }
-            return MapTabView.minDistanceToBoundary(location, path: points) <= 100
+            if MapTabView.isPoint(wgsCoord, insidePolygon: points) { return true }
+            return MapTabView.minDistanceToBoundary(wgsCoord, path: points) <= 100
         }
 
         // 若玩家已关闭该领地提示且仍在范围内，不再显示；离开范围则重置关闭记录
         if let found {
             if found.id == dismissedTradingTerritoryId { return }
         } else {
-            // 离开所有领地范围，重置关闭记录
             dismissedTradingTerritoryId = nil
         }
 

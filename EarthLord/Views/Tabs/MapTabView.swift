@@ -138,23 +138,19 @@ struct MapTabView: View {
         AuthManager.shared.currentUser?.id.uuidString
     }
 
-    /// 探索中的营地痕迹领地列表（玩家在领地内部或距任意顶点 100m 内即显示）
+    /// 探索中的营地痕迹领地列表（玩家在领地内部，或距领地边界任意一段 100m 以内即显示）
     private var campTerritories: [Territory] {
         guard explorationManager.isExploring, let userCoord = userLocation else { return [] }
-        let playerLocation = CLLocation(latitude: userCoord.latitude, longitude: userCoord.longitude)
         let myId = currentUserId?.lowercased() ?? ""
         return TerritoryManager.shared.territories.filter { territory in
             guard territory.isActive == true,
                   territory.userId.lowercased() != myId else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
-            // 1. 玩家是否在领地多边形内部
+            // 1. 玩家在领地多边形内部
             if MapTabView.isPoint(userCoord, insidePolygon: points) { return true }
-            // 2. 玩家是否距任意顶点 100m 内
-            return points.contains { p in
-                guard let lat = p["lat"], let lon = p["lon"] else { return false }
-                return playerLocation.distance(from: CLLocation(latitude: lat, longitude: lon)) <= 100
-            }
+            // 2. 玩家到领地边界（任意边线段）的最近距离 ≤ 100m
+            return MapTabView.minDistanceToBoundary(userCoord, path: points) <= 100
         }
     }
 
@@ -186,6 +182,43 @@ struct MapTabView: View {
             j = i
         }
         return inside
+    }
+
+    /// 点到多边形边界的最近距离（对每条边线段做垂足投影，取最小值）
+    private static func minDistanceToBoundary(_ coord: CLLocationCoordinate2D, path: [[String: Double]]) -> CLLocationDistance {
+        let verts = path.compactMap { p -> CLLocationCoordinate2D? in
+            guard let lat = p["lat"], let lon = p["lon"] else { return nil }
+            return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        }
+        guard verts.count >= 2 else {
+            // 只有一个点时退化为点距离
+            guard let v = verts.first else { return .infinity }
+            return CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+                .distance(from: CLLocation(latitude: v.latitude, longitude: v.longitude))
+        }
+        let playerCL = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+        var minDist = CLLocationDistance.infinity
+        let n = verts.count
+        for i in 0..<n {
+            let a = verts[i]
+            let b = verts[(i + 1) % n]
+            // 将玩家坐标投影到线段 ab，t 限制在 [0,1] 内
+            let ax = a.longitude, ay = a.latitude
+            let bx = b.longitude, by = b.latitude
+            let dx = bx - ax, dy = by - ay
+            let lenSq = dx * dx + dy * dy
+            let t: Double
+            if lenSq == 0 {
+                t = 0 // a == b，退化为点
+            } else {
+                t = max(0, min(1, ((coord.longitude - ax) * dx + (coord.latitude - ay) * dy) / lenSq))
+            }
+            let closestLat = ay + t * dy
+            let closestLon = ax + t * dx
+            let dist = playerCL.distance(from: CLLocation(latitude: closestLat, longitude: closestLon))
+            if dist < minDist { minDist = dist }
+        }
+        return minDist
     }
 
     // MARK: - Body
@@ -724,12 +757,9 @@ struct MapTabView: View {
                   territory.userId.lowercased() != myId else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
-            // 玩家在领地内部，或距任意顶点 100m 内
+            // 玩家在领地内部，或距领地边界（任意边线段）100m 以内
             if MapTabView.isPoint(location, insidePolygon: points) { return true }
-            return points.contains { p in
-                guard let lat = p["lat"], let lon = p["lon"] else { return false }
-                return userCL.distance(from: CLLocation(latitude: lat, longitude: lon)) <= 100
-            }
+            return MapTabView.minDistanceToBoundary(location, path: points) <= 100
         }
 
         // 若玩家已关闭该领地提示且仍在范围内，不再显示；离开范围则重置关闭记录

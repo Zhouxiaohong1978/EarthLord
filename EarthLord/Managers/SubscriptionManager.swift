@@ -53,6 +53,35 @@ final class SubscriptionManager: ObservableObject {
     /// 日志器
     private let logger = ExplorationLogger.shared
 
+    // MARK: - Highest Known Tier (UserDefaults 持久化)
+
+    /// 用户曾购买过的最高订阅档位，跨重启持久化。
+    /// 用于阻止沙盒/低档位自动续费通过 Transaction.updates 覆盖高档位 DB 记录。
+    private let highestKnownTierKey = "com.earthlord.highestKnownSubscriptionTier"
+
+    private(set) var highestKnownTier: SubscriptionTier {
+        get {
+            let raw = UserDefaults.standard.string(forKey: highestKnownTierKey) ?? SubscriptionTier.free.rawValue
+            return SubscriptionTier(rawValue: raw) ?? .free
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: highestKnownTierKey)
+            logger.log("highestKnownTier → \(newValue.rawValue)", type: .info)
+        }
+    }
+
+    /// 仅向上提升 highestKnownTier（不降级）
+    private func elevateHighestKnownTier(to tier: SubscriptionTier) {
+        if tier.rank > highestKnownTier.rank {
+            highestKnownTier = tier
+        }
+    }
+
+    /// 恢复购买完成后显式同步（允许降级，例如 Lord 已过期只剩 Explorer）
+    private func syncHighestKnownTierAfterRestore() {
+        highestKnownTier = currentTier
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -208,6 +237,7 @@ final class SubscriptionManager: ObservableObject {
                let tier = SubscriptionTier(rawValue: tierString),
                tier != .free {
                 currentTier = tier
+                elevateHighestKnownTier(to: tier)
                 await fetchSubscriptionDetails(userId: userId)
             } else {
                 currentTier = .free
@@ -286,6 +316,7 @@ final class SubscriptionManager: ObservableObject {
                     immediteTier = .free
                 }
                 currentTier = immediteTier
+                elevateHighestKnownTier(to: immediteTier)
 
                 // 6. 后台从 DB 确认（失败时保留已设置的档位，不覆盖）
                 Task { [weak self] in
@@ -459,7 +490,11 @@ final class SubscriptionManager: ObservableObject {
             // 3. 刷新订阅状态（现在 DB 应该有记录了）
             await refreshSubscriptionStatus()
 
-            logger.log("恢复购买完成", type: .success)
+            // 4. 恢复完成后显式同步 highestKnownTier，
+            //    允许档位根据 currentEntitlements 重新校准（例如 Lord 已过期只剩 Explorer）
+            syncHighestKnownTierAfterRestore()
+
+            logger.log("恢复购买完成（highestKnownTier → \(highestKnownTier.rawValue)）", type: .success)
 
         } catch let error as SubscriptionError {
             throw error
@@ -494,10 +529,18 @@ final class SubscriptionManager: ObservableObject {
 
     /// 处理交易更新（续费等）
     private func handleTransactionUpdate(_ transaction: Transaction) async {
-        logger.log("处理交易更新: \(transaction.id)", type: .info)
+        logger.log("处理交易更新: \(transaction.id) (\(transaction.productID))", type: .info)
 
         guard let userId = AuthManager.shared.currentUser?.id,
               let product = availableSubscriptions.first(where: { $0.id == transaction.productID }) else {
+            return
+        }
+
+        // 防止沙盒/低档位自动续费覆盖高档位 DB 记录。
+        // 只处理档位 >= highestKnownTier 的交易；低档位续费直接 finish 后跳过。
+        let newTier = tierForProductId(transaction.productID)
+        if newTier.rank < highestKnownTier.rank {
+            logger.log("跳过低档位自动续费 [\(transaction.productID) → \(newTier.rawValue)] (highestKnown=\(highestKnownTier.rawValue))", type: .info)
             return
         }
 

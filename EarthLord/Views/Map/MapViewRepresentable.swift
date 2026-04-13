@@ -507,22 +507,17 @@ struct MapViewRepresentable: UIViewRepresentable {
                 }
             }
 
-            // 处理营地痕迹标注
+            // 处理营地痕迹标注（玩家有领地但无建筑时显示，用人形图标表示"这里有人"）
             if annotation is CampTraceAnnotation {
                 let identifier = "CampTrace"
-                let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? BuildingAnnotationView
-                    ?? BuildingAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
                 view.annotation = annotation
                 view.canShowCallout = true
                 view.displayPriority = .defaultHigh
-                if let image = UIImage(named: "building_tent_simple") {
-                    let latDelta = mapView.region.span.latitudeDelta
-                    let referenceSpan: CLLocationDegrees = 0.004
-                    let scaleFactor = CGFloat(min(max(referenceSpan / latDelta, 0.05), 5.0))
-                    let iconSize = max(60 * scaleFactor, 8)
-                    view.configure(image: image, size: iconSize)
-                    view.updateHeading(mapView.camera.heading)
-                }
+                view.markerTintColor = UIColor(red: 1.0, green: 0.4, blue: 0.1, alpha: 1.0)
+                let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+                view.glyphImage = UIImage(systemName: "person.fill", withConfiguration: config)
                 return view
             }
 
@@ -716,7 +711,11 @@ struct MapViewRepresentable: UIViewRepresentable {
         let old = mapView.annotations.filter { $0 is CampTraceAnnotation }
         mapView.removeAnnotations(old)
         for territory in campTerritories {
-            mapView.addAnnotation(CampTraceAnnotation(territory: territory))
+            // 只在领地没有任何建筑时显示占位标记；有建筑时由建筑自身的图标表示
+            let hasBuildings = (territory.buildingCount ?? 0) > 0
+            if !hasBuildings {
+                mapView.addAnnotation(CampTraceAnnotation(territory: territory))
+            }
         }
     }
 

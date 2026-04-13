@@ -15,6 +15,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
     case constructorPack = "com.earthlord.constructor_pack"
     case engineerPack    = "com.earthlord.engineer_pack"
     case rarePack        = "com.earthlord.rare_pack"
+    case commUpgradePack = "com.earthlord.comm_upgrade"
+    case backpackExpand  = "com.earthlord.capacity_expansion"
     var id: String { rawValue }
 
     var displayName: String {
@@ -23,6 +25,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return String(localized: "pack.constructor.name")
         case .engineerPack:    return String(localized: "pack.engineer.name")
         case .rarePack:        return String(localized: "pack.rare.name")
+        case .commUpgradePack: return String(localized: "pack.comm_upgrade.name")
+        case .backpackExpand:  return String(localized: "pack.backpack_expand.name")
         }
     }
 
@@ -32,6 +36,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return 18
         case .engineerPack:    return 30
         case .rarePack:        return 68
+        case .commUpgradePack: return 68
+        case .backpackExpand:  return 15
         }
     }
 
@@ -41,6 +47,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return "hammer.fill"
         case .engineerPack:    return "wrench.and.screwdriver.fill"
         case .rarePack:        return "crown.fill"
+        case .commUpgradePack: return "antenna.radiowaves.left.and.right"
+        case .backpackExpand:  return "bag.fill.badge.plus"
         }
     }
 
@@ -50,6 +58,8 @@ enum SupplyPackProduct: String, CaseIterable, Identifiable {
         case .constructorPack: return "blue"
         case .engineerPack:    return "purple"
         case .rarePack:        return "orange"
+        case .commUpgradePack: return "cyan"
+        case .backpackExpand:  return "yellow"
         }
     }
 }
@@ -133,6 +143,27 @@ extension SupplyPackConfig {
             ]
         ),
 
+        // ¥68 / $9.99 — 通讯设备升级令×1 + 卫星模块×2
+        .commUpgradePack: SupplyPackConfig(
+            product: .commUpgradePack,
+            baseItems: [
+                PackItem(itemId: "device_upgrade_token", quantity: 1, quality: nil),
+                PackItem(itemId: "satellite_module",     quantity: 2, quality: nil),
+            ],
+            bonusItems: [
+                BonusItem(item: PackItem(itemId: "electronic_component", quantity: 10, quality: nil), probability: 50)
+            ]
+        ),
+
+        // ¥15 / $1.99 — 背包扩容200格
+        .backpackExpand: SupplyPackConfig(
+            product: .backpackExpand,
+            baseItems: [
+                PackItem(itemId: "backpack_expand_voucher", quantity: 1, quality: nil)
+            ],
+            bonusItems: []
+        ),
+
         // ¥68 / $9.99 — 解决Tier3高级建筑缺稀有材料 + 搜刮令×15
         .rarePack: SupplyPackConfig(
             product: .rarePack,
@@ -182,7 +213,9 @@ extension String {
         case "satellite_module":      return String(localized: "item.satellite_module")
         case "fuel":                  return String(localized: "item.fuel")
         case "scavenge_pass":         return String(localized: "item.scavenge_pass")
-        case "blueprint_basic":       return String(localized: "item.blueprint_basic")
+        case "device_upgrade_token":    return String(localized: "item.device_upgrade_token")
+        case "backpack_expand_voucher": return String(localized: "item.backpack_expand_voucher")
+        case "blueprint_basic":         return String(localized: "item.blueprint_basic")
         case "blueprint_epic":        return String(localized: "item.blueprint_epic")
         case "equipment_rare":        return String(localized: "item.equipment_rare")
         case "equipment_epic":        return String(localized: "item.equipment_epic")

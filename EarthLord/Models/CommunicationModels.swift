@@ -340,6 +340,7 @@ enum CommunicationError: LocalizedError {
     case cannotSend                 // 当前设备无法发送
     case outOfRange                 // 超出通讯范围
     case noTargetChannel            // 没有目标频道
+    case alreadyMaxLevel            // 已是最高型号
     case saveFailed(String)
     case loadFailed(String)
 
@@ -357,6 +358,8 @@ enum CommunicationError: LocalizedError {
             return String(localized: "超出通讯范围")
         case .noTargetChannel:
             return String(localized: "请先订阅一个频道")
+        case .alreadyMaxLevel:
+            return String(localized: "当前设备已是最高型号（卫星电话）")
         case .saveFailed(let message):
             return String(format: String(localized: "保存失败: %@"), message)
         case .loadFailed(let message):
@@ -516,15 +519,24 @@ struct CommunicationChannel: Codable, Identifiable, Hashable {
         latitude  = try container.decodeIfPresent(Double.self, forKey: .latitude)
         longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
 
-        // 解析日期
+        // 解析日期（支持带毫秒的 ISO8601 格式）
+        let iso8601WithFraction: (String) -> Date? = { s in
+            let f1 = ISO8601DateFormatter()
+            f1.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let d = f1.date(from: s) { return d }
+            let f2 = ISO8601DateFormatter()
+            f2.formatOptions = [.withInternetDateTime]
+            return f2.date(from: s)
+        }
+
         if let createdString = try? container.decode(String.self, forKey: .createdAt) {
-            createdAt = ISO8601DateFormatter().date(from: createdString) ?? Date()
+            createdAt = iso8601WithFraction(createdString) ?? Date()
         } else {
             createdAt = Date()
         }
 
         if let updatedString = try? container.decode(String.self, forKey: .updatedAt) {
-            updatedAt = ISO8601DateFormatter().date(from: updatedString) ?? Date()
+            updatedAt = iso8601WithFraction(updatedString) ?? Date()
         } else {
             updatedAt = Date()
         }
@@ -797,10 +809,10 @@ enum MessageCategory: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .survival: return String(localized: "生存指南")
-        case .news:     return String(localized: "游戏资讯")
-        case .mission:  return String(localized: "任务发布")
-        case .alert:    return String(localized: "紧急广播")
+        case .survival: return LanguageManager.localizedStringSync(for: "生存指南")
+        case .news:     return LanguageManager.localizedStringSync(for: "游戏资讯")
+        case .mission:  return LanguageManager.localizedStringSync(for: "任务发布")
+        case .alert:    return LanguageManager.localizedStringSync(for: "紧急广播")
         }
     }
 
@@ -851,6 +863,7 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
     let senderId: UUID?
     let senderCallsign: String?
     let content: String
+    let contentEn: String?
     let senderLocation: LocationPoint?
     let metadata: MessageMetadata?
     let createdAt: Date
@@ -867,6 +880,7 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         case senderId = "sender_id"
         case senderCallsign = "sender_callsign"
         case content
+        case contentEn = "content_en"
         case senderLocation = "sender_location"
         case metadata
         case createdAt = "created_at"
@@ -884,6 +898,7 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         senderId = try container.decodeIfPresent(UUID.self, forKey: .senderId)
         senderCallsign = try container.decodeIfPresent(String.self, forKey: .senderCallsign)
         content = try container.decode(String.self, forKey: .content)
+        contentEn = try container.decodeIfPresent(String.self, forKey: .contentEn)
 
         // 解析 PostGIS 位置（支持 WKT 字符串和 GeoJSON 对象）
         // 🐛 DEBUG: 打印解码过程
@@ -957,6 +972,15 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
             let days = Int(interval / 86400)
             return String(format: String(localized: "%d天前"), days)
         }
+    }
+
+    /// 根据当前语言环境返回合适的内容
+    var localizedContent: String {
+        if let en = contentEn, !en.isEmpty,
+           LanguageManager.currentLocaleSync.hasPrefix("en") {
+            return en
+        }
+        return content
     }
 
     /// 设备类型
@@ -1106,13 +1130,13 @@ struct ChannelPreview: Codable, Identifiable {
     static func officialChannelPreview() -> ChannelPreview {
         ChannelPreview(
             channelId: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
-            channelName: String(localized: "末日广播站"),
+            channelName: LanguageManager.localizedStringSync(for: "末日广播站"),
             channelType: "official",
             channelCode: "OFFICIAL",
             memberCount: 0,
             isMuted: false,
             unreadCount: 0,
-            lastMessageContent: String(localized: "官方公告与生存指南"),
+            lastMessageContent: LanguageManager.localizedStringSync(for: "官方公告与生存指南"),
             lastMessageTime: nil,
             lastMessageSender: nil
         )

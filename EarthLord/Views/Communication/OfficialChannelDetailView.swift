@@ -46,14 +46,14 @@ struct OfficialChannelDetailView: View {
             }
         }
         .background(ApocalypseTheme.background)
-        .navigationTitle(String(localized: "末日广播站"))
+        .navigationTitle(LanguageManager.shared.localizedString(for: "末日广播站"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 4) {
                     Image(systemName: "megaphone.fill")
                         .foregroundColor(ApocalypseTheme.primary)
-                    Text(String(localized: "末日广播站"))
+                    Text(LanguageManager.shared.localizedString(for: "末日广播站"))
                         .font(.headline)
                         .foregroundColor(ApocalypseTheme.textPrimary)
                     Image(systemName: "checkmark.seal.fill")
@@ -87,7 +87,7 @@ struct OfficialChannelDetailView: View {
             HStack(spacing: 8) {
                 // 全部
                 categoryTab(
-                    label: String(localized: "全部"),
+                    label: LanguageManager.shared.localizedString(for: "全部"),
                     icon: "square.grid.2x2.fill",
                     color: ApocalypseTheme.primary,
                     isSelected: selectedCategory == nil,
@@ -174,11 +174,11 @@ struct OfficialChannelDetailView: View {
                 .font(.system(size: 50))
                 .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.4))
             Text(cat == nil
-                 ? String(localized: "暂无消息")
-                 : String(format: String(localized: "暂无%@"), cat!.displayName))
+                 ? LanguageManager.shared.localizedString(for: "暂无消息")
+                 : String(format: LanguageManager.shared.localizedString(for: "暂无%@"), cat!.displayName))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
-            Text(String(localized: "请稍后再来查看"))
+            Text(LanguageManager.shared.localizedString(for: "请稍后再来查看"))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
             Spacer()
@@ -192,7 +192,7 @@ struct OfficialChannelDetailView: View {
             Spacer()
             ProgressView()
                 .tint(ApocalypseTheme.primary)
-            Text(String(localized: "加载中..."))
+            Text(LanguageManager.shared.localizedString(for: "加载中..."))
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
             Spacer()
@@ -244,7 +244,7 @@ struct OfficialMessageCard: View {
             }
 
             // Content
-            Text(message.content)
+            Text(message.localizedContent)
                 .font(.body)
                 .foregroundColor(ApocalypseTheme.textPrimary)
                 .lineLimit(nil)
@@ -253,7 +253,7 @@ struct OfficialMessageCard: View {
             HStack {
                 Image(systemName: "megaphone.fill")
                     .font(.caption2)
-                Text(message.senderCallsign ?? String(localized: "末日广播站"))
+                Text(message.senderCallsign ?? LanguageManager.shared.localizedString(for: "末日广播站"))
                     .font(.caption2)
             }
             .foregroundColor(ApocalypseTheme.textSecondary)

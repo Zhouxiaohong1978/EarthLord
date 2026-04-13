@@ -351,6 +351,90 @@ final class CommunicationManager: ObservableObject {
         }
     }
 
+    // MARK: - 设备型号升级（付费路径）
+
+    /// 升级当前激活设备的型号（付费购买通讯升级包后调用）
+    /// 路径：收音机 → 对讲机 → 营地电台 → 卫星电话
+    /// 与建造解锁互不干扰：只要目标设备未解锁，直接解锁并切换；已是最高型号则不处理
+    func upgradeCurrentDeviceType(userId: UUID) async throws {
+        let hierarchy: [DeviceType] = [.radio, .walkieTalkie, .campRadio, .satellite]
+
+        guard let current = currentDevice,
+              let currentIndex = hierarchy.firstIndex(of: current.deviceType) else {
+            throw CommunicationError.deviceNotFound
+        }
+
+        let nextIndex = currentIndex + 1
+        guard nextIndex < hierarchy.count else {
+            logger.log("当前设备已是最高型号（卫星），无法继续升级", type: .warning)
+            throw CommunicationError.alreadyMaxLevel
+        }
+
+        let nextType = hierarchy[nextIndex]
+        isLoading = true
+        defer { isLoading = false }
+
+        // 如果目标设备已存在则解锁，不存在则插入新记录
+        if let existingIndex = devices.firstIndex(where: { $0.deviceType == nextType }) {
+            // 已有记录但未解锁 → 解锁并设为当前设备
+            try await supabase
+                .from("communication_devices")
+                .update(["is_unlocked": true, "is_current": true])
+                .eq("user_id", value: userId.uuidString)
+                .eq("device_type", value: nextType.rawValue)
+                .execute()
+
+            // 旧当前设备取消激活
+            try await supabase
+                .from("communication_devices")
+                .update(["is_current": false])
+                .eq("user_id", value: userId.uuidString)
+                .eq("device_type", value: current.deviceType.rawValue)
+                .execute()
+
+            devices[existingIndex].isUnlocked = true
+            devices[existingIndex].isCurrent = true
+            if let oldIndex = devices.firstIndex(where: { $0.deviceType == current.deviceType }) {
+                devices[oldIndex].isCurrent = false
+            }
+            currentDevice = devices[existingIndex]
+
+        } else {
+            // 不存在该设备记录 → 插入
+            struct NewDevice: Encodable {
+                let user_id: String
+                let device_type: String
+                let device_level: Int
+                let is_unlocked: Bool
+                let is_current: Bool
+            }
+            let payload = NewDevice(
+                user_id: userId.uuidString,
+                device_type: nextType.rawValue,
+                device_level: 1,
+                is_unlocked: true,
+                is_current: true
+            )
+            try await supabase
+                .from("communication_devices")
+                .insert(payload)
+                .execute()
+
+            // 旧当前设备取消激活
+            try await supabase
+                .from("communication_devices")
+                .update(["is_current": false])
+                .eq("user_id", value: userId.uuidString)
+                .eq("device_type", value: current.deviceType.rawValue)
+                .execute()
+
+            // 刷新设备列表
+            _ = try await loadDevices(userId: userId)
+        }
+
+        logger.log("设备型号升级成功: \(current.deviceType.displayName) → \(nextType.displayName)", type: .success)
+    }
+
     // MARK: - Helper Methods
 
     /// 获取当前设备类型
@@ -375,10 +459,6 @@ final class CommunicationManager: ObservableObject {
     /// 由建筑完成触发设备解锁（供 BuildingManager 调用）
     func unlockDeviceByBuilding(deviceType: String) async {
         guard let userId = AuthManager.shared.currentUser?.id else { return }
-
-        // Lord 订阅者卫星设备已由订阅直接解锁，跳过
-        if deviceType == "satellite" && SubscriptionManager.shared.hasSatelliteAccess { return }
-
         guard let type = DeviceType(rawValue: deviceType) else { return }
         guard !(devices.first(where: { $0.deviceType == type })?.isUnlocked ?? false) else { return }
 
@@ -388,15 +468,6 @@ final class CommunicationManager: ObservableObject {
         } catch {
             logger.logError("建筑触发解锁通讯设备失败", error: error)
         }
-    }
-
-/// 检查 Lord 订阅者是否应自动解锁卫星
-    func ensureLordSatelliteAccess() async {
-        guard SubscriptionManager.shared.hasSatelliteAccess,
-              let userId = AuthManager.shared.currentUser?.id else { return }
-        let satType = DeviceType(rawValue: "satellite") ?? DeviceType.radio
-        guard !(devices.first(where: { $0.deviceType == satType })?.isUnlocked ?? false) else { return }
-        try? await unlockDevice(userId: userId, deviceType: satType)
     }
 
     /// 检查指定设备是否已解锁

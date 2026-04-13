@@ -141,6 +141,32 @@ final class LanguageManager: ObservableObject {
         return bundle.localizedString(forKey: key, value: nil, table: nil)
     }
 
+    // MARK: - Nonisolated 同步辅助（供 Model 层调用，绕过 MainActor）
+
+    /// 在非 MainActor 上下文（struct/enum）中直接读 UserDefaults 完成本地化，
+    /// 行为与 localizedString(for:) 完全一致。
+    nonisolated static func localizedStringSync(for key: String) -> String {
+        let raw = UserDefaults.standard.string(forKey: "app_language") ?? "system"
+        let language = AppLanguage(rawValue: raw) ?? .system
+
+        if language == .system {
+            return NSLocalizedString(key, comment: "")
+        }
+        guard let languageCode = language.languageCode,
+              let bundlePath = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
+              let bundle = Bundle(path: bundlePath) else {
+            return NSLocalizedString(key, comment: "")
+        }
+        return bundle.localizedString(forKey: key, value: nil, table: nil)
+    }
+
+    /// 在非 MainActor 上下文中读取当前语言代码
+    nonisolated static var currentLocaleSync: String {
+        let raw = UserDefaults.standard.string(forKey: "app_language") ?? "system"
+        let language = AppLanguage(rawValue: raw) ?? .system
+        return language.languageCode ?? "zh-Hans"
+    }
+
     // MARK: - 私有方法
 
     /// 保存语言设置到 UserDefaults

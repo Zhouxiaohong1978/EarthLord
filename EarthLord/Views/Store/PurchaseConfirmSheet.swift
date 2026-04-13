@@ -26,10 +26,12 @@ struct PurchaseConfirmSheet: View {
     // 礼包名本地化 key
     private var packNameKey: String {
         switch product.id {
-        case "com.earthlord.survivor_pack":    return "pack.survivor.name"
-        case "com.earthlord.constructor_pack": return "pack.constructor.name"
-        case "com.earthlord.engineer_pack":    return "pack.engineer.name"
-        case "com.earthlord.rare_pack":        return "pack.rare.name"
+        case "com.earthlord.survivor_pack":       return "pack.survivor.name"
+        case "com.earthlord.constructor_pack":    return "pack.constructor.name"
+        case "com.earthlord.engineer_pack":       return "pack.engineer.name"
+        case "com.earthlord.rare_pack":           return "pack.rare.name"
+        case "com.earthlord.comm_upgrade":        return "pack.comm_upgrade.name"
+        case "com.earthlord.capacity_expansion":  return "pack.backpack_expand.name"
         default: return ""
         }
     }
@@ -37,10 +39,12 @@ struct PurchaseConfirmSheet: View {
     // 礼包描述本地化 key
     private var packDescKey: String {
         switch product.id {
-        case "com.earthlord.survivor_pack":    return "pack.survivor.desc"
-        case "com.earthlord.constructor_pack": return "pack.constructor.desc"
-        case "com.earthlord.engineer_pack":    return "pack.engineer.desc"
-        case "com.earthlord.rare_pack":        return "pack.rare.desc"
+        case "com.earthlord.survivor_pack":       return "pack.survivor.desc"
+        case "com.earthlord.constructor_pack":    return "pack.constructor.desc"
+        case "com.earthlord.engineer_pack":       return "pack.engineer.desc"
+        case "com.earthlord.rare_pack":           return "pack.rare.desc"
+        case "com.earthlord.comm_upgrade":        return "pack.comm_upgrade.tagline"
+        case "com.earthlord.capacity_expansion":  return "pack.backpack_expand.tagline"
         default: return ""
         }
     }
@@ -69,7 +73,7 @@ struct PurchaseConfirmSheet: View {
                             if packNameKey.isEmpty {
                                 Text(product.displayName)
                             } else {
-                                Text(LocalizedStringKey(packNameKey))
+                                Text(LanguageManager.localizedStringSync(for: packNameKey))
                             }
                         }
                         .font(.title2)
@@ -80,7 +84,7 @@ struct PurchaseConfirmSheet: View {
                             if packDescKey.isEmpty {
                                 Text(product.description)
                             } else {
-                                Text(LocalizedStringKey(packDescKey))
+                                Text(LanguageManager.localizedStringSync(for: packDescKey))
                             }
                         }
                         .font(.subheadline)
@@ -91,7 +95,7 @@ struct PurchaseConfirmSheet: View {
 
                     // 价格
                     HStack(spacing: 4) {
-                        Text("store.price.label")
+                        Text(LanguageManager.localizedStringSync(for: "store.price.label"))
                             .font(.headline)
                             .foregroundColor(ApocalypseTheme.textSecondary)
 
@@ -108,7 +112,7 @@ struct PurchaseConfirmSheet: View {
                     // 物品预览
                     if let config = packConfig {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("store.contains")
+                            Text(LanguageManager.localizedStringSync(for: "store.contains"))
                                 .font(.headline)
                                 .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -118,7 +122,7 @@ struct PurchaseConfirmSheet: View {
                                         HStack(spacing: 8) {
                                             Image(systemName: "checkmark.circle.fill")
                                                 .foregroundColor(.green)
-                                            Text(LocalizedStringKey("item." + item.itemId))
+                                            Text(LanguageManager.localizedStringSync(for: "item." + item.itemId))
                                                 .font(.subheadline)
                                                 .foregroundColor(ApocalypseTheme.textPrimary)
                                             + Text(" ×\(item.quantity)")
@@ -135,7 +139,7 @@ struct PurchaseConfirmSheet: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "star.circle.fill")
                                                     .foregroundColor(.orange)
-                                                Text(LocalizedStringKey("item." + bonus.item.itemId))
+                                                Text(LanguageManager.localizedStringSync(for: "item." + bonus.item.itemId))
                                                     .font(.subheadline)
                                                     .foregroundColor(ApocalypseTheme.textPrimary)
                                                 + Text(" ×\(bonus.item.quantity)")
@@ -161,7 +165,7 @@ struct PurchaseConfirmSheet: View {
                     HStack(spacing: 8) {
                         Image(systemName: "envelope.fill")
                             .foregroundColor(ApocalypseTheme.primary)
-                        Text("store.info.desc")
+                        Text(LanguageManager.localizedStringSync(for: "store.info.desc"))
                             .font(.caption)
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }
@@ -175,7 +179,7 @@ struct PurchaseConfirmSheet: View {
                             dismiss()
                             onConfirm()
                         }) {
-                            Text("store.purchase.confirm")
+                            Text(LanguageManager.localizedStringSync(for: "store.purchase.confirm"))
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -189,7 +193,7 @@ struct PurchaseConfirmSheet: View {
                             dismiss()
                             onCancel()
                         }) {
-                            Text("store.close")
+                            Text(LanguageManager.localizedStringSync(for: "store.close"))
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)

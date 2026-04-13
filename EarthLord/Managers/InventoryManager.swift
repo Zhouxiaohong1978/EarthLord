@@ -54,6 +54,9 @@ final class InventoryManager: ObservableObject {
     /// 背包物品列表
     @Published var items: [BackpackItem] = []
 
+    /// 购买扩容券累计增加的额外格数（存 UserDefaults，与订阅档位无关）
+    @Published private(set) var extraCapacity: Int = 0
+
     /// 是否正在加载
     @Published var isLoading: Bool = false
 
@@ -61,6 +64,9 @@ final class InventoryManager: ObservableObject {
     @Published var errorMessage: String?
 
     // MARK: - Private Properties
+
+    private let extraCapacityKey = "com.earthlord.extraBackpackCapacity"
+    private let expandAmount = 200
 
     /// Supabase 客户端
     private var supabase: SupabaseClient {
@@ -73,7 +79,27 @@ final class InventoryManager: ObservableObject {
     // MARK: - Initialization
 
     private init() {
-        logger.log("InventoryManager 初始化完成", type: .info)
+        extraCapacity = UserDefaults.standard.integer(forKey: "com.earthlord.extraBackpackCapacity")
+        logger.log("InventoryManager 初始化完成，额外扩容: \(extraCapacity)格", type: .info)
+    }
+
+    // MARK: - 背包容量
+
+    /// 背包总容量 = 订阅档位基础容量 + 购买扩容券累计增量
+    var backpackCapacity: Int {
+        SubscriptionManager.shared.currentTier.backpackCapacity + extraCapacity
+    }
+
+    /// 当前已使用格数（每种物品占1格）
+    var usedSlots: Int { items.count }
+
+    /// 使用一张背包扩容券，扩大200格
+    func useExpandVoucher(inventoryId: UUID) async throws {
+        let before = backpackCapacity
+        try await useItem(inventoryId: inventoryId, quantity: 1)
+        extraCapacity += expandAmount
+        UserDefaults.standard.set(extraCapacity, forKey: extraCapacityKey)
+        logger.log("背包容量扩容成功: \(before) → \(backpackCapacity)", type: .success)
     }
 
     // MARK: - Public Methods
@@ -115,7 +141,9 @@ final class InventoryManager: ObservableObject {
                     obtainedAt: obtainedAt,
                     obtainedFrom: dbItem.obtainedFrom,
                     customName: dbItem.customName,
-                    customDescription: dbItem.customDescription
+                    customNameEn: dbItem.customNameEn,
+                    customDescription: dbItem.customDescription,
+                    customDescriptionEn: dbItem.customStoryEn
                 )
             }
 
@@ -156,6 +184,11 @@ final class InventoryManager: ObservableObject {
         }
     }
 
+    /// 登出时重置背包状态，防止跨账号数据污染
+    func resetForLogout() {
+        items = []
+    }
+
     /// 添加物品到背包
     /// - Parameters:
     ///   - itemId: 物品ID
@@ -170,7 +203,9 @@ final class InventoryManager: ObservableObject {
         obtainedFrom: String? = nil,
         sessionId: String? = nil,
         customName: String? = nil,
-        customDescription: String? = nil
+        customNameEn: String? = nil,
+        customDescription: String? = nil,
+        customDescriptionEn: String? = nil
     ) async throws {
         guard let userId = AuthManager.shared.currentUser?.id else {
             throw InventoryError.notAuthenticated
@@ -206,7 +241,9 @@ final class InventoryManager: ObservableObject {
                 "obtained_from": obtainedFrom != nil ? .string(obtainedFrom!) : .null,
                 "exploration_session_id": sessionId != nil ? .string(sessionId!) : .null,
                 "custom_name": customName != nil ? .string(customName!) : .null,
-                "custom_description": customDescription != nil ? .string(customDescription!) : .null
+                "custom_name_en": customNameEn != nil ? .string(customNameEn!) : .null,
+                "custom_description": customDescription != nil ? .string(customDescription!) : .null,
+                "custom_story_en": customDescriptionEn != nil ? .string(customDescriptionEn!) : .null
             ]
 
             try await supabase
@@ -332,11 +369,6 @@ final class InventoryManager: ObservableObject {
     /// 获取背包物品种类数（不同的物品类型数量）
     var itemTypeCount: Int {
         items.count
-    }
-
-    /// 获取背包容量上限（由订阅档位决定）
-    var backpackCapacity: Int {
-        SubscriptionManager.shared.backpackCapacity
     }
 
     /// 检查背包是否已满（按物品总数量）

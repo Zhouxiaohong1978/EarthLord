@@ -2334,6 +2334,22 @@
         }
       }
     },
+    "item.backpack_expand_voucher" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backpack Expansion Voucher"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包扩容券"
+          }
+        }
+      }
+    },
     "item.bandage" : {
       "localizations" : {
         "en" : {
@@ -2464,7 +2480,6 @@
       }
     },
     "item.device_upgrade_token" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3124,6 +3139,39 @@
         }
       }
     },
+    "pack.backpack_expand.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backpack Expansion"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包扩容券"
+          }
+        }
+      }
+    },
+    "pack.backpack_expand.tagline" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expand backpack +200 slots · Stackable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包容量+200格 · 可叠加购买"
+          }
+        }
+      }
+    },
     "pack.capacity.effect" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3205,6 +3253,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "一次性购买 · 永久扩充+500格"
+          }
+        }
+      }
+    },
+    "pack.comm_upgrade.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comm Device Upgrade"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通讯设备升级包"
+          }
+        }
+      }
+    },
+    "pack.comm_upgrade.tagline" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade device +1 level · Satellite +100km range"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备升级+1级 · 卫星额外+100公里"
           }
         }
       }
@@ -3503,6 +3584,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "/年"
+          }
+        }
+      }
+    },
+    "physique.buff.building" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Building Shelter: Vitals Decay -%d%%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建筑庇护：体征衰减 -%d%%"
+          }
+        }
+      }
+    },
+    "physique.buff.explorer" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explorer Boost: Vitals Decay -15%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索者加持：体征衰减 -15%"
+          }
+        }
+      }
+    },
+    "physique.buff.lord" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lord Aura: Vitals Decay -30%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领主光环：体征衰减 -30%"
           }
         }
       }
@@ -4359,6 +4491,7 @@
       }
     },
     "store.price.label" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4392,6 +4525,7 @@
       }
     },
     "store.purchase.confirm" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5768,6 +5902,40 @@
         }
       }
     },
+    "trade.nearby.hint" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This territory only"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅显示该领地挂单"
+          }
+        }
+      }
+    },
+    "trade.nearby.listings" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nearby Listings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地挂单"
+          }
+        }
+      }
+    },
     "unit.km" : {
       "localizations" : {
         "en" : {
@@ -6977,6 +7145,7 @@
       }
     },
     "任务发布" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7353,6 +7522,9 @@
         }
       }
     },
+    "使用设备升级令" : {
+
+    },
     "使用设备语言" : {
       "localizations" : {
         "en" : {
@@ -7606,39 +7778,8 @@
         }
       }
     },
-    "trade.nearby.listings" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nearby Listings"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领地挂单"
-          }
-        }
-      }
-    },
-    "trade.nearby.hint" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This territory only"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "仅显示该领地挂单"
-          }
-        }
-      }
-    },
     "全球挂单" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8976,6 +9117,9 @@
           }
         }
       }
+    },
+    "升级令 ×%lld" : {
+
     },
     "升级失败，请稍后重试" : {
       "localizations" : {
@@ -10743,6 +10887,7 @@
       }
     },
     "官方公告与生存指南" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10964,6 +11109,9 @@
           }
         }
       }
+    },
+    "将当前设备「%@」升级为下一型号，需消耗 1 枚设备升级令。" : {
+
     },
     "将获得以下物品" : {
       "extractionState" : "stale",
@@ -13142,6 +13290,9 @@
         }
       }
     },
+    "当前设备已是最高型号（卫星电话）" : {
+
+    },
     "当前设备无法发送" : {
       "localizations" : {
         "en" : {
@@ -13743,6 +13894,7 @@
       }
     },
     "所有玩家挂单可见" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -14669,6 +14821,23 @@
         }
       }
     },
+    "搜刮废墟" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruins Scavenged"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜刮废墟"
+          }
+        }
+      }
+    },
     "搜刮解锁" : {
       "localizations" : {
         "en" : {
@@ -15436,6 +15605,7 @@
       }
     },
     "暂无%@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -17280,6 +17450,23 @@
         }
       }
     },
+    "消耗卡路里" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calories Burned"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消耗卡路里"
+          }
+        }
+      }
+    },
     "深入废土的探索者" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -17420,6 +17607,7 @@
       }
     },
     "游戏资讯" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -17807,6 +17995,7 @@
       }
     },
     "生存指南" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -18372,6 +18561,9 @@
           }
         }
       }
+    },
+    "确认升级（消耗 1 枚升级令）" : {
+
     },
     "确认发送" : {
       "localizations" : {
@@ -19137,6 +19329,7 @@
       }
     },
     "紧急广播" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -21153,6 +21346,7 @@
       }
     },
     "请稍后再来查看" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -23319,86 +23513,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "面积"
-          }
-        }
-      }
-    },
-    "physique.buff.lord" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lord Aura: Vitals Decay -30%"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "领主光环：体征衰减 -30%"
-          }
-        }
-      }
-    },
-    "physique.buff.explorer" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explorer Boost: Vitals Decay -15%"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "探索者加持：体征衰减 -15%"
-          }
-        }
-      }
-    },
-    "physique.buff.building" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Building Shelter: Vitals Decay -%d%%"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "建筑庇护：体征衰减 -%d%%"
-          }
-        }
-      }
-    },
-    "搜刮废墟" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ruins Scavenged"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "搜刮废墟"
-          }
-        }
-      }
-    },
-    "消耗卡路里" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calories Burned"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "消耗卡路里"
           }
         }
       }

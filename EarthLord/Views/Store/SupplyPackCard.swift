@@ -84,6 +84,36 @@ private func theme(for productId: String) -> PackTheme {
             nameKey: "pack.rare.name",
             taglineKey: "pack.rare.tagline"
         )
+    case "com.earthlord.comm_upgrade":
+        return PackTheme(
+            accentColor: Color(red: 0.95, green: 0.20, blue: 0.70),
+            secondaryColor: Color(red: 0.72, green: 0.05, blue: 0.52),
+            headerGradient: [
+                Color(red: 0.22, green: 0.04, blue: 0.16),
+                Color(red: 0.08, green: 0.08, blue: 0.09)
+            ],
+            icon: "antenna.radiowaves.left.and.right",
+            badgeIcon: "📡",
+            tierLabel: "SIGNAL",
+            tierLabelColor: Color(red: 0.95, green: 0.20, blue: 0.70),
+            nameKey: "pack.comm_upgrade.name",
+            taglineKey: "pack.comm_upgrade.tagline"
+        )
+    case "com.earthlord.capacity_expansion":
+        return PackTheme(
+            accentColor: Color(red: 1.00, green: 0.82, blue: 0.00),
+            secondaryColor: Color(red: 0.80, green: 0.60, blue: 0.00),
+            headerGradient: [
+                Color(red: 0.22, green: 0.17, blue: 0.00),
+                Color(red: 0.08, green: 0.08, blue: 0.09)
+            ],
+            icon: "bag.fill.badge.plus",
+            badgeIcon: "🎒",
+            tierLabel: "EXPAND",
+            tierLabelColor: Color(red: 1.00, green: 0.82, blue: 0.00),
+            nameKey: "pack.backpack_expand.name",
+            taglineKey: "pack.backpack_expand.tagline"
+        )
     default:
         return PackTheme(
             accentColor: ApocalypseTheme.primary,
@@ -180,7 +210,7 @@ struct SupplyPackCard: View {
                         if t.nameKey.isEmpty {
                             Text(product.displayName)
                         } else {
-                            Text(LocalizedStringKey(t.nameKey))
+                            Text(LanguageManager.localizedStringSync(for: t.nameKey))
                         }
                     }
                     .font(.system(size: 22, weight: .black))
@@ -192,9 +222,9 @@ struct SupplyPackCard: View {
                     .font(.system(size: 28, weight: .black, design: .rounded))
                     .foregroundColor(t.accentColor)
 
-                // 特色说明（随系统语言）
+                // 特色说明（随 App 语言设置）
                 if !t.taglineKey.isEmpty {
-                    Text(LocalizedStringKey(t.taglineKey))
+                    Text(LanguageManager.localizedStringSync(for: t.taglineKey))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.70))
                         .lineLimit(2)
@@ -336,6 +366,7 @@ struct ThemedItemRow: View {
         case "fuel": return "flame.fill"
         case "electronic_component": return "cpu.fill"
         case "satellite_module": return "antenna.radiowaves.left.and.right"
+        case "backpack_expand_voucher": return "bag.fill.badge.plus"
         case "blueprint_basic", "blueprint_epic": return "doc.plaintext.fill"
         case "build_speedup": return "bolt.fill"
         case "equipment_rare", "equipment_epic": return "shield.fill"

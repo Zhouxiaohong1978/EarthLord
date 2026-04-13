@@ -115,17 +115,37 @@
       "type" : "NonConsumable"
     },
     {
-      "displayPrice" : "25.00",
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "1007",
+      "localizations" : [
+        {
+          "description" : "消耗品，每张扩充背包容量+200格，可多次购买",
+          "displayName" : "背包扩容券",
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "Consumable. Each voucher expands backpack by +200 slots. Can be purchased multiple times.",
+          "displayName" : "Backpack Expansion",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.earthlord.capacity_expansion",
+      "referenceName" : "Backpack Expansion",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "9.99",
       "familyShareable" : false,
       "internalID" : "1006",
       "localizations" : [
         {
-          "description" : "升级通讯设备，解锁更远通讯范围",
+          "description" : "将当前设备升级一级，卫星设备可额外增加100公里覆盖范围，扩展你的联络网络",
           "displayName" : "通讯设备升级包",
           "locale" : "zh_Hans"
         },
         {
-          "description" : "Upgrade communication device, unlock extended range",
+          "description" : "Upgrade your current device by one level. Satellite devices gain an extra 100km coverage range, extending your communication network.",
           "displayName" : "Comm Device Upgrade",
           "locale" : "en_US"
         }

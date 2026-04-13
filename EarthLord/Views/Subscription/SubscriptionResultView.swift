@@ -138,16 +138,17 @@ struct SubscriptionResultView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    benefitRow(icon: "backpack.fill", text: "背包容量提升至 \(tier.backpackCapacity)")
-                    benefitRow(icon: "map.fill", text: "探索范围扩大至 \(String(format: "%.0f", tier.explorationRadius))km")
-                    benefitRow(icon: "building.2.fill", text: "建造速度 \(String(format: "%.0f", tier.buildSpeedMultiplier))倍加速")
-                    benefitRow(icon: "arrow.triangle.2.circlepath", text: tier.dailyTradeLimit == nil ? "无限次交易" : "每日交易 \(tier.dailyTradeLimit!)次")
-                    benefitRow(icon: "gift.fill", text: "每日专属礼包")
-                    benefitRow(icon: "tag.fill", text: "专属呼号前缀")
+                    let lang = LanguageManager.shared
+                    benefitRow(icon: "backpack.fill", text: String(format: lang.localizedString(for: "sub.benefit.backpack"), tier.backpackCapacity))
+                    benefitRow(icon: "map.fill", text: String(format: lang.localizedString(for: "sub.benefit.range"), tier.explorationRadius))
+                    benefitRow(icon: "building.2.fill", text: String(format: lang.localizedString(for: "sub.benefit.build_speed"), tier.buildSpeedMultiplier))
+                    benefitRow(icon: "arrow.triangle.2.circlepath", text: tier.dailyTradeLimit == nil ? lang.localizedString(for: "无限次交易") : String(format: lang.localizedString(for: "sub.benefit.trades.daily"), tier.dailyTradeLimit!))
+                    benefitRow(icon: "gift.fill", text: lang.localizedString(for: "sub.benefit.daily_gift"))
+                    benefitRow(icon: "tag.fill", text: lang.localizedString(for: "sub.benefit.callsign"))
 
                     if tier == .lord {
-                        benefitRow(icon: "crown.fill", text: "领主专属头衔")
-                        benefitRow(icon: "person.3.fill", text: "优先客服支持")
+                        benefitRow(icon: "crown.fill", text: lang.localizedString(for: "sub.benefit.lord_title"))
+                        benefitRow(icon: "person.3.fill", text: lang.localizedString(for: "sub.benefit.support"))
                     }
                 }
             }
@@ -299,7 +300,9 @@ struct SubscriptionResultView: View {
 
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年MM月dd日"
+        formatter.locale = Locale(identifier: LanguageManager.shared.currentLocale)
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
         return formatter.string(from: date)
     }
 }

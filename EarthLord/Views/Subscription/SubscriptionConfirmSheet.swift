@@ -25,6 +25,22 @@ struct SubscriptionConfirmSheet: View {
         product.id.contains("yearly")
     }
 
+    /// 使用 app 语言设置返回产品名称，避免直接用 product.displayName（受设备语言影响）
+    private var localizedProductName: String {
+        let lang = LanguageManager.shared
+        let id = product.id
+        if id.contains("lord") && id.contains("yearly") {
+            return lang.localizedString(for: "sub.lord.yearly")
+        } else if id.contains("lord") && id.contains("monthly") {
+            return lang.localizedString(for: "sub.lord.monthly")
+        } else if id.contains("explorer") && id.contains("yearly") {
+            return lang.localizedString(for: "sub.explorer.yearly")
+        } else if id.contains("explorer") && id.contains("monthly") {
+            return lang.localizedString(for: "sub.explorer.monthly")
+        }
+        return product.displayName
+    }
+
     private var periodSuffix: String {
         isYearly ? String(localized: "period.yr.suffix") : String(localized: "period.mo.suffix")
     }
@@ -54,7 +70,7 @@ struct SubscriptionConfirmSheet: View {
                             .fontWeight(.bold)
                             .foregroundColor(ApocalypseTheme.textPrimary)
 
-                        Text(product.displayName)
+                        Text(localizedProductName)
                             .font(.subheadline)
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }

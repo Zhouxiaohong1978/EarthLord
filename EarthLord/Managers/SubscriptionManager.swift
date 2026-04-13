@@ -124,8 +124,15 @@ final class SubscriptionManager: ObservableObject {
 
     // MARK: - 订阅状态查询
 
+    /// 登出时重置订阅状态，防止跨账号数据污染
+    func resetForLogout() {
+        currentTier = .free
+        currentSubscription = nil
+    }
+
     /// 刷新订阅状态
     func refreshSubscriptionStatus() async {
+        // 记录查询时的用户 ID，防止异步结果写回时用户已切换
         guard let userId = AuthManager.shared.currentUser?.id else {
             currentTier = .free
             return
@@ -140,22 +147,29 @@ final class SubscriptionManager: ObservableObject {
 
             logger.log("订阅状态查询结果: \(result)", type: .info)
 
-            // 解析结果
-            if let tierString = result["tier"]?.stringValue,
-               let tier = SubscriptionTier(rawValue: tierString) {
-                currentTier = tier
+            // ⚠️ 异步查询完成后再次验证当前用户未切换，防止跨账号污染
+            guard AuthManager.shared.currentUser?.id == userId,
+                  AuthManager.shared.isAuthenticated else {
+                logger.log("订阅结果已过期（用户已切换或登出），丢弃", type: .info)
+                return
+            }
 
-                // 如果是付费用户，获取完整订阅信息
-                if tier != .free {
-                    await fetchSubscriptionDetails(userId: userId)
-                }
+            // 解析结果：必须 is_active = true 才算有效订阅
+            let isActive = result["is_active"]?.boolValue ?? false
+            if isActive,
+               let tierString = result["tier"]?.stringValue,
+               let tier = SubscriptionTier(rawValue: tierString),
+               tier != .free {
+                currentTier = tier
+                await fetchSubscriptionDetails(userId: userId)
             } else {
                 currentTier = .free
+                currentSubscription = nil
             }
 
         } catch {
-            logger.logError("查询订阅状态失败", error: error)
-            currentTier = .free
+            logger.logError("查询订阅状态失败（保留当前档位 \(currentTier.rawValue)，不重置）", error: error)
+            // 查询失败时不重置 currentTier，避免覆盖刚完成的购买结果
         }
     }
 
@@ -171,6 +185,10 @@ final class SubscriptionManager: ObservableObject {
                 .limit(1)
                 .execute()
                 .value
+
+            // 写回前验证用户未切换
+            guard AuthManager.shared.currentUser?.id == userId,
+                  AuthManager.shared.isAuthenticated else { return }
 
             if let db = response.first,
                let subscription = db.toUserSubscription() {
@@ -205,17 +223,27 @@ final class SubscriptionManager: ObservableObject {
                 // 验证交易
                 let transaction = try checkVerified(verification)
 
-                // 3. 处理订阅
+                // 3. 处理订阅（写入数据库）
                 try await handleSubscription(transaction: transaction, product: product, userId: userId)
 
                 // 4. 完成交易
                 await transaction.finish()
 
-                // 5. 刷新订阅状态
-                await refreshSubscriptionStatus()
+                // 5. 立即应用档位，不等待 DB 查询（防止 refreshSubscriptionStatus 因网络失败回退到 free）
+                let immediteTier: SubscriptionTier
+                if product.id.contains("basic") || product.id.contains("explorer") {
+                    immediteTier = .explorer
+                } else if product.id.contains("premium") || product.id.contains("lord") {
+                    immediteTier = .lord
+                } else {
+                    immediteTier = .free
+                }
+                currentTier = immediteTier
 
-                // 6. Lord 档自动解锁卫星通讯
-                await CommunicationManager.shared.ensureLordSatelliteAccess()
+                // 6. 后台从 DB 确认（失败时保留已设置的档位，不覆盖）
+                Task { [weak self] in
+                    await self?.refreshSubscriptionStatus()
+                }
 
                 logger.log("订阅成功: \(product.displayName)", type: .success)
 
@@ -450,11 +478,6 @@ final class SubscriptionManager: ObservableObject {
     /// 通讯范围倍率（叠加在建筑基础范围上）
     var communicationMultiplier: Double {
         currentTier.communicationMultiplier
-    }
-
-    /// Lord档是否直接解锁卫星通讯
-    var hasSatelliteAccess: Bool {
-        currentTier.hasSatelliteAccess
     }
 
     /// 步行探索奖励倍率

@@ -4599,6 +4599,38 @@
         }
       }
     },
+    "sub.benefit.support" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority customer support"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "优先客服支持"
+          }
+        }
+      }
+    },
+    "sub.benefit.trades.daily" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d trades/day"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日 %d 次交易"
+          }
+        }
+      }
+    },
     "sub.benefit.range" : {
       "localizations" : {
         "en" : {
@@ -19795,6 +19827,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "背包容量 300"
+          }
+        }
+      }
+    },
+    "背包容量提升至 500" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backpack capacity upgraded to 500"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包容量提升至 500"
+          }
+        }
+      }
+    },
+    "背包容量提升至 1000" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backpack capacity upgraded to 1000"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包容量提升至 1000"
           }
         }
       }

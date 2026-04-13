@@ -4599,7 +4599,24 @@
         }
       }
     },
+    "sub.benefit.range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore range %.0fkm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索范围 %.0fkm"
+          }
+        }
+      }
+    },
     "sub.benefit.support" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4616,6 +4633,7 @@
       }
     },
     "sub.benefit.trades.daily" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4627,22 +4645,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "每日 %d 次交易"
-          }
-        }
-      }
-    },
-    "sub.benefit.range" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explore range %.0fkm"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "探索范围 %.0fkm"
           }
         }
       }
@@ -7600,6 +7602,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "全球"
+          }
+        }
+      }
+    },
+    "trade.nearby.listings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nearby Listings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领地挂单"
+          }
+        }
+      }
+    },
+    "trade.nearby.hint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This territory only"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅显示该领地挂单"
           }
         }
       }
@@ -19831,40 +19865,6 @@
         }
       }
     },
-    "背包容量提升至 500" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Backpack capacity upgraded to 500"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "背包容量提升至 500"
-          }
-        }
-      }
-    },
-    "背包容量提升至 1000" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Backpack capacity upgraded to 1000"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "背包容量提升至 1000"
-          }
-        }
-      }
-    },
     "背包容量提升至 200" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -19895,6 +19895,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "背包容量提升至 300"
+          }
+        }
+      }
+    },
+    "背包容量提升至 500" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backpack capacity upgraded to 500"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包容量提升至 500"
+          }
+        }
+      }
+    },
+    "背包容量提升至 1000" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backpack capacity upgraded to 1000"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包容量提升至 1000"
           }
         }
       }

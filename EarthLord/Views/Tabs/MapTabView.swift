@@ -527,10 +527,10 @@ struct MapTabView: View {
                 explorationManager.startExploration()
             }
         }
-        // 附近交易市场 Sheet
+        // 附近交易市场 Sheet（只显示该领地主人的挂单）
         .sheet(isPresented: $showNearbyTradeSheet) {
             NavigationStack {
-                TradeMarketView()
+                TradeMarketView(filterUserId: nearbyTradingTerritory?.userId)
             }
             .presentationDetents([.large])
         }

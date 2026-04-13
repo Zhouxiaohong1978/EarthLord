@@ -158,12 +158,14 @@ struct MapTabView: View {
         return result
     }
 
-    /// 探索中可见的他人建筑（仅属于 campTerritories 范围内领地的建筑）
+    /// 探索中可见的他人建筑（仅属于 campTerritories 内具体领地的建筑）
+    /// ⚠️ 用 territoryId 而非 userId 过滤：同一玩家可能拥有多块领地，
+    /// 只进入其中1块的100m范围时，不应显示其他领地的建筑
     private var visibleOtherPlayersBuildings: [PlayerBuilding] {
         guard explorationManager.isExploring else { return [] }
-        let nearbyUserIds = Set(campTerritories.map { $0.userId.lowercased() })
+        let nearbyTerritoryIds = Set(campTerritories.map { $0.id })
         return buildingManager.otherPlayersBuildings.filter {
-            nearbyUserIds.contains($0.userId.uuidString.lowercased())
+            nearbyTerritoryIds.contains($0.territoryId)
         }
     }
 

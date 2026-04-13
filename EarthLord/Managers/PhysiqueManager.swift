@@ -123,8 +123,8 @@ final class PhysiqueManager: ObservableObject {
 
     var subscriptionBuffKey: String? {
         switch SubscriptionManager.shared.currentTier {
-        case .lord:     return "领主光环：体征衰减 -30%"
-        case .explorer: return "探索者加持：体征衰减 -15%"
+        case .lord:     return "physique.buff.lord"
+        case .explorer: return "physique.buff.explorer"
         case .free:     return nil
         }
     }
@@ -133,7 +133,7 @@ final class PhysiqueManager: ObservableObject {
     var buildingDecayBuffDescription: String? {
         let reduction = BuildingManager.shared.vitalDecayReduction
         guard reduction > 0 else { return nil }
-        return "建筑庇护：体征衰减 -\(Int(reduction * 100))%"
+        return String(format: LanguageManager.shared.localizedString(for: "physique.buff.building"), Int(reduction * 100))
     }
 
     // MARK: - Load

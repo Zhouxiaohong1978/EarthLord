@@ -23323,6 +23323,86 @@
         }
       }
     },
+    "physique.buff.lord" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lord Aura: Vitals Decay -30%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "领主光环：体征衰减 -30%"
+          }
+        }
+      }
+    },
+    "physique.buff.explorer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explorer Boost: Vitals Decay -15%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索者加持：体征衰减 -15%"
+          }
+        }
+      }
+    },
+    "physique.buff.building" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Building Shelter: Vitals Decay -%d%%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建筑庇护：体征衰减 -%d%%"
+          }
+        }
+      }
+    },
+    "搜刮废墟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruins Scavenged"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜刮废墟"
+          }
+        }
+      }
+    },
+    "消耗卡路里" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calories Burned"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消耗卡路里"
+          }
+        }
+      }
+    },
     "项" : {
       "extractionState" : "stale",
       "localizations" : {

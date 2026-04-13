@@ -26,16 +26,17 @@ struct SubscriptionConfirmSheet: View {
     }
 
     /// 使用 app 语言设置返回产品名称，避免直接用 product.displayName（受设备语言影响）
+    /// 注意：所有产品 ID 都包含 "earthlord"，不能用 contains("lord") 区分，需用 "premium"/"basic"
     private var localizedProductName: String {
         let lang = LanguageManager.shared
         let id = product.id
-        if id.contains("lord") && id.contains("yearly") {
+        if id.contains("premium") && id.contains("yearly") {
             return lang.localizedString(for: "sub.lord.yearly")
-        } else if id.contains("lord") && id.contains("monthly") {
+        } else if id.contains("premium") && id.contains("monthly") {
             return lang.localizedString(for: "sub.lord.monthly")
-        } else if id.contains("explorer") && id.contains("yearly") {
+        } else if id.contains("basic") && id.contains("yearly") {
             return lang.localizedString(for: "sub.explorer.yearly")
-        } else if id.contains("explorer") && id.contains("monthly") {
+        } else if id.contains("basic") && id.contains("monthly") {
             return lang.localizedString(for: "sub.explorer.monthly")
         }
         return product.displayName

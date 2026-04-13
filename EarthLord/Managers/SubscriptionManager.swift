@@ -65,35 +65,58 @@ final class SubscriptionManager: ObservableObject {
         transactionListener = listenForTransactions()
         logger.log("交易监听已启动", type: .info)
 
-        // 启动时检查所有当前有效授权，补写 DB 中缺失的订阅记录
+        // 启动时检查所有当前有效授权，仅在 DB 无有效记录时补写（防止沙盒续费覆盖）
         Task { [weak self] in
-            await self?.syncCurrentEntitlements()
+            await self?.refreshSubscriptionStatus()
+            // 只有 DB 查询后仍是 free，才尝试从 StoreKit 补写
+            if await self?.currentTier == .free {
+                await self?.syncCurrentEntitlements()
+            }
         }
     }
 
-    /// 将 StoreKit 当前所有有效授权同步到 DB（解决首次购买/切换设备后 DB 缺失的问题）
+    /// 将 StoreKit 当前有效授权补写到 DB
+    /// 仅在 DB 无有效记录（currentTier==free）时调用，防止沙盒自动续费反复覆盖已有档位
+    /// 只写入档位最高的那条授权，避免低档位覆盖高档位
     func syncCurrentEntitlements() async {
         guard let userId = AuthManager.shared.currentUser?.id else { return }
 
-        var synced = 0
+        // 找出 StoreKit 中档位最高的有效授权
+        var highestTier: SubscriptionTier = .free
+        var bestPair: (transaction: Transaction, product: Product)?
+
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result,
                   transaction.productType == .autoRenewable,
                   let product = availableSubscriptions.first(where: { $0.id == transaction.productID }) else {
                 continue
             }
-            do {
-                try await handleSubscription(transaction: transaction, product: product, userId: userId)
-                synced += 1
-            } catch {
-                logger.logError("syncCurrentEntitlements 写库失败: \(transaction.productID)", error: error)
+            let tier = tierForProductId(product.id)
+            if tier.rank > highestTier.rank {
+                highestTier = tier
+                bestPair = (transaction, product)
             }
         }
 
-        if synced > 0 {
-            logger.log("启动时补写 \(synced) 条订阅记录，重新刷新状态", type: .info)
-            await refreshSubscriptionStatus()
+        guard let best = bestPair, highestTier != .free else {
+            logger.log("syncCurrentEntitlements: StoreKit 无有效授权，跳过", type: .info)
+            return
         }
+
+        do {
+            try await handleSubscription(transaction: best.transaction, product: best.product, userId: userId)
+            logger.log("补写订阅记录成功: \(best.product.id)（\(highestTier.rawValue)）", type: .info)
+            await refreshSubscriptionStatus()
+        } catch {
+            logger.logError("syncCurrentEntitlements 写库失败", error: error)
+        }
+    }
+
+    /// 根据 product ID 推断订阅档位（用 basic/premium 区分，避免 earthlord 误匹配 lord）
+    private func tierForProductId(_ id: String) -> SubscriptionTier {
+        if id.contains("premium") { return .lord }
+        if id.contains("basic") { return .explorer }
+        return .free
     }
 
     deinit {

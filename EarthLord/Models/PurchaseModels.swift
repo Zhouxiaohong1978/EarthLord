@@ -381,6 +381,15 @@ enum SubscriptionTier: String, Codable {
         }
     }
 
+    /// 档位数值，用于比较高低（lord > explorer > free）
+    var rank: Int {
+        switch self {
+        case .free:     return 0
+        case .explorer: return 1
+        case .lord:     return 2
+        }
+    }
+
     var callsignPrefix: String {
         switch self {
         case .free:     return ""
@@ -435,11 +444,6 @@ enum SubscriptionTier: String, Codable {
         case .explorer: return 1.3
         case .lord:     return 1.6
         }
-    }
-
-    // MARK: Lord档是否直接解锁卫星通讯（无需建领主指挥所）
-    var hasSatelliteAccess: Bool {
-        self == .lord
     }
 
     // MARK: 步行奖励倍率 — 免费1x，探索者1.5x，领主2x

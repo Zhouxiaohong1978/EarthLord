@@ -64,6 +64,36 @@ final class SubscriptionManager: ObservableObject {
         guard transactionListener == nil else { return }
         transactionListener = listenForTransactions()
         logger.log("交易监听已启动", type: .info)
+
+        // 启动时检查所有当前有效授权，补写 DB 中缺失的订阅记录
+        Task { [weak self] in
+            await self?.syncCurrentEntitlements()
+        }
+    }
+
+    /// 将 StoreKit 当前所有有效授权同步到 DB（解决首次购买/切换设备后 DB 缺失的问题）
+    func syncCurrentEntitlements() async {
+        guard let userId = AuthManager.shared.currentUser?.id else { return }
+
+        var synced = 0
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result,
+                  transaction.productType == .autoRenewable,
+                  let product = availableSubscriptions.first(where: { $0.id == transaction.productID }) else {
+                continue
+            }
+            do {
+                try await handleSubscription(transaction: transaction, product: product, userId: userId)
+                synced += 1
+            } catch {
+                logger.logError("syncCurrentEntitlements 写库失败: \(transaction.productID)", error: error)
+            }
+        }
+
+        if synced > 0 {
+            logger.log("启动时补写 \(synced) 条订阅记录，重新刷新状态", type: .info)
+            await refreshSubscriptionStatus()
+        }
     }
 
     deinit {
@@ -368,18 +398,54 @@ final class SubscriptionManager: ObservableObject {
     }
 
     /// 恢复购买
+    /// StoreKit 2 中需要遍历 Transaction.currentEntitlements 重新写库，
+    /// 仅 AppStore.sync() + refreshSubscriptionStatus() 无法恢复 DB 缺失的记录
     func restorePurchases() async throws {
         logger.log("开始恢复购买", type: .info)
 
         do {
-            // StoreKit 2 自动同步购买记录
+            // 1. 强制同步 Apple 服务器最新购买记录
             try await AppStore.sync()
 
-            // 刷新订阅状态
+            // 2. 遍历所有当前有效授权，将 DB 里缺失的订阅补写进去
+            guard let userId = AuthManager.shared.currentUser?.id else {
+                throw SubscriptionError.notAuthenticated
+            }
+
+            var restoredCount = 0
+            for await result in Transaction.currentEntitlements {
+                do {
+                    let transaction = try checkVerified(result)
+
+                    // 只处理订阅类型
+                    guard transaction.productType == .autoRenewable else { continue }
+
+                    // 找到对应的 Product 对象（可能 availableSubscriptions 还未加载）
+                    let matchedProduct = availableSubscriptions.first(where: { $0.id == transaction.productID })
+                    guard let product = matchedProduct else {
+                        logger.log("恢复时找不到商品: \(transaction.productID)，跳过", type: .info)
+                        continue
+                    }
+
+                    // 重新写库（handleSubscription 内部做 upsert，重复写安全）
+                    try await handleSubscription(transaction: transaction, product: product, userId: userId)
+                    restoredCount += 1
+                    logger.log("已恢复交易: \(transaction.productID)", type: .success)
+
+                } catch {
+                    logger.logError("处理恢复交易失败: \(result)", error: error)
+                }
+            }
+
+            logger.log("共恢复 \(restoredCount) 条交易记录", type: .info)
+
+            // 3. 刷新订阅状态（现在 DB 应该有记录了）
             await refreshSubscriptionStatus()
 
             logger.log("恢复购买完成", type: .success)
 
+        } catch let error as SubscriptionError {
+            throw error
         } catch {
             logger.logError("恢复购买失败", error: error)
             throw SubscriptionError.subscribeFailed("恢复购买失败")

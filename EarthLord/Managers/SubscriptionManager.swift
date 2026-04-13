@@ -65,14 +65,8 @@ final class SubscriptionManager: ObservableObject {
         transactionListener = listenForTransactions()
         logger.log("交易监听已启动", type: .info)
 
-        // 启动时检查所有当前有效授权，仅在 DB 无有效记录时补写（防止沙盒续费覆盖）
-        Task { [weak self] in
-            await self?.refreshSubscriptionStatus()
-            // 只有 DB 查询后仍是 free，才尝试从 StoreKit 补写
-            if await self?.currentTier == .free {
-                await self?.syncCurrentEntitlements()
-            }
-        }
+        // 启动时只刷新 DB 状态，不自动从 StoreKit 补写
+        // （补写逻辑仅在用户主动点"恢复购买"时执行，防止沙盒自动续费反复覆盖）
     }
 
     /// 将 StoreKit 当前有效授权补写到 DB

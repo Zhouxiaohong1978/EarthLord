@@ -530,7 +530,7 @@ struct MapTabView: View {
         // 附近交易市场 Sheet（只显示该领地主人的挂单）
         .sheet(isPresented: $showNearbyTradeSheet) {
             NavigationStack {
-                TradeMarketView(filterUserId: nearbyTradingTerritory?.userId)
+                TradeMarketView(filterUserId: nearbyTradingTerritory.flatMap { UUID(uuidString: $0.userId) })
             }
             .presentationDetents([.large])
         }

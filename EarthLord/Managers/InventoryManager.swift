@@ -54,7 +54,7 @@ final class InventoryManager: ObservableObject {
     /// 背包物品列表
     @Published var items: [BackpackItem] = []
 
-    /// 购买扩容券累计增加的额外格数（存 UserDefaults，与订阅档位无关）
+    /// 购买扩容券累计增加的额外格数（存 Supabase profiles，与订阅档位无关）
     @Published private(set) var extraCapacity: Int = 0
 
     /// 是否正在加载
@@ -65,7 +65,6 @@ final class InventoryManager: ObservableObject {
 
     // MARK: - Private Properties
 
-    private let extraCapacityKey = "com.earthlord.extraBackpackCapacity"
     private let expandAmount = 200
 
     /// Supabase 客户端
@@ -79,8 +78,7 @@ final class InventoryManager: ObservableObject {
     // MARK: - Initialization
 
     private init() {
-        extraCapacity = UserDefaults.standard.integer(forKey: "com.earthlord.extraBackpackCapacity")
-        logger.log("InventoryManager 初始化完成，额外扩容: \(extraCapacity)格", type: .info)
+        logger.log("InventoryManager 初始化完成", type: .info)
     }
 
     // MARK: - 背包容量
@@ -93,12 +91,46 @@ final class InventoryManager: ObservableObject {
     /// 当前已使用格数（每种物品占1格）
     var usedSlots: Int { items.count }
 
+    /// 从 Supabase 加载当前用户的额外容量
+    func loadExtraCapacity() async {
+        guard let userId = AuthManager.shared.currentUser?.id else { return }
+        // 清除旧 UserDefaults key，防止跨账号污染（历史遗留）
+        UserDefaults.standard.removeObject(forKey: "com.earthlord.extraBackpackCapacity")
+        do {
+            struct ProfileCapacity: Decodable {
+                let extraBackpackCapacity: Int
+                enum CodingKeys: String, CodingKey {
+                    case extraBackpackCapacity = "extra_backpack_capacity"
+                }
+            }
+            let result: ProfileCapacity = try await supabase
+                .from("profiles")
+                .select("extra_backpack_capacity")
+                .eq("id", value: userId.uuidString)
+                .single()
+                .execute()
+                .value
+            extraCapacity = result.extraBackpackCapacity
+            logger.log("额外背包容量加载: \(extraCapacity)格", type: .info)
+        } catch {
+            logger.logError("加载额外背包容量失败", error: error)
+        }
+    }
+
     /// 使用一张背包扩容券，扩大200格
     func useExpandVoucher(inventoryId: UUID) async throws {
+        guard let userId = AuthManager.shared.currentUser?.id else {
+            throw InventoryError.notAuthenticated
+        }
         let before = backpackCapacity
         try await useItem(inventoryId: inventoryId, quantity: 1)
-        extraCapacity += expandAmount
-        UserDefaults.standard.set(extraCapacity, forKey: extraCapacityKey)
+        let newExtra = extraCapacity + expandAmount
+        try await supabase
+            .from("profiles")
+            .update(["extra_backpack_capacity": newExtra])
+            .eq("id", value: userId.uuidString)
+            .execute()
+        extraCapacity = newExtra
         logger.log("背包容量扩容成功: \(before) → \(backpackCapacity)", type: .success)
     }
 
@@ -171,6 +203,7 @@ final class InventoryManager: ObservableObject {
 
     /// 刷新背包（供 UI 调用）
     func refreshInventory() async {
+        await loadExtraCapacity()
         do {
             _ = try await getInventory()
             errorMessage = nil
@@ -187,6 +220,7 @@ final class InventoryManager: ObservableObject {
     /// 登出时重置背包状态，防止跨账号数据污染
     func resetForLogout() {
         items = []
+        extraCapacity = 0
     }
 
     /// 添加物品到背包

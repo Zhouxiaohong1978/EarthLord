@@ -161,7 +161,14 @@ struct ProfileTabView: View {
                         .font(.system(size: 42, weight: .bold))
                         .foregroundColor(.white)
                 }
+
+                // 领主专属王冠
+                if subscriptionManager.currentTier == .lord {
+                    LordCrownView()
+                        .offset(y: -54)
+                }
             }
+            .padding(.top, subscriptionManager.currentTier == .lord ? 28 : 0)
 
             // 用户名
             Text(displayName)
@@ -443,27 +450,6 @@ struct ProfileTabView: View {
                     .background(ApocalypseTheme.cardBackground)
                     .cornerRadius(12)
                 }
-            }
-
-            // 呼号设置
-            NavigationLink { CallsignEditView().environmentObject(authManager) } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.title3).foregroundColor(ApocalypseTheme.info)
-                        .frame(width: 36, height: 36)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(ApocalypseTheme.info.opacity(0.15)))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("呼号设置").font(.callout).fontWeight(.medium).foregroundColor(ApocalypseTheme.textPrimary)
-                        Text(CommunicationManager.shared.userCallsign ?? String(localized: "未设置呼号"))
-                            .font(.caption)
-                            .foregroundColor(CommunicationManager.shared.userCallsign == nil ? ApocalypseTheme.warning : ApocalypseTheme.info)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.caption).foregroundColor(ApocalypseTheme.textMuted)
-                }
-                .padding(14)
-                .background(ApocalypseTheme.cardBackground)
-                .cornerRadius(12)
             }
 
             // 查看详细统计
@@ -1017,6 +1003,17 @@ enum AvatarStore {
     private static func fileURL(for userId: String) -> URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("avatar_\(userId).jpg")
+    }
+}
+
+// MARK: - 领主王冠
+
+struct LordCrownView: View {
+    var body: some View {
+        Text("👑")
+            .font(.system(size: 48))
+            .shadow(color: Color(red: 1.0, green: 0.80, blue: 0.0).opacity(0.9), radius: 12, x: 0, y: 2)
+            .shadow(color: Color(red: 1.0, green: 0.60, blue: 0.0).opacity(0.5), radius: 20, x: 0, y: 4)
     }
 }
 

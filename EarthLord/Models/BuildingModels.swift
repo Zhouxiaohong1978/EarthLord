@@ -261,8 +261,11 @@ struct PlayerBuilding: Identifiable, Codable {
         case showToOthers = "show_to_others"
     }
 
-    /// 检查建造是否已完成（根据时间）
+    /// 检查建造是否已完成（优先用 build_completed_at，兼容加速道具）
     func isConstructionComplete(template: BuildingTemplate) -> Bool {
+        if let completedAt = buildCompletedAt {
+            return Date() >= completedAt
+        }
         let elapsed = Date().timeIntervalSince(buildStartedAt)
         return elapsed >= Double(template.buildTimeSeconds)
     }

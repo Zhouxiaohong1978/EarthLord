@@ -2,7 +2,7 @@
 //  ChannelCenterView.swift
 //  EarthLord
 //
-//  频道中心 - 显示我的频道和发现频道
+//  频道中心 - 搜索入口 + 附近频道列表
 //
 
 import SwiftUI
@@ -12,31 +12,33 @@ struct ChannelCenterView: View {
     @EnvironmentObject var authManager: AuthManager
     @StateObject private var communicationManager = CommunicationManager.shared
 
-    @State private var selectedTab = 0
+    @ObservedObject private var locationManager = LocationManager.shared
+
+    @State private var showSearchSheet = false
     @State private var showCreateSheet = false
     @State private var selectedChannel: CommunicationChannel?
-    @State private var searchText = ""
-    @State private var isRefreshing = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // 顶部标题栏
+            // 标题栏
             headerView
 
-            // Tab 切换
-            tabSelector
+            ScrollView {
+                VStack(spacing: 16) {
+                    // 搜索频道入口
+                    searchEntry
 
-            // 内容区域
-            TabView(selection: $selectedTab) {
-                myChannelsView
-                    .tag(0)
-
-                discoverChannelsView
-                    .tag(1)
+                    // 附近频道
+                    nearbySection
+                }
+                .padding(16)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .background(ApocalypseTheme.background)
+        .sheet(isPresented: $showSearchSheet) {
+            ChannelSearchView()
+                .environmentObject(authManager)
+        }
         .sheet(isPresented: $showCreateSheet) {
             CreateChannelSheet()
                 .environmentObject(authManager)
@@ -48,9 +50,12 @@ struct ChannelCenterView: View {
         .task {
             await loadData()
         }
+        .refreshable {
+            await loadData()
+        }
     }
 
-    // MARK: - Header View
+    // MARK: - 标题栏
 
     private var headerView: some View {
         HStack {
@@ -60,256 +65,266 @@ struct ChannelCenterView: View {
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
             Spacer()
-
-            Button(action: { showCreateSheet = true }) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(ApocalypseTheme.primary)
-            }
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
-    }
-
-    // MARK: - Tab Selector
-
-    private var tabSelector: some View {
-        HStack(spacing: 0) {
-            tabButton(title: String(localized: "我的频道"), count: communicationManager.subscribedChannels.count, tag: 0)
-            tabButton(title: String(localized: "发现频道"), count: nil, tag: 1)
-        }
         .background(ApocalypseTheme.cardBackground)
     }
 
-    private func tabButton(title: String, count: Int?, tag: Int) -> some View {
-        Button(action: { withAnimation { selectedTab = tag } }) {
-            VStack(spacing: 4) {
-                HStack(spacing: 4) {
-                    Text(title)
+    // MARK: - 搜索入口
+
+    private var deviceRangeLabel: String {
+        guard let device = communicationManager.currentDevice else { return "—" }
+        let range = device.currentRange
+        if range == Double.infinity { return String(localized: "不限") }
+        if range >= 100 { return String(localized: "全球") }
+        return "\(Int(range)) km"
+    }
+
+    private var searchEntry: some View {
+        Button(action: { showSearchSheet = true }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(ApocalypseTheme.primary.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 18))
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "搜索频道"))
                         .font(.subheadline)
-                        .fontWeight(selectedTab == tag ? .semibold : .regular)
-
-                    if let count = count, count > 0 {
-                        Text("\(count)")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundColor(ApocalypseTheme.textPrimary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(ApocalypseTheme.primary.opacity(0.3))
-                            .clipShape(Capsule())
-                    }
-                }
-                .foregroundColor(selectedTab == tag ? ApocalypseTheme.primary : ApocalypseTheme.textSecondary)
-
-                Rectangle()
-                    .fill(selectedTab == tag ? ApocalypseTheme.primary : Color.clear)
-                    .frame(height: 2)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-    }
-
-    // MARK: - My Channels View
-
-    private var myChannelsView: some View {
-        ScrollView {
-            if communicationManager.isLoading && communicationManager.subscribedChannels.isEmpty {
-                loadingView
-            } else if communicationManager.subscribedChannels.isEmpty {
-                emptyMyChannelsView
-            } else {
-                LazyVStack(spacing: 12) {
-                    ForEach(communicationManager.subscribedChannels) { subscribedChannel in
-                        // 官方频道导航到 OfficialChannelDetailView
-                        if communicationManager.isOfficialChannel(subscribedChannel.channel.id) {
-                            NavigationLink(destination: OfficialChannelDetailView().environmentObject(authManager)) {
-                                ChannelRowView(channel: subscribedChannel.channel, isSubscribed: true, isOfficial: true)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        } else {
-                            NavigationLink(destination: ChannelChatView(channel: subscribedChannel.channel).environmentObject(authManager)) {
-                                ChannelRowView(channel: subscribedChannel.channel, isSubscribed: true, isOfficial: false)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .contextMenu {
-                                Button(action: { selectedChannel = subscribedChannel.channel }) {
-                                    Label(String(localized: "频道详情"), systemImage: "info.circle")
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding()
-            }
-        }
-        .refreshable {
-            await loadData()
-        }
-    }
-
-    private var emptyMyChannelsView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.system(size: 50))
-                .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
-
-            Text(String(localized: "暂无订阅频道"))
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            Text(String(localized: "创建新频道或去发现页面订阅"))
-                .font(.subheadline)
-                .foregroundColor(ApocalypseTheme.textSecondary)
-
-            Button(action: { showCreateSheet = true }) {
-                HStack {
-                    Image(systemName: "plus.circle")
-                    Text(String(localized: "创建频道"))
-                }
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(ApocalypseTheme.primary)
-                .cornerRadius(8)
-            }
-            .padding(.top, 8)
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Discover Channels View
-
-    private var discoverChannelsView: some View {
-        VStack(spacing: 0) {
-            // 搜索栏
-            searchBar
-
-            ScrollView {
-                if communicationManager.isLoading && communicationManager.channels.isEmpty {
-                    loadingView
-                } else if filteredChannels.isEmpty {
-                    emptyDiscoverView
-                } else {
-                    LazyVStack(spacing: 12) {
-                        ForEach(filteredChannels) { channel in
-                            let isOfficial = communicationManager.isOfficialChannel(channel.id)
-                            if isOfficial {
-                                NavigationLink(destination: OfficialChannelDetailView().environmentObject(authManager)) {
-                                    ChannelRowView(
-                                        channel: channel,
-                                        isSubscribed: true,
-                                        isOfficial: true
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            } else {
-                                ChannelRowView(
-                                    channel: channel,
-                                    isSubscribed: communicationManager.isSubscribed(channelId: channel.id),
-                                    isOfficial: false
-                                )
-                                .onTapGesture {
-                                    selectedChannel = channel
-                                }
-                            }
-                        }
-                    }
-                    .padding()
-                }
-            }
-            .refreshable {
-                await loadData()
-            }
-        }
-    }
-
-    private var searchBar: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(ApocalypseTheme.textSecondary)
-
-            TextField(String(localized: "搜索频道..."), text: $searchText)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            if !searchText.isEmpty {
-                Button(action: { searchText = "" }) {
-                    Image(systemName: "xmark.circle.fill")
+                        .fontWeight(.medium)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                    Text(String(localized: "按名称或频道号查找"))
+                        .font(.caption)
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
+
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Image(systemName: "wave.3.right")
+                        .font(.system(size: 11))
+                    Text(deviceRangeLabel)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(ApocalypseTheme.primary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(ApocalypseTheme.primary.opacity(0.12))
+                .cornerRadius(8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
             }
+            .padding()
+            .background(ApocalypseTheme.cardBackground)
+            .cornerRadius(12)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(ApocalypseTheme.cardBackground)
-        .cornerRadius(8)
-        .padding(.horizontal)
-        .padding(.vertical, 8)
+        .buttonStyle(PlainButtonStyle())
     }
 
-    private var filteredChannels: [CommunicationChannel] {
-        if searchText.isEmpty {
-            return communicationManager.channels
+    // MARK: - 附近频道
+
+    /// 当前设备范围（km），nil = 无限制
+    private var deviceRangeKm: Double? {
+        guard let device = communicationManager.currentDevice else { return nil }
+        let r = device.currentRange
+        return r == Double.infinity ? nil : r
+    }
+
+    /// 附近频道（含已订阅），按设备范围过滤，自己的频道和已订阅优先
+    private var allNearbyChannels: [CommunicationChannel] {
+        let myId = authManager.currentUser?.id
+        let filtered = communicationManager.channels.filter { ch in
+            guard !communicationManager.isOfficialChannel(ch.id) else { return false }
+            guard let maxKm = deviceRangeKm else { return true }
+            guard let playerLoc = locationManager.userLocation else { return true }
+            guard let dist = ch.distance(from: playerLoc) else { return true }
+            return dist <= maxKm
         }
+        return filtered.sorted { a, b in
+            let aOwn = a.creatorId == myId
+            let bOwn = b.creatorId == myId
+            let aSub = communicationManager.isSubscribed(channelId: a.id)
+            let bSub = communicationManager.isSubscribed(channelId: b.id)
+            // 自己的频道 > 已订阅 > 其他
+            let aScore = aOwn ? 2 : (aSub ? 1 : 0)
+            let bScore = bOwn ? 2 : (bSub ? 1 : 0)
+            return aScore > bScore
+        }
+    }
+
+    private var nearbySection: some View {
+        VStack(spacing: 10) {
+            // 区块标题 + 数量
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: deviceRangeKm == nil ? "globe" : "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.primary)
+                    Text(deviceRangeKm == nil ? String(localized: "全部频道") : String(localized: "附近频道"))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                }
+
+                Spacer()
+
+                Text("\(allNearbyChannels.count)")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(ApocalypseTheme.primary.opacity(0.25))
+                    .clipShape(Capsule())
+            }
+            .padding(.horizontal, 4)
+
+            if communicationManager.isLoading && allNearbyChannels.isEmpty {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
+                    .padding(.vertical, 24)
+            } else if allNearbyChannels.isEmpty {
+                emptyNearbyView
+            } else {
+                ForEach(allNearbyChannels) { channel in
+                    let isOfficial = communicationManager.isOfficialChannel(channel.id)
+                    let isSubscribed = communicationManager.isSubscribed(channelId: channel.id)
+
+                    if isOfficial {
+                        NavigationLink(destination: OfficialChannelDetailView().environmentObject(authManager)) {
+                            ChannelRowView(channel: channel, isSubscribed: true, isOfficial: true)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        ChannelRowView(channel: channel, isSubscribed: isSubscribed, isOfficial: false)
+                            .onTapGesture {
+                                selectedChannel = channel
+                            }
+                    }
+                }
+            }
+        }
+    }
+
+    private var emptyNearbyView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "dot.radiowaves.left.and.right")
+                .font(.system(size: 40))
+                .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.4))
+            Text(String(localized: "附近暂无频道"))
+                .font(.subheadline)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+            Text(String(localized: "升级设备可扩大搜索范围"))
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    }
+
+    // MARK: - 加载数据
+
+    private func loadData() async {
+        guard let userId = authManager.currentUser?.id else { return }
+        do {
+            _ = try await communicationManager.loadPublicChannels()
+            _ = try await communicationManager.loadSubscribedChannels(userId: userId)
+        } catch {
+            print("加载频道数据失败: \(error)")
+        }
+    }
+}
+
+// MARK: - 频道搜索视图
+
+struct ChannelSearchView: View {
+    @EnvironmentObject var authManager: AuthManager
+    @StateObject private var communicationManager = CommunicationManager.shared
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var searchText = ""
+    @State private var selectedChannel: CommunicationChannel?
+
+    private var filteredChannels: [CommunicationChannel] {
+        if searchText.isEmpty { return communicationManager.channels }
         return communicationManager.channels.filter {
             $0.name.localizedCaseInsensitiveContains(searchText) ||
             $0.channelCode.localizedCaseInsensitiveContains(searchText)
         }
     }
 
-    private var emptyDiscoverView: some View {
-        VStack(spacing: 16) {
-            Spacer()
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApocalypseTheme.background.ignoresSafeArea()
 
-            Image(systemName: "dot.radiowaves.left.and.right")
-                .font(.system(size: 50))
-                .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
+                VStack(spacing: 0) {
+                    // 搜索栏
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                        TextField(String(localized: "搜索频道名称或频道号..."), text: $searchText)
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(ApocalypseTheme.textSecondary)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(ApocalypseTheme.cardBackground)
+                    .cornerRadius(10)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
 
-            Text(searchText.isEmpty ? String(localized: "暂无公共频道") : String(localized: "未找到匹配频道"))
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            Text(searchText.isEmpty ? String(localized: "成为第一个创建频道的人") : String(localized: "尝试其他关键词"))
-                .font(.subheadline)
-                .foregroundColor(ApocalypseTheme.textSecondary)
-
-            Spacer()
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            if filteredChannels.isEmpty {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.4))
+                                    Text(searchText.isEmpty ? String(localized: "输入关键词开始搜索") : String(localized: "未找到匹配频道"))
+                                        .font(.subheadline)
+                                        .foregroundColor(ApocalypseTheme.textSecondary)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 48)
+                            } else {
+                                ForEach(filteredChannels) { channel in
+                                    let isOfficial = communicationManager.isOfficialChannel(channel.id)
+                                    let isSubscribed = communicationManager.isSubscribed(channelId: channel.id)
+                                    ChannelRowView(channel: channel, isSubscribed: isSubscribed, isOfficial: isOfficial)
+                                        .onTapGesture { selectedChannel = channel }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "搜索频道"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(String(localized: "关闭")) { dismiss() }
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Loading View
-
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.primary))
-            Text(String(localized: "加载中..."))
-                .font(.subheadline)
-                .foregroundColor(ApocalypseTheme.textSecondary)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Methods
-
-    private func loadData() async {
-        guard let userId = authManager.currentUser?.id else { return }
-
-        do {
-            _ = try await communicationManager.loadPublicChannels()
-            _ = try await communicationManager.loadSubscribedChannels(userId: userId)
-        } catch {
-            print("加载频道数据失败: \(error)")
+        .sheet(item: $selectedChannel) { channel in
+            ChannelDetailView(channel: channel)
+                .environmentObject(authManager)
         }
     }
 }
@@ -321,20 +336,23 @@ struct ChannelRowView: View {
     let isSubscribed: Bool
     var isOfficial: Bool = false
 
+    @StateObject private var communicationManager = CommunicationManager.shared
+
+    private var isFavorited: Bool {
+        communicationManager.isFavorited(channelId: channel.id)
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            // 频道图标
             ZStack {
                 Circle()
                     .fill(isOfficial ? ApocalypseTheme.primary.opacity(0.2) : channel.channelType.color.opacity(0.2))
                     .frame(width: 48, height: 48)
-
                 Image(systemName: isOfficial ? "megaphone.fill" : channel.channelType.icon)
                     .font(.title3)
                     .foregroundColor(isOfficial ? ApocalypseTheme.primary : channel.channelType.color)
             }
 
-            // 频道信息
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(isOfficial ? String(localized: "末日广播站") : channel.name)
@@ -364,7 +382,6 @@ struct ChannelRowView: View {
                             .font(.caption2)
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     }
-
                     Text(isOfficial ? String(localized: "官方频道") : channel.channelType.displayName)
                         .font(.caption2)
                         .foregroundColor(isOfficial ? ApocalypseTheme.primary : channel.channelType.color)
@@ -377,6 +394,19 @@ struct ChannelRowView: View {
 
             Spacer()
 
+            // 收藏按钮（官方频道不显示）
+            if !isOfficial {
+                Button {
+                    communicationManager.toggleFavorite(channelId: channel.id)
+                } label: {
+                    Image(systemName: isFavorited ? "star.fill" : "star")
+                        .font(.system(size: 18))
+                        .foregroundColor(isFavorited ? .yellow : ApocalypseTheme.textMuted)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.trailing, 4)
+            }
+
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textSecondary)
@@ -388,6 +418,8 @@ struct ChannelRowView: View {
 }
 
 #Preview {
-    ChannelCenterView()
-        .environmentObject(AuthManager.shared)
+    NavigationStack {
+        ChannelCenterView()
+            .environmentObject(AuthManager.shared)
+    }
 }

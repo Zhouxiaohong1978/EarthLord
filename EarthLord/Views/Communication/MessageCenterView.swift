@@ -17,6 +17,7 @@ struct MessageCenterView: View {
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     @State private var isLoading = true
+    @State private var isPublicChannelExpanded = false
 
     /// 未处理的个人通知数量（用于角标）
     private var personalNotificationCount: Int {
@@ -78,6 +79,34 @@ struct MessageCenterView: View {
 
     // MARK: - Channel List
 
+    /// 官方频道（单独置顶）
+    private var officialPreviews: [ChannelPreview] {
+        communicationManager.channelPreviews.filter { $0.isOfficial }
+    }
+
+    /// 所有非官方频道，按最新消息时间倒序（归入公共频道分区）
+    private var allChannelPreviews: [ChannelPreview] {
+        communicationManager.channelPreviews
+            .filter { !$0.isOfficial }
+            .sorted {
+                let a = $0.lastMessageTime ?? Date.distantPast
+                let b = $1.lastMessageTime ?? Date.distantPast
+                return a > b
+            }
+    }
+
+    /// 公共频道分区总未读数
+    private var publicTotalUnread: Int {
+        allChannelPreviews.reduce(0) { $0 + $1.unreadCount }
+    }
+
+    /// 已收藏的频道预览
+    private var favoritedPreviews: [ChannelPreview] {
+        communicationManager.channelPreviews.filter {
+            communicationManager.isFavorited(channelId: $0.channelId) && !$0.isOfficial
+        }
+    }
+
     private var channelListView: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
@@ -94,7 +123,245 @@ struct MessageCenterView: View {
                     .background(ApocalypseTheme.cardBackground)
                     .padding(.leading, 72)
 
-                ForEach(communicationManager.channelPreviews) { preview in
+                // 官方频道（可展开）
+                if let official = officialPreviews.first {
+                    officialRow(preview: official)
+                }
+
+                // 公共频道 · LIVE 分区（所有非官方频道）
+                publicLiveSection
+
+                // 收藏频道分区
+                favoritedSection
+            }
+        }
+    }
+
+    // MARK: - 官方消息入口（直接导航）
+
+    @ViewBuilder
+    private func officialRow(preview: ChannelPreview) -> some View {
+        NavigationLink {
+            OfficialChannelDetailView()
+                .environmentObject(authManager)
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(ApocalypseTheme.primary.opacity(0.2))
+                        .frame(width: 50, height: 50)
+                    Image(systemName: "megaphone.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(String(localized: "末日官方广播"))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                    }
+
+                    HStack(spacing: 4) {
+                        Text(String(localized: "官方消息"))
+                            .font(.caption)
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        Text("·")
+                            .font(.caption)
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        if preview.unreadCount > 0 {
+                            Text(String(format: String(localized: "%d 条未读消息"), preview.unreadCount))
+                                .font(.caption)
+                                .foregroundColor(ApocalypseTheme.primary)
+                        } else {
+                            Text(String(localized: "0 条消息"))
+                                .font(.caption)
+                                .foregroundColor(ApocalypseTheme.textMuted)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(ApocalypseTheme.background)
+        }
+        .buttonStyle(PlainButtonStyle())
+
+        Divider()
+            .background(ApocalypseTheme.cardBackground)
+            .padding(.leading, 72)
+    }
+
+    // MARK: - 公共频道 · LIVE
+
+    private var publicChannelCount: Int {
+        communicationManager.channels.filter { $0.channelType == .public }.count
+    }
+
+    private var publicLiveSection: some View {
+        VStack(spacing: 0) {
+            // 卡片头部（点击展开/折叠）
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isPublicChannelExpanded.toggle()
+                }
+            } label: {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        // 图标
+                        ZStack {
+                            Circle()
+                                .fill(ApocalypseTheme.info.opacity(0.2))
+                                .frame(width: 50, height: 50)
+                            Image(systemName: "globe.americas.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(ApocalypseTheme.info)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            // 标题行
+                            HStack(spacing: 6) {
+                                Text(String(localized: "公共频道"))
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(ApocalypseTheme.textPrimary)
+
+                                // LIVE 标签
+                                HStack(spacing: 3) {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 5, height: 5)
+                                    Text("LIVE")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.red)
+                                .cornerRadius(4)
+                            }
+
+                            // 描述文字（始终显示）
+                            Text(String(localized: "升级你的设备以接收和发送消息"))
+                                .font(.caption)
+                                .foregroundColor(ApocalypseTheme.textMuted)
+                        }
+
+                        Spacer()
+
+                        // 展开/折叠箭头
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                            .rotationEffect(.degrees(isPublicChannelExpanded ? 90 : 0))
+                    }
+
+                    // 未读消息数（始终显示）
+                    HStack(spacing: 6) {
+                        if publicTotalUnread > 0 {
+                            Text("\(publicTotalUnread > 99 ? "99+" : "\(publicTotalUnread)")")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.red)
+                                .clipShape(Capsule())
+                        }
+                        Text(publicTotalUnread > 0
+                             ? String(format: String(localized: "%d 条未读消息"), publicTotalUnread)
+                             : String(localized: "0 条消息"))
+                            .font(.caption2)
+                            .foregroundColor(publicTotalUnread > 0 ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+                    }
+                    .padding(.leading, 62)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(ApocalypseTheme.background)
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            // 展开后显示所有频道，按最新消息倒序
+            if isPublicChannelExpanded {
+                Divider()
+                    .background(ApocalypseTheme.cardBackground)
+                    .padding(.leading, 72)
+
+                if allChannelPreviews.isEmpty {
+                    Text(String(localized: "暂无消息"))
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(ApocalypseTheme.background)
+                } else {
+                    ForEach(allChannelPreviews) { preview in
+                        NavigationLink {
+                            destinationView(for: preview)
+                        } label: {
+                            ChannelPreviewRow(preview: preview)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Divider()
+                            .background(ApocalypseTheme.cardBackground)
+                            .padding(.leading, 72)
+                    }
+                }
+            } else {
+                Divider()
+                    .background(ApocalypseTheme.cardBackground)
+                    .padding(.leading, 72)
+            }
+        }
+    }
+
+    // MARK: - 收藏频道
+
+    private var favoritedSection: some View {
+        VStack(spacing: 0) {
+            // 分区标题
+            HStack(spacing: 6) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(.yellow)
+
+                Text(String(localized: "收藏频道"))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+
+                Spacer()
+
+                Text("\(favoritedPreviews.count)")
+                    .font(.caption2)
+                    .foregroundColor(ApocalypseTheme.textMuted)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 8)
+
+            if favoritedPreviews.isEmpty {
+                // 空状态
+                HStack(spacing: 8) {
+                    Image(systemName: "star")
+                        .font(.system(size: 14))
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                    Text(String(localized: "在频道中心点击 ★ 收藏频道"))
+                        .font(.caption)
+                        .foregroundColor(ApocalypseTheme.textMuted)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(ApocalypseTheme.background)
+            } else {
+                ForEach(favoritedPreviews) { preview in
                     NavigationLink {
                         destinationView(for: preview)
                     } label: {
@@ -102,7 +369,7 @@ struct MessageCenterView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
 
-                    if preview.id != communicationManager.channelPreviews.last?.id {
+                    if preview.id != favoritedPreviews.last?.id {
                         Divider()
                             .background(ApocalypseTheme.cardBackground)
                             .padding(.leading, 72)
@@ -284,7 +551,7 @@ struct ChannelPreviewRow: View {
             // Channel info
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(preview.channelName)
+                    Text(preview.isOfficial ? String(localized: "末日广播站") : preview.channelName)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(ApocalypseTheme.textPrimary)
@@ -343,6 +610,66 @@ struct ChannelPreviewRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(ApocalypseTheme.background)
+    }
+}
+
+// MARK: - 公共频道列表 Sheet
+
+struct PublicChannelsListSheet: View {
+    @EnvironmentObject var authManager: AuthManager
+    @StateObject private var communicationManager = CommunicationManager.shared
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedChannel: CommunicationChannel?
+
+    private var publicChannels: [CommunicationChannel] {
+        communicationManager.channels.filter { $0.channelType == .public }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApocalypseTheme.background.ignoresSafeArea()
+
+                if publicChannels.isEmpty {
+                    VStack(spacing: 16) {
+                        Spacer()
+                        Image(systemName: "globe.americas")
+                            .font(.system(size: 50))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        Text(String(localized: "暂无公共频道"))
+                            .font(.headline)
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                        Text(String(localized: "前往频道中心创建公共频道"))
+                            .font(.subheadline)
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        Spacer()
+                    }
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 10) {
+                            ForEach(publicChannels) { channel in
+                                let isSubscribed = communicationManager.isSubscribed(channelId: channel.id)
+                                ChannelRowView(channel: channel, isSubscribed: isSubscribed, isOfficial: false)
+                                    .onTapGesture { selectedChannel = channel }
+                            }
+                        }
+                        .padding(16)
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "公共频道"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(String(localized: "关闭")) { dismiss() }
+                        .foregroundColor(ApocalypseTheme.primary)
+                }
+            }
+        }
+        .sheet(item: $selectedChannel) { channel in
+            ChannelDetailView(channel: channel)
+                .environmentObject(authManager)
+        }
     }
 }
 

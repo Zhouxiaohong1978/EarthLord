@@ -46,22 +46,8 @@ struct OfficialChannelDetailView: View {
             }
         }
         .background(ApocalypseTheme.background)
-        .navigationTitle(LanguageManager.shared.localizedString(for: "末日广播站"))
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 4) {
-                    Image(systemName: "megaphone.fill")
-                        .foregroundColor(ApocalypseTheme.primary)
-                    Text(LanguageManager.shared.localizedString(for: "末日广播站"))
-                        .font(.headline)
-                        .foregroundColor(ApocalypseTheme.textPrimary)
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.caption)
-                        .foregroundColor(ApocalypseTheme.primary)
-                }
-            }
-        }
         .task {
             await loadMessages()
         }

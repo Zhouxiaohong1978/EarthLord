@@ -579,6 +579,8 @@ final class BuildingManager: ObservableObject {
                 _ = try await fetchAllPlayerBuildings()
             }
             errorMessage = nil
+            // 自动完成已到期的建造/升级
+            await checkAndCompleteConstructions()
         } catch {
             errorMessage = error.localizedDescription
         }

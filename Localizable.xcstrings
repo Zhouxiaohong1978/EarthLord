@@ -336,6 +336,9 @@
         }
       }
     },
+    "%@" : {
+
+    },
     "%@ (%lld%@)" : {
       "localizations" : {
         "en" : {
@@ -573,6 +576,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%d unread"
+          }
+        }
+      }
+    },
+    "%d 条未读消息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d Unread"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 条未读消息"
           }
         }
       }
@@ -1403,12 +1422,31 @@
         }
       }
     },
+    "👑" : {
+
+    },
     "🔒" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "🔒"
+          }
+        }
+      }
+    },
+    "0 条消息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0 Messages"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0 条消息"
           }
         }
       }
@@ -1594,6 +1632,91 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%d%% 已完成"
+          }
+        }
+      }
+    },
+    "backpack.expand.after" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After Use"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "扩容后"
+          }
+        }
+      }
+    },
+    "backpack.expand.confirm" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm (+200 Slots)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认使用（+200 格）"
+          }
+        }
+      }
+    },
+    "backpack.expand.current" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前容量"
+          }
+        }
+      }
+    },
+    "backpack.expand.hint" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently adds +200 slots"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "永久扩充背包容量 +200 格"
+          }
+        }
+      }
+    },
+    "backpack.expand.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Backpack Expansion Voucher"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用背包扩容券"
           }
         }
       }
@@ -2814,6 +2937,25 @@
           }
         }
       }
+    },
+    "leaderboard.scavenges.format" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d Scavenges"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 次"
+          }
+        }
+      }
+    },
+    "LIVE" : {
+
     },
     "Lv.%d · 当前耐久 %d%%" : {
       "localizations" : {
@@ -7523,7 +7665,20 @@
       }
     },
     "使用设备升级令" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Upgrade Token"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用设备升级令"
+          }
+        }
+      }
     },
     "使用设备语言" : {
       "localizations" : {
@@ -7905,6 +8060,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All Channels"
+          }
+        }
+      }
+    },
+    "公共广场" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Public Square"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "公共广场"
           }
         }
       }
@@ -8679,6 +8851,22 @@
         }
       }
     },
+    "前往频道中心创建公共频道" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to Channel Center to create a public channel"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往频道中心创建公共频道"
+          }
+        }
+      }
+    },
     "前置设备" : {
       "localizations" : {
         "en" : {
@@ -9119,7 +9307,36 @@
       }
     },
     "升级令 ×%lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Token ×%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升级令 ×%lld"
+          }
+        }
+      }
+    },
+    "升级你的设备以接收和发送消息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade your device to receive and send messages"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升级你的设备以接收和发送消息"
+          }
+        }
+      }
     },
     "升级失败，请稍后重试" : {
       "localizations" : {
@@ -9196,6 +9413,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "占领一角"
+          }
+        }
+      }
+    },
+    "占领时间" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claimed At"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "占领时间"
           }
         }
       }
@@ -10435,6 +10668,22 @@
         }
       }
     },
+    "在频道中心点击 ★ 收藏频道" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap ★ in Channel Center to add favorites"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在频道中心点击 ★ 收藏频道"
+          }
+        }
+      }
+    },
     "地区" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10913,6 +11162,22 @@
         }
       }
     },
+    "官方消息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Official"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "官方消息"
+          }
+        }
+      }
+    },
     "官方频道" : {
       "localizations" : {
         "en" : {
@@ -11111,7 +11376,20 @@
       }
     },
     "将当前设备「%@」升级为下一型号，需消耗 1 枚设备升级令。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade your current device \"%@\" to the next tier. This will use 1 Upgrade Token."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将当前设备「%@」升级为下一型号，需消耗 1 枚设备升级令。"
+          }
+        }
+      }
     },
     "将获得以下物品" : {
       "extractionState" : "stale",
@@ -14838,6 +15116,23 @@
         }
       }
     },
+    "搜刮次数" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scavenges"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜刮次数"
+          }
+        }
+      }
+    },
     "搜刮解锁" : {
       "localizations" : {
         "en" : {
@@ -15149,6 +15444,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Claim items to backpack or store directly in warehouse"
+          }
+        }
+      }
+    },
+    "收藏频道" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收藏频道"
           }
         }
       }
@@ -15638,12 +15949,11 @@
       }
     },
     "暂无公共频道" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No public channels"
+            "value" : "No Public Channels"
           }
         },
         "zh-Hans" : {
@@ -16265,6 +16575,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "末日之主"
+          }
+        }
+      }
+    },
+    "末日官方广播" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doomsday Broadcast"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "末日官方广播"
           }
         }
       }
@@ -18563,7 +18889,20 @@
       }
     },
     "确认升级（消耗 1 枚升级令）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Upgrade (Use 1 Upgrade Token)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认升级（消耗 1 枚升级令）"
+          }
+        }
+      }
     },
     "确认发送" : {
       "localizations" : {
@@ -20154,6 +20493,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "背包快满了！"
+          }
+        }
+      }
+    },
+    "背包扩容券" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backpack Expansion Voucher"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背包扩容券"
           }
         }
       }

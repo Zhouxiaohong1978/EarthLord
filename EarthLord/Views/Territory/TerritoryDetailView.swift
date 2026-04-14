@@ -331,43 +331,88 @@ struct TerritoryDetailView: View {
 
     /// 领地信息卡片
     private var territoryInfoCard: some View {
-        HStack(spacing: 0) {
-            // 面积
-            infoItem(
-                icon: "square.dashed",
-                value: String(format: "%.0f m²", territory.area),
-                label: String(localized: "面积")
-            )
-
-            Divider()
-                .frame(height: 40)
-                .background(ApocalypseTheme.textMuted)
-
-            // 点数
-            if let pointCount = territory.pointCount {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                // 面积
                 infoItem(
-                    icon: "point.topleft.down.curvedto.point.bottomright.up",
-                    value: "\(pointCount)",
-                    label: String(localized: "边界点")
+                    icon: "square.dashed",
+                    value: String(format: "%.0f m²", territory.area),
+                    label: String(localized: "面积")
                 )
 
                 Divider()
                     .frame(height: 40)
                     .background(ApocalypseTheme.textMuted)
-            }
 
-            // 建筑数量
-            infoItem(
-                icon: "building.2",
-                value: "\(territoryBuildings.count)",
-                label: String(localized: "建筑")
-            )
+                // 点数
+                if let pointCount = territory.pointCount {
+                    infoItem(
+                        icon: "point.topleft.down.curvedto.point.bottomright.up",
+                        value: "\(pointCount)",
+                        label: String(localized: "边界点")
+                    )
+
+                    Divider()
+                        .frame(height: 40)
+                        .background(ApocalypseTheme.textMuted)
+                }
+
+                // 建筑数量
+                infoItem(
+                    icon: "building.2",
+                    value: "\(territoryBuildings.count)",
+                    label: String(localized: "建筑")
+                )
+            }
+            .padding(.vertical, 12)
+
+            // 占领时间
+            if let timeText = formattedConqueredAt {
+                Divider()
+                    .background(ApocalypseTheme.textMuted.opacity(0.3))
+                    .padding(.horizontal, 12)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "flag.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(ApocalypseTheme.primary)
+
+                    Text(String(localized: "占领时间"))
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+
+                    Spacer()
+
+                    Text(timeText)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
         }
-        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(ApocalypseTheme.background)
         )
+    }
+
+    /// 格式化占领时间
+    private var formattedConqueredAt: String? {
+        guard let str = territory.createdAt else { return nil }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = iso.date(from: str)
+        if date == nil {
+            iso.formatOptions = [.withInternetDateTime]
+            date = iso.date(from: str)
+        }
+        guard let d = date else { return nil }
+        let fmt = DateFormatter()
+        let isZh = LanguageManager.shared.currentLanguage == .chinese
+        fmt.locale = Locale(identifier: isZh ? "zh_CN" : "en_US")
+        fmt.dateFormat = isZh ? "yyyy年M月d日 H时" : "MMM d, yyyy h a"
+        return fmt.string(from: d)
     }
 
     /// 信息项

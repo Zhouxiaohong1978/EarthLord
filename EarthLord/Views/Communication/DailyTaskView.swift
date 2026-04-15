@@ -62,7 +62,7 @@ struct DailyTaskView: View {
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(ApocalypseTheme.textPrimary)
-                Text("本周主题：\(WeeklyRewardRotation.current.theme)")
+                Text(String(format: String(localized: "本周主题：%@"), WeeklyRewardRotation.current.theme))
                     .font(.caption2)
                     .fontWeight(.medium)
                     .foregroundColor(ApocalypseTheme.primary)

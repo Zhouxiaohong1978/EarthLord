@@ -170,21 +170,21 @@ struct ChannelDetailView: View {
 
     private var channelInfoCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("频道信息")
+            Text(String(localized: "频道信息"))
                 .font(.headline)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
             VStack(spacing: 12) {
-                infoRow(icon: "dot.radiowaves.left.and.right", title: "类型", value: channel.channelType.displayName, color: channel.channelType.color)
-                infoRow(icon: "person.2.fill", title: "成员", value: "\(channel.memberCount) 人")
-                infoRow(icon: "calendar", title: "创建时间", value: formatDate(channel.createdAt))
+                infoRow(icon: "dot.radiowaves.left.and.right", title: String(localized: "类型"), value: channel.channelType.displayName, color: channel.channelType.color)
+                infoRow(icon: "person.2.fill", title: String(localized: "成员"), value: String(format: String(localized: "%lld 人"), channel.memberCount))
+                infoRow(icon: "calendar", title: String(localized: "创建时间"), value: formatDate(channel.createdAt))
 
                 if let description = channel.description, !description.isEmpty {
                     Divider()
                         .background(ApocalypseTheme.textSecondary.opacity(0.3))
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("描述")
+                        Text(String(localized: "描述"))
                             .font(.caption)
                             .foregroundColor(ApocalypseTheme.textSecondary)
 

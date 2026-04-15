@@ -12,6 +12,7 @@ struct CreateChannelSheet: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) private var dismiss
     @StateObject private var communicationManager = CommunicationManager.shared
+    @ObservedObject private var locationManager = LocationManager.shared
 
     @State private var selectedType: ChannelType = .public
     @State private var channelName = ""
@@ -92,17 +93,17 @@ struct CreateChannelSheet: View {
     private var deviceUnlockHint: String? {
         var hints: [String] = []
 
-        // 对讲频道前置条件
-        if selectedType == .camp || selectedType == .satellite {
+        // 营地电台前置条件（营地频道）
+        if selectedType == .camp {
             if !isFullyUnlocked(for: .walkie) {
                 hints.append(String(localized: "需要先解锁对讲频道"))
             }
         }
 
-        // 营地频道前置条件
+        // 手机频道直接前置：营地电台
         if selectedType == .satellite {
-            if isFullyUnlocked(for: .walkie) && !isFullyUnlocked(for: .camp) {
-                hints.append(String(localized: "需要先解锁营地频道"))
+            if !isFullyUnlocked(for: .camp) {
+                hints.append(String(localized: "需要先解锁营地电台"))
             }
         }
 
@@ -451,7 +452,9 @@ struct CreateChannelSheet: View {
                     creatorId: userId,
                     channelType: selectedType,
                     name: channelName.trimmingCharacters(in: .whitespacesAndNewlines),
-                    description: channelDescription.isEmpty ? nil : channelDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                    description: channelDescription.isEmpty ? nil : channelDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+                    latitude: locationManager.userLocation?.latitude,
+                    longitude: locationManager.userLocation?.longitude
                 )
 
                 await MainActor.run {

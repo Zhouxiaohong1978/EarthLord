@@ -37,6 +37,8 @@ struct PTTCallView: View {
     @State private var isSendingSurvivorCall = false
     @State private var showSurvivorCallSent = false
     @State private var survivorCallPulse = false
+    @State private var showSurvivorCallConfirm = false
+    @State private var survivorCallError: String?
 
     // Quick message templates
     private var quickMessages: [String] {
@@ -89,6 +91,21 @@ struct PTTCallView: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(ApocalypseTheme.background)
+        .alert("发送失败", isPresented: .constant(survivorCallError != nil)) {
+            Button("确定") { survivorCallError = nil }
+        } message: {
+            Text(survivorCallError ?? "")
+        }
+        .alert("发送求救信号", isPresented: $showSurvivorCallConfirm) {
+            Button("取消", role: .cancel) {}
+            Button("确认发送") { sendSurvivorCall() }
+        } message: {
+            if let name = targetChannel?.name {
+                Text("将向频道「\(name)」发送【求生信号】，频道内所有成员都会收到。")
+            } else {
+                Text("请先选择目标频道")
+            }
+        }
         .overlay {
             // Sent feedback overlay
             if showSentFeedback, let msg = sentMessage {
@@ -483,7 +500,7 @@ struct PTTCallView: View {
                 .background(ApocalypseTheme.textMuted.opacity(0.3))
                 .padding(.horizontal, 20)
 
-            Button(action: sendSurvivorCall) {
+            Button(action: { showSurvivorCallConfirm = true }) {
                 HStack(spacing: 12) {
                     ZStack {
                         // 脉冲光环
@@ -537,13 +554,13 @@ struct PTTCallView: View {
                 .cornerRadius(12)
                 .padding(.horizontal, 20)
             }
-            .disabled(!canSend || isSendingSurvivorCall || isSending)
-            .opacity((canSend && !isSendingSurvivorCall) ? 1.0 : 0.5)
+            .disabled(isSendingSurvivorCall || isSending || targetChannel == nil)
+            .opacity(!isSendingSurvivorCall ? 1.0 : 0.5)
         }
     }
 
     private func sendSurvivorCall() {
-        guard canSend, let channelId = targetChannel?.id else { return }
+        guard let channelId = targetChannel?.id else { return }
         let channelName = targetChannel?.name
 
         isSendingSurvivorCall = true
@@ -584,6 +601,8 @@ struct PTTCallView: View {
                 await MainActor.run {
                     isSendingSurvivorCall = false
                     survivorCallPulse = false
+                    survivorCallError = error.localizedDescription
+                    print("❌ [幸存者呼叫] 发送失败: \(error)")
                 }
             }
         }

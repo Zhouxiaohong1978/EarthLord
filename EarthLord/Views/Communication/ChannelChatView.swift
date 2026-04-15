@@ -185,15 +185,22 @@ struct ChannelChatView: View {
     }
 
     private var radioModeHint: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "radio")
-                .foregroundColor(ApocalypseTheme.info)
-            Text("收音机模式 - 仅可接收消息")
-                .font(.subheadline)
-                .foregroundColor(ApocalypseTheme.textSecondary)
+        VStack(spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "radio")
+                    .foregroundColor(ApocalypseTheme.info)
+                Text("收音机模式 - 仅可接收消息")
+                    .font(.subheadline)
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+            }
+            Text("请尽快升级对讲机才能与周围3公里的其他玩家交流")
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.warning)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
         .background(ApocalypseTheme.cardBackground.opacity(0.5))
         .overlay(
             Rectangle()
@@ -310,12 +317,12 @@ struct MessageBubbleView: View {
                         isOwnMessage: isOwnMessage
                     )
                 } else {
-                    Text(message.content)
+                    Text(message.localizedContent)
                         .font(.body)
-                        .foregroundColor(isOwnMessage ? .white : ApocalypseTheme.textPrimary)
+                        .foregroundColor(isOwnMessage ? .white : .black)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(isOwnMessage ? ApocalypseTheme.primary : ApocalypseTheme.cardBackground)
+                        .background(isOwnMessage ? Color(red: 0.18, green: 0.72, blue: 0.35) : .white)
                         .cornerRadius(18)
                 }
 
@@ -340,66 +347,86 @@ struct VoiceMessageBubble: View {
     @AppStorage("voiceBroadcastEnabled") private var autoPlay: Bool = false
     @State private var player: AVAudioPlayer?
     @State private var isPlaying = false
-    @State private var progress: Double = 0
     @State private var playTimer: Timer?
     @State private var hasAutoPlayed = false
+    @State private var waveOpacity: Double = 1.0
+    @State private var waveTimer: Timer?
+    /// 他人语音：未播放前显示红点
+    @State private var isUnread: Bool
+
+    init(voiceUrl: String, duration: Int, isOwnMessage: Bool) {
+        self.voiceUrl = voiceUrl
+        self.duration = duration
+        self.isOwnMessage = isOwnMessage
+        self._isUnread = State(initialValue: !isOwnMessage)
+    }
+
+    /// 气泡宽度随时长线性增长（微信风格），最小80，最大220
+    private var bubbleWidth: CGFloat {
+        min(80 + CGFloat(min(duration, 60)) * 2.2, 220)
+    }
+
+    /// 时长文字：秒数 + 双引号，如 "3""
+    private var durationLabel: String { "\(duration)\"" }
 
     var body: some View {
-        HStack(spacing: 10) {
-            // 播放/暂停按钮
-            Button(action: togglePlay) {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(isOwnMessage ? .white : ApocalypseTheme.primary)
-                    .frame(width: 32, height: 32)
-            }
-
-            // 进度条
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(isOwnMessage ? Color.white.opacity(0.3) : ApocalypseTheme.textMuted.opacity(0.3))
-                        .frame(height: 3)
-                    Capsule()
-                        .fill(isOwnMessage ? Color.white : ApocalypseTheme.primary)
-                        .frame(width: geo.size.width * progress, height: 3)
+        HStack(spacing: 6) {
+            // 气泡主体
+            Button(action: { isUnread = false; togglePlay() }) {
+                HStack(spacing: 8) {
+                    if isOwnMessage {
+                        // 自己：时长在左，波纹在右（微信镜像）
+                        Text(durationLabel)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white)
+                        Image(systemName: "waveform")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white)
+                            .opacity(waveOpacity)
+                            .scaleEffect(x: -1)
+                    } else {
+                        // 他人：波纹在左，时长在右
+                        Image(systemName: "waveform")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.black)
+                            .opacity(waveOpacity)
+                        Text(durationLabel)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.black)
+                    }
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .frame(minWidth: bubbleWidth)
+                .background(isOwnMessage ? Color(red: 0.18, green: 0.72, blue: 0.35) : Color.white)
+                .cornerRadius(18)
             }
-            .frame(height: 3)
+            .buttonStyle(.plain)
+            .fixedSize()
 
-            // 时长
-            Text(formatDuration(isPlaying ? Int(progress * Double(duration)) : duration))
-                .font(.system(size: 12, weight: .medium).monospacedDigit())
-                .foregroundColor(isOwnMessage ? .white.opacity(0.8) : ApocalypseTheme.textSecondary)
-                .frame(minWidth: 28, alignment: .trailing)
+            // 未读红点（气泡外侧，仅他人消息）
+            if !isOwnMessage && isUnread {
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 8, height: 8)
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(minWidth: 160)
-        .background(isOwnMessage ? ApocalypseTheme.primary : ApocalypseTheme.cardBackground)
-        .cornerRadius(18)
         .onAppear {
             if autoPlay && !isOwnMessage && !hasAutoPlayed {
                 hasAutoPlayed = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    togglePlay()
-                }
+                isUnread = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { togglePlay() }
             }
         }
         .onDisappear { stopPlay() }
     }
 
     private func togglePlay() {
-        if isPlaying {
-            stopPlay()
-        } else {
-            startPlay()
-        }
+        if isPlaying { stopPlay() } else { startPlay() }
     }
 
     private func startPlay() {
         guard let url = URL(string: voiceUrl) else { return }
-
         Task {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
@@ -409,15 +436,17 @@ struct VoiceMessageBubble: View {
                     player = try? AVAudioPlayer(data: data)
                     player?.play()
                     isPlaying = true
-                    progress = 0
-
-                    playTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
-                        guard let p = player else { return }
-                        if p.isPlaying {
-                            progress = p.currentTime / p.duration
-                        } else {
-                            stopPlay()
+                    // 波纹脉冲动画
+                    waveOpacity = 1.0
+                    waveTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            waveOpacity = waveOpacity > 0.4 ? 0.3 : 1.0
                         }
+                    }
+                    // 播放结束检测 timer
+                    playTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+                        guard let p = player else { return }
+                        if !p.isPlaying { stopPlay() }
                     }
                 }
             } catch {
@@ -429,13 +458,10 @@ struct VoiceMessageBubble: View {
     private func stopPlay() {
         player?.stop()
         player = nil
-        playTimer?.invalidate()
-        playTimer = nil
-        withAnimation { isPlaying = false; progress = 0 }
-    }
-
-    private func formatDuration(_ seconds: Int) -> String {
-        String(format: "%d:%02d", seconds / 60, seconds % 60)
+        playTimer?.invalidate(); playTimer = nil
+        waveTimer?.invalidate(); waveTimer = nil
+        isPlaying = false
+        waveOpacity = 1.0
     }
 }
 

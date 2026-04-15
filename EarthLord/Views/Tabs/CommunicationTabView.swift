@@ -13,6 +13,12 @@ struct CommunicationTabView: View {
     @StateObject private var communicationManager = CommunicationManager.shared
     @EnvironmentObject var authManager: AuthManager
 
+    @State private var showCallsignSheet = false
+    @State private var showCreateChannelSheet = false
+    @State private var showAdminBroadcast = false
+    @State private var isSendingTestBroadcast = false
+    @AppStorage("voiceBroadcastEnabled") private var voiceBroadcastEnabled = false
+
     var body: some View {
         ZStack {
             ApocalypseTheme.background.ignoresSafeArea()
@@ -40,6 +46,38 @@ struct CommunicationTabView: View {
                             .padding(.vertical, 4)
                             .background(ApocalypseTheme.primary.opacity(0.2))
                             .cornerRadius(8)
+                        }
+
+                        // 三点菜单
+                        Menu {
+                            Button(action: { showCallsignSheet = true }) {
+                                Label("呼号设置", systemImage: "antenna.radiowaves.left.and.right")
+                            }
+                            Button(action: { showCreateChannelSheet = true }) {
+                                Label("创建频道", systemImage: "plus.circle")
+                            }
+                            Button(action: {
+                                voiceBroadcastEnabled.toggle()
+                                communicationManager.setVoiceBroadcast(enabled: voiceBroadcastEnabled)
+                            }) {
+                                Label(
+                                    voiceBroadcastEnabled ? "关闭语音播报" : "开启语音播报",
+                                    systemImage: voiceBroadcastEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill"
+                                )
+                            }
+                            Button(action: sendTestBroadcast) {
+                                Label("生成测试广播", systemImage: "waveform")
+                            }
+                            if authManager.isAdmin {
+                                Divider()
+                                Button(action: { showAdminBroadcast = true }) {
+                                    Label("发布官方消息", systemImage: "megaphone.fill")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .font(.title2)
+                                .foregroundColor(ApocalypseTheme.primary)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -90,16 +128,32 @@ struct CommunicationTabView: View {
             }
         }
         .onAppear {
+            communicationManager.setVoiceBroadcast(enabled: voiceBroadcastEnabled)
             if let userId = authManager.currentUser?.id {
                 Task {
                     await communicationManager.ensureDevicesInitialized()
-                    // Day 36-A：确保订阅官方频道
                     await communicationManager.ensureOfficialChannelSubscribed(userId: userId)
-                    // Day 36：加载用户呼号
                     await communicationManager.loadCallsign(userId: userId)
                 }
             }
         }
+        .sheet(isPresented: $showCallsignSheet) {
+            CallsignEditView()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showCreateChannelSheet) {
+            CreateChannelSheet()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showAdminBroadcast) {
+            AdminBroadcastView()
+        }
+    }
+
+    private func sendTestBroadcast() {
+        let callsign = communicationManager.displayCallsign
+        let testContent = "测试广播，来自 \(callsign)，通讯设备工作正常。"
+        communicationManager.speakText(testContent)
     }
 }
 

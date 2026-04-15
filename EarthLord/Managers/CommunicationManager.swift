@@ -131,6 +131,27 @@ final class CommunicationManager: ObservableObject {
     /// 频道预览列表（消息中心使用）
     @Published var channelPreviews: [ChannelPreview] = []
 
+    /// 收藏的频道 ID 集合（本地持久化）
+    @Published var favoritedChannelIds: Set<UUID> = {
+        let strings = UserDefaults.standard.stringArray(forKey: "favorited_channel_ids") ?? []
+        return Set(strings.compactMap { UUID(uuidString: $0) })
+    }()
+
+    /// 切换收藏状态
+    func toggleFavorite(channelId: UUID) {
+        if favoritedChannelIds.contains(channelId) {
+            favoritedChannelIds.remove(channelId)
+        } else {
+            favoritedChannelIds.insert(channelId)
+        }
+        UserDefaults.standard.set(favoritedChannelIds.map { $0.uuidString }, forKey: "favorited_channel_ids")
+    }
+
+    /// 是否已收藏
+    func isFavorited(channelId: UUID) -> Bool {
+        favoritedChannelIds.contains(channelId)
+    }
+
     // MARK: - Realtime Properties
 
     /// Realtime 频道

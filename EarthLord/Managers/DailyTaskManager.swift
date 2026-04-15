@@ -73,70 +73,70 @@ struct WeeklyRewardRotation {
 
         // Week 0 — T1 基础建造（篝火/帐篷/医疗站核心材料）
         .init(
-            theme: "T1 基础建造",
+            theme: String(localized: "T1 基础建造"),
             exploreItems: [
                 MailItem(itemId: "wood",  quantity: 2, quality: nil),
                 MailItem(itemId: "stone", quantity: 1, quality: nil)
-            ], exploreDesc: "木材×2 + 石头×1",
+            ], exploreDesc: String(localized: "木材×2 + 石头×1"),
             communicateItems: [
                 MailItem(itemId: "cloth",   quantity: 2, quality: nil),
                 MailItem(itemId: "bandage", quantity: 1, quality: nil)
-            ], communicateDesc: "布料×2 + 绷带×1",
+            ], communicateDesc: String(localized: "布料×2 + 绷带×1"),
             territoryItems: [
                 MailItem(itemId: "scrap_metal", quantity: 2, quality: nil),
                 MailItem(itemId: "rope",        quantity: 1, quality: nil)
-            ], territoryDesc: "废金属×2 + 绳子×1"
+            ], territoryDesc: String(localized: "废金属×2 + 绳子×1")
         ),
 
         // Week 1 — T2 扩展建造（净水装置/小仓库/瞭望台核心材料）
         .init(
-            theme: "T2 扩展建造",
+            theme: String(localized: "T2 扩展建造"),
             exploreItems: [
                 MailItem(itemId: "scrap_metal", quantity: 2, quality: nil),
                 MailItem(itemId: "stone",       quantity: 2, quality: nil)
-            ], exploreDesc: "废金属×2 + 石头×2",
+            ], exploreDesc: String(localized: "废金属×2 + 石头×2"),
             communicateItems: [
                 MailItem(itemId: "rope",  quantity: 1, quality: nil),
                 MailItem(itemId: "cloth", quantity: 2, quality: nil)
-            ], communicateDesc: "绳子×1 + 布料×2",
+            ], communicateDesc: String(localized: "绳子×1 + 布料×2"),
             territoryItems: [
                 MailItem(itemId: "wood",        quantity: 2, quality: nil),
                 MailItem(itemId: "scrap_metal", quantity: 1, quality: nil)
-            ], territoryDesc: "木材×2 + 废金属×1"
+            ], territoryDesc: String(localized: "木材×2 + 废金属×1")
         ),
 
         // Week 2 — T2/T3 过渡（发电机棚/燃料储备站/中仓库核心材料）
         .init(
-            theme: "T2/T3 过渡",
+            theme: String(localized: "T2/T3 过渡"),
             exploreItems: [
                 MailItem(itemId: "scrap_metal", quantity: 2, quality: nil),
                 MailItem(itemId: "fuel",        quantity: 1, quality: nil)
-            ], exploreDesc: "废金属×2 + 燃料×1",
+            ], exploreDesc: String(localized: "废金属×2 + 燃料×1"),
             communicateItems: [
                 MailItem(itemId: "stone", quantity: 2, quality: nil),
                 MailItem(itemId: "rope",  quantity: 1, quality: nil)
-            ], communicateDesc: "石头×2 + 绳子×1",
+            ], communicateDesc: String(localized: "石头×2 + 绳子×1"),
             territoryItems: [
                 MailItem(itemId: "wood",  quantity: 2, quality: nil),
                 MailItem(itemId: "cloth", quantity: 1, quality: nil)
-            ], territoryDesc: "木材×2 + 布料×1"
+            ], territoryDesc: String(localized: "木材×2 + 布料×1")
         ),
 
         // Week 3 — T3 终局精英（太阳能板/电台/领主旗台核心材料）
         .init(
-            theme: "T3 终局精英",
+            theme: String(localized: "T3 终局精英"),
             exploreItems: [
                 MailItem(itemId: "scrap_metal",          quantity: 2, quality: nil),
                 MailItem(itemId: "electronic_component", quantity: 1, quality: nil)
-            ], exploreDesc: "废金属×2 + 电子元件×1",
+            ], exploreDesc: String(localized: "废金属×2 + 电子元件×1"),
             communicateItems: [
                 MailItem(itemId: "cloth", quantity: 2, quality: nil),
                 MailItem(itemId: "stone", quantity: 2, quality: nil)
-            ], communicateDesc: "布料×2 + 石头×2",
+            ], communicateDesc: String(localized: "布料×2 + 石头×2"),
             territoryItems: [
                 MailItem(itemId: "wood",        quantity: 2, quality: nil),
                 MailItem(itemId: "scrap_metal", quantity: 2, quality: nil)
-            ], territoryDesc: "木材×2 + 废金属×2"
+            ], territoryDesc: String(localized: "木材×2 + 废金属×2")
         )
     ]
 

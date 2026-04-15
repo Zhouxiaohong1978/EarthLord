@@ -149,17 +149,17 @@ final class MailboxManager: ObservableObject {
 
         logger.log("开始领取邮件: \(mail.title)", type: .info)
 
-        // 计算背包剩余格子数（物品种类数）
-        let currentItemTypes = InventoryManager.shared.items.count
-        let remainingSpace = max(0, backpackCapacity - currentItemTypes)
+        // 计算背包剩余数量（总数量而非种类数）
+        let currentItemCount = InventoryManager.shared.totalItemCount
+        let remainingSpace = InventoryManager.shared.remainingCapacity
 
-        logger.log("当前背包: \(currentItemTypes) 种物品，剩余 \(remainingSpace) 格", type: .info)
+        logger.log("当前背包: \(currentItemCount) 件物品，容量 \(backpackCapacity)，剩余 \(remainingSpace) 件", type: .info)
 
         guard remainingSpace > 0 else {
             throw NSError(
                 domain: "MailboxManager",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "背包已满（\(currentItemTypes)/\(backpackCapacity)格），请先整理背包"]
+                userInfo: [NSLocalizedDescriptionKey: "背包已满（\(currentItemCount)/\(backpackCapacity)件），请先整理背包"]
             )
         }
 

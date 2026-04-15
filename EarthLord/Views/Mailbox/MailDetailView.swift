@@ -22,6 +22,7 @@ struct MailDetailView: View {
     @State private var showingWarehouseClaimResult = false
     @State private var errorMessage: String?
     @State private var showingDeleteConfirm = false
+    @State private var showingPartialClaimConfirm = false
 
     var body: some View {
         NavigationView {
@@ -115,13 +116,24 @@ struct MailDetailView: View {
             } message: {
                 Text(errorMessage ?? "")
             }
+            .alert("背包空间不足", isPresented: $showingPartialClaimConfirm) {
+                Button("取消", role: .cancel) {}
+                Button("确认领取") {
+                    Task { await claimMail() }
+                }
+            } message: {
+                let mailTotal = mail.items.reduce(0) { $0 + $1.quantity }
+                let remaining = inventoryManager.remainingCapacity
+                Text("背包只能再存入 \(remaining) 件物品，本次只领取 \(remaining) 件，剩余 \(mailTotal - remaining) 件将留在邮件中，整理背包后可继续领取。")
+            }
         }
         .onAppear {
             Task {
                 if !mail.isRead {
                     await mailboxManager.markAsRead(mail)
                 }
-                await warehouseManager.refreshItems()
+                async let _ = warehouseManager.refreshItems()
+                async let _ = inventoryManager.refreshInventory()
             }
         }
     }
@@ -282,13 +294,20 @@ struct MailDetailView: View {
     // MARK: - 领取选择按钮组
     private var claimOptionsView: some View {
         let mailTotal = mail.items.reduce(0) { $0 + $1.quantity }
-        let backpackCanFit = inventoryManager.remainingCapacity >= mailTotal
+        let backpackRemaining = inventoryManager.remainingCapacity
+        let backpackCanFit = backpackRemaining >= mailTotal
+        let backpackHasSomeSpace = backpackRemaining > 0
         let warehouseCanFit = warehouseManager.hasWarehouse && warehouseManager.remainingCapacity >= mailTotal
 
         return HStack(spacing: 12) {
             // 存入背包
             Button {
-                Task { await claimMail() }
+                if backpackCanFit {
+                    Task { await claimMail() }
+                } else {
+                    // 部分放得下：弹确认框
+                    showingPartialClaimConfirm = true
+                }
             } label: {
                 HStack(spacing: 6) {
                     if isClaiming {
@@ -301,11 +320,15 @@ struct MailDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(backpackCanFit ? ApocalypseTheme.primary : Color.gray.opacity(0.4))
+                .background(
+                    backpackCanFit ? ApocalypseTheme.primary :
+                    backpackHasSomeSpace ? Color.orange.opacity(0.8) :
+                    Color.gray.opacity(0.4)
+                )
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
-            .disabled(isClaiming || isClaimingToWarehouse || !backpackCanFit)
+            .disabled(isClaiming || isClaimingToWarehouse || !backpackHasSomeSpace)
 
             // 存入仓库
             Button {

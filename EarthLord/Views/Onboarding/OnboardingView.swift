@@ -15,37 +15,64 @@ struct OnboardingView: View {
             icon: "🌍",
             title: "欢迎来到末日之主",
             description: "末日降临，文明崩溃。\n你是少数幸存者之一。\n\n圈地、探索、建造、通讯——\n四大核心玩法带你从零建立末日领地。",
-            color: .orange
+            color: .orange,
+            highlights: []
         ),
         OnboardingPage(
             icon: "🗺️",
             title: "出门圈地",
-            description: "在地图上沿边界行走，\n回到起点即可圈定属于你的领地。\n\n领地越大，可建造的设施越多，\n每日产出的资源也越丰厚。",
-            color: .green
+            description: "在地图上沿边界步行，\n回到起点即可圈定属于你的领地。\n\n领地越大，可建造的设施越多，\n每日产出的资源也越丰厚。",
+            color: .green,
+            highlights: [
+                HighlightItem(icon: "flag.fill", color: .green, text: "圈地后可设置领地名称和税率"),
+                HighlightItem(icon: "dollarsign.circle.fill", color: .yellow, text: "其他玩家在你领地搜刮物资，税收自动入邮箱")
+            ]
         ),
         OnboardingPage(
             icon: "🎒",
             title: "出门探索，搜刮物资",
-            description: "点击「开始探索」，带着手机出门步行。\n\n走满 200m 即可领取距离奖励，\n走满 500m 后，靠近附近的医院、超市等地点，\n可触发搜刮，额外获得物品。\n\n走得越远，物品越多、品质越高。",
-            color: .blue
+            description: "点击「开始探索」，带着手机出门步行。\n走满 200m 领取距离奖励，走满 500m 解锁废墟搜刮。",
+            color: .blue,
+            highlights: [
+                HighlightItem(icon: "figure.walk", color: .blue, text: "走得越远，奖励物品越多、品质越高（最高传奇级）"),
+                HighlightItem(icon: "mappin.and.ellipse", color: .cyan, text: "医院/超市/工厂附近可触发搜刮，获得 AI 生成的末日物资"),
+                HighlightItem(icon: "key.fill", color: .orange, text: "持有「搜刮令」可远程搜刮，无需步行到现场"),
+                HighlightItem(icon: "calendar.badge.clock", color: .gray, text: "幸存者每日最多探索 10 次，订阅后无限次")
+            ]
         ),
         OnboardingPage(
             icon: "🏗️",
             title: "建造庇护所",
-            description: "这是你在末日中最重要的事。\n\n用背包里的物资在领地内建造各类设施：\n· 庇护所 — 每日自动产出基础资源\n· 医疗站 — 提升队伍恢复能力\n· 通讯塔 — 扩大通讯范围\n\n建筑等级越高，收益越强大。",
-            color: .orange
+            description: "这是你在末日中最重要的事。\n\n用背包里的物资在领地内建造各类设施：",
+            color: .orange,
+            highlights: [
+                HighlightItem(icon: "house.fill", color: .orange, text: "庇护所 — 每日自动产出基础资源"),
+                HighlightItem(icon: "cross.fill", color: .red, text: "医疗站 — 提升队伍恢复能力"),
+                HighlightItem(icon: "antenna.radiowaves.left.and.right", color: .cyan, text: "通讯塔 — 扩大通讯范围，联系更多幸存者"),
+                HighlightItem(icon: "building.2.fill", color: .gray, text: "建筑等级越高，收益越强大")
+            ]
         ),
         OnboardingPage(
             icon: "📦",
-            title: "资源交易",
-            description: "背包装不下？或者缺少某种材料？\n\n前往「资源」页面，\n把多余的物资挂单出售，\n或购买其他幸存者的物资。\n\n合理交易，让每一份资源都发挥最大价值。",
-            color: .purple
+            title: "资源管理与交易",
+            description: "背包装不下？或者缺少某种材料？\n\n前往「资源」页面统一管理你的物品：",
+            color: .purple,
+            highlights: [
+                HighlightItem(icon: "backpack.fill", color: .purple, text: "背包 — 外出探索携带的物资"),
+                HighlightItem(icon: "archivebox.fill", color: .brown, text: "领地物品 — 建造材料存放在领地仓库"),
+                HighlightItem(icon: "tag.fill", color: .green, text: "交易市场 — 挂单出售或购买全球玩家物资"),
+                HighlightItem(icon: "envelope.fill", color: .blue, text: "邮箱 — 领地税收、系统礼包自动投递")
+            ]
         ),
         OnboardingPage(
             icon: "📡",
             title: "与幸存者通讯",
-            description: "你并不孤单。\n\n设置你的专属呼号，\n通过通讯频道联系附近的幸存者，\n组建联盟，共享资源，共御威胁。\n\n通讯塔建得越高，覆盖范围越广。",
-            color: .cyan
+            description: "你并不孤单。\n\n设置你的专属呼号，通过通讯频道联系幸存者：",
+            color: .cyan,
+            highlights: [
+                HighlightItem(icon: "megaphone.fill", color: .cyan, text: "加入营地频道，与附近幸存者组建联盟"),
+                HighlightItem(icon: "waveform", color: .green, text: "PTT 对讲 — 按住录音，松手发送语音消息至频道")
+            ]
         )
     ]
 
@@ -117,48 +144,80 @@ struct OnboardingView: View {
     }
 
     private func pageView(page: OnboardingPage) -> some View {
-        VStack(spacing: 32) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 28) {
+                // 图标
+                ZStack {
+                    Circle()
+                        .fill(page.color.opacity(0.15))
+                        .frame(width: 130, height: 130)
+                    Circle()
+                        .fill(page.color.opacity(0.08))
+                        .frame(width: 168, height: 168)
+                    Text(page.icon)
+                        .font(.system(size: 64))
+                }
+                .padding(.top, 20)
 
-            // 图标
-            ZStack {
-                Circle()
-                    .fill(page.color.opacity(0.15))
-                    .frame(width: 140, height: 140)
-                Circle()
-                    .fill(page.color.opacity(0.08))
-                    .frame(width: 180, height: 180)
-                Text(page.icon)
-                    .font(.system(size: 70))
-            }
+                // 标题 + 描述
+                VStack(spacing: 12) {
+                    Text(page.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                        .multilineTextAlignment(.center)
 
-            // 文字
-            VStack(spacing: 16) {
-                Text(page.title)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-                    .multilineTextAlignment(.center)
+                    Text(page.description)
+                        .font(.body)
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(6)
+                        .padding(.horizontal, 28)
+                }
 
-                Text(page.description)
-                    .font(.body)
-                    .foregroundColor(ApocalypseTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(6)
+                // 高亮要点（如有）
+                if !page.highlights.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(page.highlights) { item in
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: item.icon)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(item.color)
+                                    .frame(width: 20)
+                                    .padding(.top, 1)
+                                Text(item.text)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(ApocalypseTheme.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
                     .padding(.horizontal, 32)
-            }
+                    .padding(.vertical, 16)
+                    .background(ApocalypseTheme.cardBackground)
+                    .cornerRadius(14)
+                    .padding(.horizontal, 24)
+                }
 
-            Spacer()
-            Spacer()
+                Spacer(minLength: 16)
+            }
         }
     }
 }
 
 struct OnboardingPage {
     let icon: String
-    let title: String
-    let description: String
+    let title: LocalizedStringKey
+    let description: LocalizedStringKey
     let color: Color
+    let highlights: [HighlightItem]
+}
+
+struct HighlightItem: Identifiable {
+    let id = UUID()
+    let icon: String
+    let color: Color
+    let text: LocalizedStringKey
 }
 
 #Preview {

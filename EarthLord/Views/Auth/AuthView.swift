@@ -242,7 +242,7 @@ struct AuthView: View {
             // 邮箱输入框
             CustomTextField(
                 icon: "envelope.fill",
-                placeholder: "邮箱",
+                placeholder: "邮箱地址",
                 text: $loginEmail,
                 keyboardType: .emailAddress
             )
@@ -287,7 +287,7 @@ struct AuthView: View {
 
             CustomTextField(
                 icon: "envelope.fill",
-                placeholder: "邮箱",
+                placeholder: "邮箱地址",
                 text: $registerEmail,
                 keyboardType: .emailAddress
             )
@@ -775,7 +775,7 @@ struct AuthView: View {
 /// 自定义输入框
 struct CustomTextField: View {
     let icon: String
-    let placeholder: String
+    let placeholder: LocalizedStringKey
     @Binding var text: String
     var keyboardType: UIKeyboardType = .default
 
@@ -805,7 +805,7 @@ struct CustomTextField: View {
 /// 自定义密码输入框
 struct CustomSecureField: View {
     let icon: String
-    let placeholder: String
+    let placeholder: LocalizedStringKey
     @Binding var text: String
     @State private var isSecure: Bool = true
 
@@ -844,7 +844,7 @@ struct CustomSecureField: View {
 
 /// 主按钮
 struct PrimaryButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let action: () -> Void
     @Environment(\.isEnabled) private var isEnabled
 

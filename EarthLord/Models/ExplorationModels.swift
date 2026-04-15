@@ -358,8 +358,10 @@ struct TaxInfo {
 /// AI生成的物品（包含独特名称和背景故事）
 struct AIGeneratedItem: Identifiable, Codable, Equatable {
     let id: UUID
-    let name: String           // AI生成的独特名称
-    let story: String          // 背景故事
+    let name: String           // AI生成的独特名称（中文）
+    let nameEn: String?        // AI生成的英文名称
+    let story: String          // 背景故事（中文）
+    let storyEn: String?       // 背景故事（英文）
     let category: String       // 物品分类 (water/food/medical/material/tool/weapon/clothing/misc)
     let rarity: String         // 稀有度 (common/uncommon/rare/epic/legendary)
     let quantity: Int          // 数量
@@ -368,7 +370,9 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
     init(
         id: UUID = UUID(),
         name: String,
+        nameEn: String? = nil,
         story: String,
+        storyEn: String? = nil,
         category: String,
         rarity: String,
         quantity: Int = 1,
@@ -376,7 +380,9 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
     ) {
         self.id = id
         self.name = name
+        self.nameEn = nameEn
         self.story = story
+        self.storyEn = storyEn
         self.category = category
         self.rarity = rarity
         self.quantity = quantity
@@ -416,7 +422,7 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
     /// 转换为 ObtainedItem（用于保存到背包）
     /// 注意：itemId 必须映射到数据库合法值，不能直接用 AI 生成的 name
     func toObtainedItem() -> ObtainedItem {
-        return ObtainedItem(itemId: mappedItemId, quantity: quantity, quality: quality, customName: name, story: story)
+        return ObtainedItem(itemId: mappedItemId, quantity: quantity, quality: quality, customName: name, customNameEn: nameEn, story: story, storyEn: storyEn)
     }
 
     /// 根据 category + rarity 映射到数据库合法的 item_id
@@ -475,16 +481,20 @@ struct ObtainedItem: Identifiable, Equatable {
     let itemId: String
     let quantity: Int
     let quality: ItemQuality?
-    let customName: String?         // AI 生成的物品名（可选）
-    let story: String?              // AI 生成的背景故事（可选）
+    let customName: String?         // AI 生成的物品名（中文）
+    let customNameEn: String?       // AI 生成的物品名（英文）
+    let story: String?              // AI 生成的背景故事（中文）
+    let storyEn: String?            // AI 生成的背景故事（英文）
 
-    init(itemId: String, quantity: Int, quality: ItemQuality? = nil, customName: String? = nil, story: String? = nil) {
+    init(itemId: String, quantity: Int, quality: ItemQuality? = nil, customName: String? = nil, customNameEn: String? = nil, story: String? = nil, storyEn: String? = nil) {
         self.id = UUID()
         self.itemId = itemId
         self.quantity = quantity
         self.quality = quality
         self.customName = customName
+        self.customNameEn = customNameEn
         self.story = story
+        self.storyEn = storyEn
     }
 
     static func == (lhs: ObtainedItem, rhs: ObtainedItem) -> Bool {
@@ -562,7 +572,9 @@ struct InventoryItemDB: Codable {
     let obtainedFrom: String?
     let explorationSessionId: String?
     let customName: String?
+    let customNameEn: String?
     let customDescription: String?
+    let customStoryEn: String?
     let createdAt: String?
     let updatedAt: String?
 
@@ -575,7 +587,9 @@ struct InventoryItemDB: Codable {
         case obtainedFrom = "obtained_from"
         case explorationSessionId = "exploration_session_id"
         case customName = "custom_name"
+        case customNameEn = "custom_name_en"
         case customDescription = "custom_description"
+        case customStoryEn = "custom_story_en"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }

@@ -1066,6 +1066,15 @@ struct BackpackContentView: View {
                     onDisassemble: {
                         pendingDisassemble = (group.itemId, group.customName ?? "", group.totalQuantity)
                         showDisassembleConfirm = true
+                    },
+                    onExpandVoucher: {
+                        Task { @MainActor in
+                            if let backpackItem = inventoryManager.items.first(where: {
+                                $0.itemId == group.itemId && $0.customName == nil
+                            }) {
+                                try? await InventoryManager.shared.useExpandVoucher(inventoryId: backpackItem.id)
+                            }
+                        }
                     }
                 )
             }
@@ -1186,6 +1195,9 @@ struct BackpackItemCardNew: View {
     var customName: String? = nil
     var onUse: (() -> Void)? = nil
     var onDisassemble: (() -> Void)? = nil
+    var onExpandVoucher: (() -> Void)? = nil
+
+    @State private var showExpandSheet = false
 
     private var isAIItem: Bool { customName != nil }
     private var displayName: String { customName ?? LanguageManager.shared.localizedString(for: definition.name) }
@@ -1258,6 +1270,19 @@ struct BackpackItemCardNew: View {
                                 .fill(ApocalypseTheme.warning)
                         )
                 }
+            } else if itemId == "backpack_expand_voucher" {
+                Button {
+                    showExpandSheet = true
+                } label: {
+                    Text(LanguageManager.shared.localizedString(for: "使用"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 48, height: 26)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color(red: 1.00, green: 0.82, blue: 0.00))
+                        )
+                }
             } else if definition.category == .food || definition.category == .water || definition.category == .medical {
                 Button {
                     onUse?()
@@ -1282,6 +1307,12 @@ struct BackpackItemCardNew: View {
                         .strokeBorder(isAIItem ? ApocalypseTheme.warning.opacity(0.4) : Color.clear, lineWidth: 1)
                 )
         )
+        .sheet(isPresented: $showExpandSheet) {
+            ExpandVoucherSheet(onConfirm: {
+                onExpandVoucher?()
+            })
+            .presentationDetents([.height(320)])
+        }
     }
 }
 

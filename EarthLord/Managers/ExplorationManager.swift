@@ -1132,7 +1132,9 @@ final class ExplorationManager: NSObject, ObservableObject {
                     obtainedFrom: "探索",
                     sessionId: sessionId?.isEmpty == false ? sessionId : nil,
                     customName: item.customName,
-                    customDescription: item.story
+                    customNameEn: item.customNameEn,
+                    customDescription: item.story,
+                    customDescriptionEn: item.storyEn
                 )
                 logger.log("✅ 物品已添加到背包: \(item.itemId) x\(item.quantity)", type: .success)
             } catch {
@@ -1472,8 +1474,24 @@ extension ExplorationManager {
             status: .undiscovered,
             description: mapItem.placemark.title ?? "",
             estimatedResources: [],
-            dangerLevel: 1
+            dangerLevel: defaultDangerLevel(for: poiType)
         )
+    }
+
+    /// 根据 POI 类型推断默认危险等级（末日世界设定）
+    private func defaultDangerLevel(for type: POIType) -> Int {
+        switch type {
+        case .restaurant, .park:
+            return 1   // 安全：物资稀少，无明显威胁
+        case .supermarket, .pharmacy, .electronics, .buildingSupply, .residential:
+            return 2   // 低危：有物资，可能有零散威胁
+        case .hospital, .gasStation, .warehouse:
+            return 3   // 中危：物资丰富，存在争夺风险
+        case .factory:
+            return 4   // 高危：工业危险品
+        case .police, .military:
+            return 5   // 极危：武器库/军事设施，最高风险
+        }
     }
 
     /// MapKit类型映射到游戏POI类型
@@ -1923,11 +1941,16 @@ extension ExplorationManager {
         // 检查是否在他人领地内，若是则扣税
         // 优先用玩家当前实际位置（更准确），无定位时回退到 POI 坐标
         var itemsToSave = selectedItems.map { $0.toObtainedItem() }
-        let checkCoord = LocationManager.shared.userLocation ?? scavengedPOI.coordinate
-        logger.log("[税收] 开始领地检测，使用坐标=\(LocationManager.shared.userLocation != nil ? "玩家位置" : "POI坐标")", type: .info)
+        // 以 POI 本身的坐标判断是否在领地内（POI 是 GCJ02，需转 WGS84 才能与领地多边形比较）
+        // 不用玩家 GPS 位置：玩家沿边界行走时 GPS 有 10-50m 误差，会导致误判
+        let checkCoord = CoordinateConverter.gcj02ToWgs84(scavengedPOI.coordinate)
+        logger.log("[税收] 开始领地检测，使用POI坐标(WGS84)=(\(String(format: "%.5f", checkCoord.latitude)),\(String(format: "%.5f", checkCoord.longitude)))", type: .info)
         if let hostTerritory = TerritoryManager.shared.findOtherTerritory(containing: checkCoord) {
+            // 实时拉取领地最新数据，确保广播消息是领主最新设置的内容
+            let freshTerritory = (try? await TerritoryManager.shared.fetchTerritory(id: hostTerritory.id)) ?? hostTerritory
+
             let taxCount = await TerritoryManager.shared.recordVisitAndTax(
-                territory: hostTerritory,
+                territory: freshTerritory,
                 items: itemsToSave
             )
             // 从末尾扣除税收件数（税收物品已在 recordVisitAndTax 内投递给领主）
@@ -1940,10 +1963,10 @@ extension ExplorationManager {
             // 通知 UI 显示税收提示
             await MainActor.run {
                 lastTaxInfo = TaxInfo(
-                    ownerName: hostTerritory.name ?? String(localized: "未知领地"),
-                    taxRate: hostTerritory.taxRate ?? 10,
+                    ownerName: freshTerritory.name ?? String(localized: "未知领地"),
+                    taxRate: freshTerritory.taxRate ?? 10,
                     taxCount: taxCount,
-                    broadcastMessage: hostTerritory.broadcastMessage
+                    broadcastMessage: freshTerritory.broadcastMessage
                 )
                 showTaxInfo = true
             }

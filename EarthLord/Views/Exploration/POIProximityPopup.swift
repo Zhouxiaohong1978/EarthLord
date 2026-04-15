@@ -90,7 +90,8 @@ struct POIProximityPopup: View {
         case 1: return ApocalypseTheme.success
         case 2: return ApocalypseTheme.info
         case 3: return ApocalypseTheme.warning
-        case 4, 5: return ApocalypseTheme.danger
+        case 4: return ApocalypseTheme.danger
+        case 5: return Color(red: 0.8, green: 0.0, blue: 0.0)
         default: return ApocalypseTheme.textMuted
         }
     }
@@ -101,8 +102,8 @@ struct POIProximityPopup: View {
         case 1: return "安全"
         case 2: return "低风险"
         case 3: return "中等风险"
-        case 4: return "高风险"
-        case 5: return "极度危险"
+        case 4: return "高危"
+        case 5: return "极危"
         default: return "未知"
         }
     }

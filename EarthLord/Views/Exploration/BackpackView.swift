@@ -434,6 +434,10 @@ struct BackpackView: View {
                             Task { @MainActor in
                                 try? await InventoryManager.shared.disassembleItem(item)
                             }
+                        }, onExpandVoucher: {
+                            Task { @MainActor in
+                                try? await InventoryManager.shared.useExpandVoucher(inventoryId: item.id)
+                            }
                         })
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .move(edge: .trailing)),
@@ -561,8 +565,10 @@ struct BackpackItemCard: View {
     let definition: ItemDefinition
     var onUse: (() -> Void)? = nil
     var onDisassemble: (() -> Void)? = nil
+    var onExpandVoucher: (() -> Void)? = nil
 
     @State private var showDisassembleConfirm = false
+    @State private var showExpandSheet = false
 
     private var isAIItem: Bool { item.customName != nil }
     private var displayName: String { item.customName ?? definition.name }
@@ -607,6 +613,12 @@ struct BackpackItemCard: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("将被分解为 \(disassembleReturnName)，回收率 60%")
+        }
+        .sheet(isPresented: $showExpandSheet) {
+            ExpandVoucherSheet(onConfirm: {
+                onExpandVoucher?()
+            })
+            .presentationDetents([.height(320)])
         }
     }
 
@@ -715,6 +727,20 @@ struct BackpackItemCard: View {
                                 .fill(ApocalypseTheme.warning)
                         )
                 }
+            } else if item.itemId == "backpack_expand_voucher" {
+                // 背包扩容券：使用按钮
+                Button {
+                    showExpandSheet = true
+                } label: {
+                    Text(LanguageManager.shared.localizedString(for: "使用"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 48, height: 26)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color(red: 1.00, green: 0.82, blue: 0.00))
+                        )
+                }
             } else if definition.category == .food || definition.category == .water || definition.category == .medical {
                 // 标准物品：使用按钮
                 Button {
@@ -731,6 +757,111 @@ struct BackpackItemCard: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - ExpandVoucherSheet
+
+struct ExpandVoucherSheet: View {
+    let onConfirm: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var inventoryManager = InventoryManager.shared
+
+    private let expandAmount = 200
+    private var currentCapacity: Int { inventoryManager.backpackCapacity }
+    private var newCapacity: Int { currentCapacity + expandAmount }
+
+    var body: some View {
+        ZStack {
+            ApocalypseTheme.background.ignoresSafeArea()
+
+            VStack(spacing: 24) {
+
+                // 标题
+                Text(LanguageManager.localizedStringSync(for: "backpack.expand.title"))
+                    .font(.title3).fontWeight(.bold)
+                    .foregroundColor(ApocalypseTheme.textPrimary)
+                    .padding(.top, 8)
+
+                // 容量变化展示
+                HStack(spacing: 0) {
+                    capacityBlock(
+                        label: LanguageManager.localizedStringSync(for: "backpack.expand.current"),
+                        value: "\(currentCapacity)",
+                        color: ApocalypseTheme.textSecondary
+                    )
+
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color(red: 1.00, green: 0.82, blue: 0.00))
+                        .frame(width: 44)
+
+                    capacityBlock(
+                        label: LanguageManager.localizedStringSync(for: "backpack.expand.after"),
+                        value: "\(newCapacity)",
+                        color: Color(red: 1.00, green: 0.82, blue: 0.00)
+                    )
+                }
+                .padding(.vertical, 16)
+                .frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 14).fill(ApocalypseTheme.cardBackground))
+
+                // +200 提示
+                HStack(spacing: 6) {
+                    Image(systemName: "bag.fill.badge.plus")
+                        .foregroundColor(Color(red: 1.00, green: 0.82, blue: 0.00))
+                    Text(LanguageManager.localizedStringSync(for: "backpack.expand.hint"))
+                        .font(.subheadline)
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+
+                // 按钮组
+                VStack(spacing: 10) {
+                    Button {
+                        dismiss()
+                        onConfirm()
+                    } label: {
+                        Text(LanguageManager.localizedStringSync(for: "backpack.expand.confirm"))
+                            .font(.headline)
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(red: 1.00, green: 0.82, blue: 0.00))
+                            )
+                    }
+
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text(LanguageManager.localizedStringSync(for: "store.close"))
+                            .font(.headline)
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(ApocalypseTheme.cardBackground)
+                            )
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private func capacityBlock(label: String, value: String, color: Color) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
+                .font(.system(size: 32, weight: .black, design: .rounded))
+                .foregroundColor(color)
+            Text(label)
+                .font(.caption)
+                .foregroundColor(ApocalypseTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

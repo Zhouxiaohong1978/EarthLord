@@ -28,8 +28,10 @@ struct DangerLevelConfig {
             return DangerLevelConfig(textKey: "低危", color: ApocalypseTheme.info)
         case 3:
             return DangerLevelConfig(textKey: "中危", color: ApocalypseTheme.warning)
-        case 4, 5:
+        case 4:
             return DangerLevelConfig(textKey: "高危", color: ApocalypseTheme.danger)
+        case 5:
+            return DangerLevelConfig(textKey: "极危", color: Color(red: 0.8, green: 0.0, blue: 0.0))
         default:
             return DangerLevelConfig(textKey: "未知", color: ApocalypseTheme.textMuted)
         }

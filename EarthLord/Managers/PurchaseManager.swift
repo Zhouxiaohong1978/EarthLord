@@ -192,8 +192,12 @@ final class PurchaseManager: ObservableObject {
 
         logger.log("开始发货: \(transaction.productID)", type: .info)
 
-        // 1. 保存购买订单
-        let purchaseId = try await savePurchaseRecord(transaction, userId: userId)
+        // 1. 保存购买订单（返回 isNew=false 表示已存在，直接跳过发货防止重复）
+        let (purchaseId, isNew) = try await savePurchaseRecord(transaction, userId: userId)
+        guard isNew else {
+            logger.log("订单已存在，跳过重复发货: \(transaction.productID)", type: .info)
+            return
+        }
 
         // 2. 生成物品（保底 + 随机奖励）
         let items = generateItems(for: transaction.productID)
@@ -212,8 +216,8 @@ final class PurchaseManager: ObservableObject {
         logger.log("发货完成: \(transaction.productID)", type: .success)
     }
 
-    /// 保存购买订单到数据库
-    private func savePurchaseRecord(_ transaction: Transaction, userId: UUID) async throws -> UUID {
+    /// 保存购买订单到数据库，返回 (purchaseId, isNew)
+    private func savePurchaseRecord(_ transaction: Transaction, userId: UUID) async throws -> (UUID, Bool) {
         struct PurchaseInsert: Encodable {
             let user_id: String
             let product_id: String
@@ -249,7 +253,7 @@ final class PurchaseManager: ObservableObject {
 
         if let existingId = existing.first?.id, let uuid = UUID(uuidString: existingId) {
             logger.log("交易已存在，跳过重复记录: \(transaction.id)", type: .info)
-            return uuid
+            return (uuid, false)
         }
 
         let response: [PurchaseResponse] = try await supabase
@@ -264,7 +268,7 @@ final class PurchaseManager: ObservableObject {
             throw PurchaseError.deliveryFailed("保存订单失败")
         }
 
-        return uuid
+        return (uuid, true)
     }
 
     /// 生成物品（保底 + 随机）

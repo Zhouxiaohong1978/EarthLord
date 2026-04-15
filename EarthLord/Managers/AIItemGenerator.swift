@@ -52,9 +52,17 @@ struct GenerateItemResponse: Codable {
 /// AI生成的物品数据
 struct AIItemData: Codable {
     let name: String
+    let nameEn: String?
     let story: String
+    let storyEn: String?
     let category: String
     let rarity: String
+
+    enum CodingKeys: String, CodingKey {
+        case name, story, category, rarity
+        case nameEn = "name_en"
+        case storyEn = "story_en"
+    }
 }
 
 // MARK: - AIItemGenerator
@@ -122,7 +130,9 @@ final class AIItemGenerator {
             let generatedItems = items.map { item in
                 AIGeneratedItem(
                     name: item.name,
+                    nameEn: item.nameEn,
                     story: item.story,
+                    storyEn: item.storyEn,
                     category: item.category,
                     rarity: item.rarity,
                     quantity: 1,

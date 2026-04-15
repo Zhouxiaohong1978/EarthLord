@@ -18,7 +18,9 @@ interface GenerateItemRequest {
 // 物品数据接口
 interface ItemData {
   name: string;
+  name_en: string;
   story: string;
+  story_en: string;
   category: string;
   rarity: string;
 }
@@ -150,16 +152,20 @@ Deno.serve(async (req: Request) => {
 
 ### 生成规则
 1. **名称**：5-12 个汉字，富有创意，符合末日氛围（如："生锈的军用水壶"）
-2. **故事**：15-50 个汉字，描述物品的状态、来源或特殊之处
-3. **分类**：根据 POI 类型选择合适的分类
-4. **稀有度**：根据危险等级调整分布
-5. **真实性**：物品应符合 POI 环境，不要生成不合理的物品
+2. **英文名称**：对应的英文名称，3-6个英文单词（如："Rusty Military Canteen"）
+3. **故事**：15-50 个汉字，描述物品的状态、来源或特殊之处
+4. **英文故事**：对应的英文背景故事，15-40个英文单词
+5. **分类**：根据 POI 类型选择合适的分类
+6. **稀有度**：根据危险等级调整分布
+7. **真实性**：物品应符合 POI 环境，不要生成不合理的物品
 
 ### 输出格式
 返回 JSON 数组，每个物品包含:
 {
-  "name": "物品名称",
-  "story": "背景故事",
+  "name": "物品中文名称",
+  "name_en": "Item English Name",
+  "story": "中文背景故事",
+  "story_en": "English background story",
   "category": "分类代码",
   "rarity": "稀有度代码"
 }`;
@@ -217,11 +223,13 @@ Deno.serve(async (req: Request) => {
       throw new Error("AI 返回的物品数据格式错误");
     }
 
-    // 验证每个物品的字段
+    // 验证每个物品的字段，name_en/story_en 缺失时用中文补位
     for (const item of items) {
       if (!item.name || !item.story || !item.category || !item.rarity) {
         throw new Error("物品数据缺少必需字段");
       }
+      if (!item.name_en) item.name_en = item.name;
+      if (!item.story_en) item.story_en = item.story;
     }
 
     console.log(`✅ 成功生成 ${items.length} 件物品`);

@@ -50,7 +50,7 @@ final class LeaderboardManager: ObservableObject {
         func formattedValue(_ value: Double) -> String {
             switch self {
             case .scavenges:
-                return "\(Int(value)) 次"
+                return String(format: String(localized: "leaderboard.scavenges.format"), Int(value))
             case .territory:
                 if value >= 1_000_000 { return String(format: "%.2f km²", value / 1_000_000) }
                 return String(format: "%.0f m²", value)

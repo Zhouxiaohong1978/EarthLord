@@ -70,10 +70,11 @@ struct TradeItem: Codable, Identifiable, Equatable {
     let itemId: String           // 关联 BackpackItem.itemId
     let quantity: Int            // 数量
     let quality: ItemQuality?    // 品质（可选）
-    let customName: String?      // AI 命名物品的自定义名称
+    let customName: String?      // AI 命名物品的自定义名称（中文）
+    let customNameEn: String?    // AI 命名物品的自定义名称（英文）
 
     enum CodingKeys: String, CodingKey {
-        case id, itemId, quantity, quality, customName
+        case id, itemId, quantity, quality, customName, customNameEn
     }
 
     init(
@@ -81,28 +82,37 @@ struct TradeItem: Codable, Identifiable, Equatable {
         itemId: String,
         quantity: Int,
         quality: ItemQuality? = nil,
-        customName: String? = nil
+        customName: String? = nil,
+        customNameEn: String? = nil
     ) {
         self.id = id
         self.itemId = itemId
         self.quantity = quantity
         self.quality = quality
         self.customName = customName
+        self.customNameEn = customNameEn
     }
 
     /// 自定义解码：id 字段缺失时自动生成 UUID（兼容 RPC 写入的历史记录）
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id         = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
-        itemId     = try c.decode(String.self, forKey: .itemId)
-        quantity   = try c.decode(Int.self, forKey: .quantity)
-        quality    = try? c.decode(ItemQuality.self, forKey: .quality)
-        customName = try? c.decodeIfPresent(String.self, forKey: .customName)
+        id           = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
+        itemId       = try c.decode(String.self, forKey: .itemId)
+        quantity     = try c.decode(Int.self, forKey: .quantity)
+        quality      = try? c.decode(ItemQuality.self, forKey: .quality)
+        customName   = try? c.decodeIfPresent(String.self, forKey: .customName)
+        customNameEn = try? c.decodeIfPresent(String.self, forKey: .customNameEn)
     }
 
-    /// 显示名称：AI 物品用 customName，标准物品用定义表名称
+    /// 显示名称：AI 物品按语言选英文/中文，标准物品走 xcstrings 本地化
     var itemName: String {
-        customName ?? MockExplorationData.getItemDefinition(by: itemId)?.name ?? itemId
+        let isEnglish = Locale.current.language.languageCode?.identifier == "en"
+        if isEnglish, let en = customNameEn, !en.isEmpty { return en }
+        if let custom = customName { return custom }
+        if let def = MockExplorationData.getItemDefinition(by: itemId) {
+            return NSLocalizedString(def.name, comment: "")
+        }
+        return itemId
     }
 
     /// 显示文本

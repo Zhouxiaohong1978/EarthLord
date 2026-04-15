@@ -651,7 +651,29 @@ struct MockExplorationData {
             hasQuality: true
         ),
 
-        // 消耗品
+        // 消耗品 / 功能券
+        ItemDefinition(
+            id: "backpack_expand_voucher",
+            name: "背包扩容券",
+            category: .misc,
+            weight: 0.0,
+            volume: 0.0,
+            rarity: .epic,
+            description: "使用后永久扩充背包容量 +200 格，可重复购买叠加。",
+            maxStack: 99,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "device_upgrade_token",
+            name: "设备升级令",
+            category: .misc,
+            weight: 0.0,
+            volume: 0.0,
+            rarity: .epic,
+            description: "使用后将当前通讯设备升级至下一型号。",
+            maxStack: 10,
+            hasQuality: false
+        ),
         ItemDefinition(
             id: "build_speedup",
             name: "建筑加速令",

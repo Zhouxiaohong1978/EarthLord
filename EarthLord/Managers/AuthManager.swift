@@ -28,6 +28,9 @@ final class AuthManager: ObservableObject {
     /// 当前用户
     @Published var currentUser: Auth.User?
 
+    /// 是否为管理员
+    @Published var isAdmin: Bool = false
+
     /// 是否正在加载
     @Published var isLoading: Bool = false
 
@@ -109,9 +112,12 @@ final class AuthManager: ObservableObject {
                     isAuthenticated = false
                 } else {
                     isAuthenticated = true
-                    // 获取关联账号列表
+                    // 获取关联账号列表 + 刷新账号专属状态
                     Task {
                         await self.fetchLinkedUserIds()
+                        await self.fetchAdminStatus()
+                        await SubscriptionManager.shared.refreshSubscriptionStatus()
+                        _ = try? await InventoryManager.shared.refreshInventory()
                     }
                 }
                 print("✅ 初始会话: \(session.user.email ?? "unknown")")
@@ -131,9 +137,12 @@ final class AuthManager: ObservableObject {
                     // 登录成功后启动位置上报
                     LocationReporter.shared.startReporting()
                     print("📍 位置上报已启动")
-                    // 获取关联账号列表
+                    // 刷新当前账号的状态，防止跨账号数据污染
                     Task {
                         await self.fetchLinkedUserIds()
+                        await self.fetchAdminStatus()
+                        await SubscriptionManager.shared.refreshSubscriptionStatus()
+                        _ = try? await InventoryManager.shared.refreshInventory()
                     }
                 }
                 print("✅ 用户登录: \(session.user.email ?? "unknown")")
@@ -152,6 +161,10 @@ final class AuthManager: ObservableObject {
             otpSent = false
             otpVerified = false
             linkedUserIds = []
+            isAdmin = false
+            // 重置各 Manager 状态，防止跨账号数据污染
+            InventoryManager.shared.resetForLogout()
+            SubscriptionManager.shared.resetForLogout()
             print("✅ 用户已登出")
 
         case .tokenRefreshed:
@@ -600,6 +613,25 @@ final class AuthManager: ObservableObject {
 
     /// 获取关联账号 ID 列表
     /// 调用数据库函数获取当前用户及其关联账号的所有 ID
+    func fetchAdminStatus() async {
+        guard let userId = currentUser?.id else { return }
+        do {
+            struct AdminRow: Decodable { let is_admin: Bool }
+            let rows: [AdminRow] = try await supabase
+                .from("profiles")
+                .select("is_admin")
+                .eq("id", value: userId.uuidString)
+                .limit(1)
+                .execute()
+                .value
+            await MainActor.run {
+                self.isAdmin = rows.first?.is_admin ?? false
+            }
+        } catch {
+            await MainActor.run { self.isAdmin = false }
+        }
+    }
+
     func fetchLinkedUserIds() async {
         guard let userId = currentUser?.id else {
             linkedUserIds = []

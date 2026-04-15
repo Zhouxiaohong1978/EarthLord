@@ -86,7 +86,7 @@ struct TerritoryBuildingRow: View {
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(rowStrokeColor, lineWidth: rowStrokeWidth))
         .onAppear { refreshTimerValues() }
         .onReceive(timer) { _ in refreshTimerValues() }
-        .sheet(isPresented: $showCollectSheet) {
+        .sheet(isPresented: $showCollectSheet, onDismiss: { refreshTimerValues() }) {
             BuildingCollectSheet(building: building)
         }
         .sheet(isPresented: $showSpeedupSheet) {
@@ -102,13 +102,15 @@ struct TerritoryBuildingRow: View {
 
     /// 定时更新动态值，不触发 view 重建
     private func refreshTimerValues() {
-        if building.status == .constructing || building.status == .upgrading {
-            buildProgress = building.buildProgress
-            remainingTime = building.formattedRemainingTime
+        // 从 BuildingManager 取最新副本（collect 后 lastProducedAt 已更新）
+        let b = BuildingManager.shared.playerBuildings.first(where: { $0.id == building.id }) ?? building
+        if b.status == .constructing || b.status == .upgrading {
+            buildProgress = b.buildProgress
+            remainingTime = b.formattedRemainingTime
         }
-        if BuildingManager.shared.hasProduction(building) {
-            canCollectNow = BuildingManager.shared.canCollect(building)
-            if let secs = BuildingManager.shared.secondsUntilNextProduction(building) {
+        if BuildingManager.shared.hasProduction(b) {
+            canCollectNow = BuildingManager.shared.canCollect(b)
+            if let secs = BuildingManager.shared.secondsUntilNextProduction(b) {
                 let h = Int(secs) / 3600
                 let m = (Int(secs) % 3600) / 60
                 productionCountdown = h > 0 ? "\(h)h \(m)m" : "\(m)m"
@@ -385,7 +387,7 @@ struct BuildingCollectSheet: View {
                             Text("x\(c.quantity)")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundColor(ApocalypseTheme.success)
-                            Text("选择存放位置")
+                            Text(String(localized: "选择存放位置"))
                                 .font(.system(size: 14))
                                 .foregroundColor(ApocalypseTheme.textMuted)
                         }
@@ -400,7 +402,7 @@ struct BuildingCollectSheet: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "bag.fill")
                                     .font(.system(size: 16))
-                                Text("存入背包")
+                                Text(String(localized: "存入背包"))
                                     .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -418,7 +420,7 @@ struct BuildingCollectSheet: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "archivebox.fill")
                                     .font(.system(size: 16))
-                                Text("存入仓库")
+                                Text(String(localized: "存入仓库"))
                                     .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(warehouseManager.hasWarehouse ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
@@ -432,7 +434,7 @@ struct BuildingCollectSheet: View {
                         .disabled(isLoading || !warehouseManager.hasWarehouse)
 
                         if !warehouseManager.hasWarehouse {
-                            Text("建造小仓库后可使用此选项")
+                            Text(String(localized: "建造小仓库后可使用此选项"))
                                 .font(.system(size: 12))
                                 .foregroundColor(ApocalypseTheme.textMuted)
                         }
@@ -447,16 +449,16 @@ struct BuildingCollectSheet: View {
                 }
                 .padding(.top, 32)
             }
-            .navigationTitle("领取产出")
+            .navigationTitle(String(localized: "领取产出"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button(String(localized: "取消")) { dismiss() }
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
             }
-            .alert("领取失败", isPresented: .constant(errorMessage != nil)) {
-                Button("确定") { errorMessage = nil }
+            .alert(String(localized: "领取失败"), isPresented: .constant(errorMessage != nil)) {
+                Button(String(localized: "确定")) { errorMessage = nil }
             } message: { Text(errorMessage ?? "") }
             .onAppear {
                 Task { await warehouseManager.refreshItems() }
@@ -499,6 +501,12 @@ struct BuildingSpeedupSheet: View {
     }
 
     private var maxSpeedupTokens: Int { min(availableSpeedupTokens, 5) }
+
+    private var localizedBuildingName: String {
+        BuildingManager.shared.buildingTemplates
+            .first(where: { $0.templateId == building.templateId })?
+            .localizedName ?? building.buildingName
+    }
 
     /// 预计减少的总秒数（每个加速令 -30 分钟）
     private var totalReductionSeconds: Int {
@@ -547,14 +555,14 @@ struct BuildingSpeedupSheet: View {
                         VStack(spacing: 8) {
                             CircularProgressView(progress: building.buildProgress)
                                 .frame(width: 72, height: 72)
-                            Text(building.buildingName)
+                            Text(localizedBuildingName)
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(ApocalypseTheme.textPrimary)
                             if let completedAt = building.buildCompletedAt {
                                 HStack(spacing: 4) {
                                     Image(systemName: "clock")
                                         .font(.system(size: 12))
-                                    Text("剩余 \(formattedRemaining(from: completedAt))")
+                                    Text(String(format: String(localized: "剩余 %@"), formattedRemaining(from: completedAt)))
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(ApocalypseTheme.textSecondary)
@@ -581,12 +589,12 @@ struct BuildingSpeedupSheet: View {
                                 HStack {
                                     Image(systemName: "arrow.down.circle.fill")
                                         .foregroundColor(ApocalypseTheme.success)
-                                    Text("缩短 \(formattedReduction)")
+                                    Text(String(format: String(localized: "缩短 %@"), formattedReduction))
                                         .font(.system(size: 15, weight: .semibold))
                                         .foregroundColor(ApocalypseTheme.success)
                                 }
                                 if let preview = previewCompletedAt {
-                                    Text("完成时间 → \(formattedRemaining(from: preview))")
+                                    Text(String(format: String(localized: "完成时间 → %@"), formattedRemaining(from: preview)))
                                         .font(.system(size: 13))
                                         .foregroundColor(ApocalypseTheme.textSecondary)
                                 }
@@ -626,16 +634,16 @@ struct BuildingSpeedupSheet: View {
                     .padding(20)
                 }
             }
-            .navigationTitle("建造加速")
+            .navigationTitle(String(localized: "建造加速"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button(String(localized: "取消")) { dismiss() }
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
             }
-            .alert("加速失败", isPresented: $showError) {
-                Button("确定") { errorMessage = nil }
+            .alert(String(localized: "加速失败"), isPresented: $showError) {
+                Button(String(localized: "确定")) { errorMessage = nil }
             } message: {
                 Text(errorMessage ?? "")
             }
@@ -650,8 +658,8 @@ struct BuildingSpeedupSheet: View {
     private func speedupSection(
         icon: String,
         iconColor: Color,
-        title: String,
-        subtitle: String,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey,
         available: Int,
         maxCount: Int,
         count: Binding<Int>

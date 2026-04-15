@@ -409,7 +409,8 @@ struct TerritoryDetailView: View {
         }
         guard let d = date else { return nil }
         let fmt = DateFormatter()
-        let isZh = LanguageManager.shared.currentLanguage == .chinese
+        let langCode = LanguageManager.shared.currentLanguage.languageCode ?? "zh-Hans"
+        let isZh = langCode.hasPrefix("zh")
         fmt.locale = Locale(identifier: isZh ? "zh_CN" : "en_US")
         fmt.dateFormat = isZh ? "yyyy年M月d日 H时" : "MMM d, yyyy h a"
         return fmt.string(from: d)

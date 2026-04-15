@@ -1721,6 +1721,57 @@
         }
       }
     },
+    "bandage" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bandage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "绷带"
+          }
+        }
+      }
+    },
+    "blueprint_basic" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basic Blueprint"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基础图纸"
+          }
+        }
+      }
+    },
+    "blueprint_epic" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Epic Blueprint"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "史诗图纸"
+          }
+        }
+      }
+    },
     "camp.area" : {
       "localizations" : {
         "en" : {
@@ -1977,6 +2028,23 @@
         }
       }
     },
+    "cloth" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloth"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "布料"
+          }
+        }
+      }
+    },
     "Critical Life Warning" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2027,6 +2095,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "地球霸主"
+          }
+        }
+      }
+    },
+    "electronic_component" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Electronic Component"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电子元件"
           }
         }
       }
@@ -2419,6 +2504,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "🆓 幸存者"
+          }
+        }
+      }
+    },
+    "fuel" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuel"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "燃料"
+          }
+        }
+      }
+    },
+    "glass" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glass"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "玻璃"
           }
         }
       }
@@ -3281,6 +3400,23 @@
         }
       }
     },
+    "nails" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nails"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "钉子"
+          }
+        }
+      }
+    },
     "pack.backpack_expand.name" : {
       "localizations" : {
         "en" : {
@@ -4068,6 +4204,74 @@
         }
       }
     },
+    "rope" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rope"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "绳子"
+          }
+        }
+      }
+    },
+    "satellite_module" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Satellite Module"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卫星模块"
+          }
+        }
+      }
+    },
+    "scrap_metal" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrap Metal"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "废金属"
+          }
+        }
+      }
+    },
+    "seeds" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seeds"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "种子"
+          }
+        }
+      }
+    },
     "settings.delete.account" : {
       "localizations" : {
         "en" : {
@@ -4467,6 +4671,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "移动速度较快 (%.1f km/h)，请放慢速度"
+          }
+        }
+      }
+    },
+    "stone" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "石头"
           }
         }
       }
@@ -6044,6 +6265,40 @@
         }
       }
     },
+    "tool" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tool"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工具"
+          }
+        }
+      }
+    },
+    "toolbox" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toolbox"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工具箱"
+          }
+        }
+      }
+    },
     "trade.nearby.hint" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6117,6 +6372,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Until Death"
+          }
+        }
+      }
+    },
+    "wood" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wood"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "木材"
           }
         }
       }

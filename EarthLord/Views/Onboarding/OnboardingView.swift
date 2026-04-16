@@ -14,7 +14,7 @@ struct OnboardingView: View {
         OnboardingPage(
             icon: "🌍",
             title: "欢迎来到末日之主",
-            description: "末日降临，文明崩溃。\n你是少数幸存者之一。\n\n圈地、探索、建造、通讯——\n四大核心玩法带你从零建立末日领地。",
+            description: "末日降临，文明崩溃。\n你是少数幸存者之一。\n\n圈地、探索、建造、交易、通讯——\n五大核心玩法带你从零建立末日领地。",
             color: .orange,
             highlights: []
         ),
@@ -42,14 +42,14 @@ struct OnboardingView: View {
         ),
         OnboardingPage(
             icon: "🏗️",
-            title: "建造庇护所",
-            description: "这是你在末日中最重要的事。\n\n用背包里的物资在领地内建造各类设施：",
+            title: "建造你的末日基地",
+            description: "有了领地，才能建造。探索获得物资，存入仓库，在领地内建造各类设施。",
             color: .orange,
             highlights: [
-                HighlightItem(icon: "house.fill", color: .orange, text: "庇护所 — 每日自动产出基础资源"),
-                HighlightItem(icon: "cross.fill", color: .red, text: "医疗站 — 提升队伍恢复能力"),
-                HighlightItem(icon: "antenna.radiowaves.left.and.right", color: .cyan, text: "通讯塔 — 扩大通讯范围，联系更多幸存者"),
-                HighlightItem(icon: "building.2.fill", color: .gray, text: "建筑等级越高，收益越强大")
+                HighlightItem(icon: "flag.fill", color: .orange, text: "建造入口：点击底部「领地」→ 选择领地 → 建造"),
+                HighlightItem(icon: "archivebox.fill", color: .brown, text: "物资先存仓库，建造时系统自动从背包+仓库扣除"),
+                HighlightItem(icon: "arrow.up.circle.fill", color: .yellow, text: "建筑可升级强化，等级越高收益越强，但需要更多物资"),
+                HighlightItem(icon: "wrench.fill", color: .gray, text: "定期维护建筑保持运行，耐久耗尽则停止产出")
             ]
         ),
         OnboardingPage(
@@ -66,12 +66,48 @@ struct OnboardingView: View {
         ),
         OnboardingPage(
             icon: "📡",
-            title: "与幸存者通讯",
-            description: "你并不孤单。\n\n设置你的专属呼号，通过通讯频道联系幸存者：",
+            title: "通讯：合作与竞争",
+            description: "末日世界里，信息就是生存优势。设置专属呼号，加入频道，与全球幸存者合作或博弈。",
             color: .cyan,
             highlights: [
-                HighlightItem(icon: "megaphone.fill", color: .cyan, text: "加入营地频道，与附近幸存者组建联盟"),
-                HighlightItem(icon: "waveform", color: .green, text: "PTT 对讲 — 按住录音，松手发送语音消息至频道")
+                HighlightItem(icon: "person.fill.badge.plus", color: .cyan, text: "通讯入口：底部「通讯」→ 加入或创建频道"),
+                HighlightItem(icon: "star.fill", color: .yellow, text: "收藏常用频道，公共频道·LIVE 实时查看全球动态"),
+                HighlightItem(icon: "waveform", color: .green, text: "PTT 对讲 — 按住录音，松手即发送语音至频道"),
+                HighlightItem(icon: "antenna.radiowaves.left.and.right", color: .cyan, text: "设备升级：收音机 → 对讲机 → 营地电台 → 卫星通讯，覆盖范围逐级扩大"),
+                HighlightItem(icon: "megaphone.fill", color: .orange, text: "末日官方广播发布重要情报，关注获取生存资讯")
+            ]
+        ),
+        OnboardingPage(
+            icon: "🏆",
+            title: "排行榜与成就",
+            description: "你在废土上的每一步都被记录。与全球幸存者竞技，解锁专属成就勋章。",
+            color: .yellow,
+            highlights: [
+                HighlightItem(icon: "chart.bar.fill", color: .yellow, text: "全球排行榜：领地面积、探索废墟数量、建筑数量多维度排名"),
+                HighlightItem(icon: "medal.fill", color: .orange, text: "完成挑战任务解锁成就勋章，记录你的末日传奇"),
+                HighlightItem(icon: "person.fill", color: .cyan, text: "成就入口：底部「个人」→ 成就 / 排行榜")
+            ]
+        ),
+        OnboardingPage(
+            icon: "❤️",
+            title: "体征监控",
+            description: "末日生存不只是抢资源，保持良好的生存状态才能走得更远。",
+            color: .red,
+            highlights: [
+                HighlightItem(icon: "heart.fill", color: .red, text: "实时监控体力、饥饿度、饮水量、健康值"),
+                HighlightItem(icon: "exclamationmark.triangle.fill", color: .orange, text: "体征过低会影响探索效率，及时补充食物和水"),
+                HighlightItem(icon: "cross.fill", color: .green, text: "体征入口：底部「个人」→ 体征")
+            ]
+        ),
+        OnboardingPage(
+            icon: "👑",
+            title: "订阅解锁更多特权",
+            description: "免费玩家可体验全部核心玩法，订阅后解锁更强加成和专属权益。",
+            color: .purple,
+            highlights: [
+                HighlightItem(icon: "figure.walk", color: .blue, text: "探索者：探索奖励×1.5，搜刮冷却缩短，解锁更多建造权限"),
+                HighlightItem(icon: "crown.fill", color: .yellow, text: "领主：探索奖励×2，头像专属王冠，全部高级功能无限使用"),
+                HighlightItem(icon: "cube.fill", color: .orange, text: "物资包：一次性购买稀有建造材料，加速基地建设")
             ]
         )
     ]

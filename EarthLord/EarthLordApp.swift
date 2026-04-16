@@ -80,6 +80,22 @@ struct EarthLordApp: App {
     /// 应用是否已准备好
     @State private var isReady = false
 
+    /// 是否需要显示新手引导（按用户 ID 记录）
+    @State private var needsOnboarding = false
+
+    /// 是否需要显示位置权限申请页
+    @State private var needsLocationPermission = false
+
+    /// 检查是否需要显示新手引导（登录成功或App启动时调用）
+    private func checkOnboarding() {
+        guard let userId = authManager.currentUser?.id else { return }
+        let key = "onboarding_completed_\(userId.uuidString)"
+        if !UserDefaults.standard.bool(forKey: key) {
+            UserDefaults.standard.set(true, forKey: key)
+            needsOnboarding = true
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -88,7 +104,6 @@ struct EarthLordApp: App {
                     SplashView(isFinished: $splashFinished)
                         .transition(.opacity)
                         .onAppear {
-                            // 确保应用初始化完成
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 isReady = true
                             }
@@ -98,12 +113,34 @@ struct EarthLordApp: App {
                     AuthView()
                         .environmentObject(authManager)
                         .transition(.opacity)
+                } else if needsOnboarding {
+                    // 新用户：显示新手引导
+                    OnboardingView {
+                        needsOnboarding = false
+                        needsLocationPermission = true
+                    }
+                    .transition(.opacity)
+                } else if needsLocationPermission {
+                    // 新用户：显示位置权限申请页
+                    LocationPermissionView(
+                        onGranted: { needsLocationPermission = false },
+                        onSkip:    { needsLocationPermission = false }
+                    )
+                    .transition(.opacity)
                 } else {
                     // 已登录且完成所有流程：显示主界面
                     MainTabView()
                         .environmentObject(authManager)
                         .transition(.opacity)
                 }
+            }
+            .onChange(of: authManager.isAuthenticated) { isAuthenticated in
+                guard isAuthenticated else { return }
+                checkOnboarding()
+            }
+            .onChange(of: isReady) { ready in
+                guard ready, authManager.isAuthenticated else { return }
+                checkOnboarding()
             }
             .id(languageManager.currentLocale) // 语言切换时强制重新创建视图
             .environmentObject(languageManager)

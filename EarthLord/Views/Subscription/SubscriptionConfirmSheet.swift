@@ -161,7 +161,7 @@ struct SubscriptionConfirmSheet: View {
                             .foregroundColor(ApocalypseTheme.textSecondary)
 
                         HStack(spacing: 4) {
-                            Link(String(localized: "sub.terms"), destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!)
+                            Link(String(localized: "sub.terms"), destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                                 .font(.caption2)
                                 .foregroundColor(ApocalypseTheme.primary)
 

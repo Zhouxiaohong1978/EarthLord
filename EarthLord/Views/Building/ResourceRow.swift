@@ -154,7 +154,7 @@ func resourceDisplayName(for resourceId: String) -> String {
     case "nails":
         return String(localized: "钉子")
     case "rope":
-        return String(localized: "绳索")
+        return String(localized: "绳子")
     case "bandage":
         return String(localized: "绷带")
     case "seeds":
@@ -182,6 +182,9 @@ func resourceDisplayName(for resourceId: String) -> String {
     case "food", "canned_food":
         return String(localized: "罐头食品")
     default:
+        if let definition = MockExplorationData.getItemDefinition(by: resourceId) {
+            return definition.name
+        }
         return resourceId
     }
 }

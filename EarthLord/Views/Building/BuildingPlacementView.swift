@@ -272,16 +272,37 @@ struct BuildingPlacementView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle(String(localized: "建造时间"))
 
-            HStack(spacing: 12) {
-                Image(systemName: "clock")
-                    .font(.system(size: 16))
-                    .foregroundColor(ApocalypseTheme.primary)
+            let multiplier = SubscriptionManager.shared.buildSpeedMultiplier
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 12) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 16))
+                        .foregroundColor(ApocalypseTheme.primary)
 
-                Text(template.formattedBuildTime)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(ApocalypseTheme.textPrimary)
+                    if multiplier > 1.0 {
+                        Text(template.formattedBuildTime(multiplier: 1.0))
+                            .font(.system(size: 14))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                            .strikethrough(true, color: ApocalypseTheme.textSecondary)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 11))
+                            .foregroundColor(ApocalypseTheme.textMuted)
+                        Text(template.formattedBuildTime(multiplier: multiplier))
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(ApocalypseTheme.success)
+                    } else {
+                        Text(template.formattedBuildTime(multiplier: 1.0))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(ApocalypseTheme.textPrimary)
+                    }
 
-                Spacer()
+                    Spacer()
+                }
+                if multiplier > 1.0 {
+                    Text(String(format: String(localized: "订阅加速，缩短 %@ 建造时间"), template.buildSpeedLabel(multiplier: multiplier)))
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.success)
+                }
             }
             .padding(12)
             .background(

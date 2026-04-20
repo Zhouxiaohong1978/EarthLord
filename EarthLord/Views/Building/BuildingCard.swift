@@ -41,11 +41,11 @@ struct BuildingCard: View {
                             .fill(template.category.color.opacity(0.15))
                     )
 
-                // 建造时间
+                // 建造时间（显示原始时间）
                 HStack(spacing: 4) {
                     Image(systemName: "clock")
                         .font(.system(size: 10))
-                    Text(template.formattedBuildTime)
+                    Text(template.formattedBuildTime(multiplier: 1.0))
                         .font(.system(size: 11))
                 }
                 .foregroundColor(ApocalypseTheme.textSecondary)
@@ -108,11 +108,11 @@ struct SelectableBuildingCard: View {
                             .fill(template.category.color.opacity(0.15))
                     )
 
-                // 建造时间
+                // 建造时间（显示原始时间）
                 HStack(spacing: 4) {
                     Image(systemName: "clock")
                         .font(.system(size: 10))
-                    Text(template.formattedBuildTime)
+                    Text(template.formattedBuildTime(multiplier: 1.0))
                         .font(.system(size: 11))
                 }
                 .foregroundColor(ApocalypseTheme.textSecondary)

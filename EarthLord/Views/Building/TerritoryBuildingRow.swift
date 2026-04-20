@@ -20,6 +20,7 @@ struct TerritoryBuildingRow: View {
     @State private var showSpeedupSheet = false
     @State private var showMaintenanceSheet = false
     @State private var showFortifySheet = false
+    @State private var showCraftingView = false
 
     // MARK: - 定时器驱动的动态值（不用 .id() 重建 view，避免菜单闪退）
     @State private var buildProgress: Double = 0
@@ -97,6 +98,12 @@ struct TerritoryBuildingRow: View {
         }
         .sheet(isPresented: $showFortifySheet) {
             BuildingFortifySheet(building: building, template: template, onConfirm: onUpgrade)
+        }
+        .sheet(isPresented: $showCraftingView) {
+            NavigationStack {
+                CraftingView(buildingLevel: building.level, buildingTemplateId: building.templateId)
+            }
+            .presentationBackground(ApocalypseTheme.background)
         }
     }
 
@@ -247,6 +254,16 @@ struct TerritoryBuildingRow: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 10).padding(.vertical, 5)
                             .background(ApocalypseTheme.success)
+                            .cornerRadius(8)
+                    }
+                }
+                if building.templateId == "workbench" || building.templateId == "food_factory" {
+                    Button { showCraftingView = true } label: {
+                        Text(building.templateId == "food_factory" ? String(localized: "加工") : String(localized: "合成"))
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(ApocalypseTheme.primary)
                             .cornerRadius(8)
                     }
                 }
@@ -1108,12 +1125,22 @@ struct BuildingFortifySheet: View {
     @ObservedObject private var inventoryManager = InventoryManager.shared
     @ObservedObject private var warehouseManager = WarehouseManager.shared
 
-    /// 当前升级所需材料（level - 1 为索引）
-    private var cost: [String: Int] {
+    /// 原始升级材料
+    private var originalCost: [String: Int] {
         guard let t = template,
               let upgradeResources = t.upgradeResources,
               building.level - 1 < upgradeResources.count else { return [:] }
         return upgradeResources[building.level - 1]
+    }
+
+    /// 是否有维修工坊（固定 20% 折扣）
+    private var hasRepairWorkshop: Bool {
+        BuildingManager.shared.repairWorkshopDiscount(for: building.territoryId) > 0
+    }
+
+    /// 折扣后实际升级材料
+    private var cost: [String: Int] {
+        BuildingManager.shared.discountedUpgradeCost(originalCost, territoryId: building.territoryId)
     }
 
     private var backpackCounts: [String: Int] {
@@ -1222,9 +1249,24 @@ struct BuildingFortifySheet: View {
 
     private var materialsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(String(localized: "所需材料"))
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(ApocalypseTheme.textSecondary)
+            HStack(spacing: 8) {
+                Text(String(localized: "所需材料"))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(ApocalypseTheme.textSecondary)
+
+                if hasRepairWorkshop {
+                    HStack(spacing: 3) {
+                        Image(systemName: "wrench.fill")
+                            .font(.system(size: 9))
+                        Text(String(localized: "维修工坊 -20%"))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.success)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
+                }
+            }
 
             if cost.isEmpty {
                 Text(String(localized: "无材料要求"))

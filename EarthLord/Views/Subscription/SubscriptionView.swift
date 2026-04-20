@@ -402,7 +402,7 @@ struct SubscriptionView: View {
             Text("·")
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textMuted)
-            Link(String(localized: "sub.terms"), destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!)
+            Link(String(localized: "sub.terms"), destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                 .font(.caption)
                 .foregroundColor(ApocalypseTheme.textMuted)
             Spacer()

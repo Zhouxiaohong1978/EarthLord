@@ -124,7 +124,7 @@ struct SettingsDetailView: View {
                     }
                     .listRowBackground(ApocalypseTheme.cardBackground)
 
-                    Link(destination: URL(string: "https://zhouxiaohong1978.github.io/earthlord-support/terms.html")!) {
+                    Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
                         Text("settings.terms")
                             .foregroundColor(ApocalypseTheme.textPrimary)
                     }

@@ -35,6 +35,8 @@
 	<string>《末日之主》需要获取您的位置来显示您在末日世界中的坐标，帮助您探索和圈定领地。</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>《末日之主》需要后台位置权限，在您行走时持续记录探索路径和距离，获取探索奖励。</string>
+	<key>NSMotionUsageDescription</key>
+	<string>《末日之主》使用运动传感器检测您的活动类型（步行/骑车/驾车），仅在步行时计算探索距离，确保奖励发放的准确性。</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
@@ -55,13 +57,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>

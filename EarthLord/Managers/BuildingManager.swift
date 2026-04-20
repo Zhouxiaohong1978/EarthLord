@@ -324,7 +324,7 @@ final class BuildingManager: ObservableObject {
             // 重置领地90天到期计时器
             await TerritoryManager.shared.updateLastActive(territoryId: territoryId)
 
-            logger.log("建筑 \(template.name) 开始建造，预计 \(template.formattedBuildTime) 完成", type: .success)
+            logger.log("建筑 \(template.name) 开始建造，预计 \(template.formattedBuildTime(multiplier: buildSpeedMultiplier)) 完成", type: .success)
 
             return building
 
@@ -418,11 +418,11 @@ final class BuildingManager: ObservableObject {
             throw BuildingError.maxLevelReached
         }
 
-        // 检查升级所需材料（背包 + 仓库合计）
+        // 检查升级所需材料（背包 + 仓库合计，应用维修工坊折扣）
         let upgradeIndex = building.level - 1  // Lv1→2 uses index 0, Lv2→3 uses index 1, etc.
         if let upgradeResources = template.upgradeResources,
            upgradeIndex < upgradeResources.count {
-            let cost = upgradeResources[upgradeIndex]
+            let cost = discountedUpgradeCost(upgradeResources[upgradeIndex], territoryId: building.territoryId)
             var missing: [String: Int] = [:]
             for (itemId, required) in cost {
                 let inBackpack  = InventoryManager.shared.items.filter { $0.itemId == itemId && $0.customName == nil }.reduce(0) { $0 + $1.quantity }
@@ -441,10 +441,10 @@ final class BuildingManager: ObservableObject {
         let newLevel = building.level + 1
 
         do {
-            // 扣除升级材料：先从背包扣，不足部分从仓库补
+            // 扣除升级材料：先从背包扣，不足部分从仓库补（应用维修工坊折扣）
             if let upgradeResources = template.upgradeResources,
                upgradeIndex < upgradeResources.count {
-                let cost = upgradeResources[upgradeIndex]
+                let cost = discountedUpgradeCost(upgradeResources[upgradeIndex], territoryId: building.territoryId)
                 for (itemId, required) in cost {
                     var remaining = required
                     let backpackItems = InventoryManager.shared.items
@@ -485,6 +485,25 @@ final class BuildingManager: ObservableObject {
             logger.logError("升级建筑失败", error: error)
             throw BuildingError.saveFailed(error.localizedDescription)
         }
+    }
+
+    // MARK: - Repair Workshop
+
+    /// 查询领地维修工坊等级，返回升级材料折扣率（仅限本领地）
+    func repairWorkshopDiscount(for territoryId: String) -> Double {
+        let hasWorkshop = playerBuildings.contains {
+            $0.territoryId == territoryId &&
+            $0.templateId == "repair_workshop" &&
+            $0.status == .active
+        }
+        return hasWorkshop ? 0.20 : 0.0
+    }
+
+    /// 应用维修工坊折扣后的升级材料费用
+    func discountedUpgradeCost(_ cost: [String: Int], territoryId: String) -> [String: Int] {
+        let discount = repairWorkshopDiscount(for: territoryId)
+        guard discount > 0 else { return cost }
+        return cost.mapValues { max(1, Int(ceil(Double($0) * (1 - discount)))) }
     }
 
     // MARK: - Fetch Methods
@@ -776,6 +795,11 @@ final class BuildingManager: ObservableObject {
         hasActiveBuilding(templateId: "generator_shed") ? 1.2 : 1.0
     }
 
+    /// 医疗站对医疗物品健康回复的加成倍率
+    var medicalHealBonus: Double {
+        hasActiveBuilding(templateId: "medical_station") ? 1.2 : 1.0
+    }
+
     /// 计算所有已建成建筑对体征衰减的总降低比例（0.0 ~ 0.50）
     /// 等级越高加成越强：Lv1=基础，Lv2=1.5×，Lv3=2×
     /// 耐久度归零的建筑不提供加成
@@ -970,32 +994,90 @@ final class BuildingManager: ObservableObject {
 
     // MARK: - Building Production
 
-    /// 建筑产出配置（templateId → (itemId, quantity, intervalHours)）
+    /// 单种固定产出配置（templateId → (itemId, baseQuantity, intervalHours)）
+    /// 农业建筑使用随机产出，见 farmProductionItems
     func productionConfig(for templateId: String) -> (itemId: String, quantity: Int, intervalHours: Double)? {
         switch templateId {
-        case "water_barrel": return ("water_bottle", 1, 24)
+        case "water_barrel":      return ("water_bottle", 1, 24)
+        case "water_purifier":    return ("water_bottle", 2, 24)
         default: return nil
         }
     }
 
+    /// 随机产出池（templateId → [(itemId, weight)]）
+    private func farmProductionPool(for templateId: String) -> [(itemId: String, weight: Int)]? {
+        switch templateId {
+        case "farm_simple":
+            return [("vegetable", 4), ("fruit", 3), ("grain", 3)]
+        case "greenhouse":
+            return [("vegetable", 3), ("fruit", 2), ("grain", 5)]
+        case "medical_station":
+            return [("bandage", 6), ("medicine", 3), ("first_aid_kit", 1)]
+        case "food_factory":
+            // 罐头50%，面包30%，压缩饼干20%
+            return [("canned_food", 5), ("bread", 3), ("hardtack", 2)]
+        default:
+            return nil
+        }
+    }
+
+    /// 随机产出建筑基础产出数量
+    private func farmBaseQuantity(for templateId: String) -> Int {
+        switch templateId {
+        case "farm_simple":     return 1
+        case "greenhouse":      return 2
+        case "medical_station": return 1
+        case "food_factory":    return 2
+        default:                return 1
+        }
+    }
+
+    /// 随机产出建筑产出周期（小时）
+    private func farmIntervalHours(for templateId: String) -> Double { 24 }
+
+    /// 根据建筑等级计算实际产出数量（Lv1×1, Lv2×1.5取整, Lv3×2）
+    private func scaledQuantity(base: Int, level: Int) -> Int {
+        let multipliers = [1.0, 1.5, 2.0]
+        let mult = multipliers[max(0, min(level - 1, multipliers.count - 1))]
+        return max(1, Int((Double(base) * mult).rounded()))
+    }
+
+    /// 按权重随机选取物品 ID
+    private func weightedRandom(from pool: [(itemId: String, weight: Int)]) -> String {
+        let total = pool.reduce(0) { $0 + $1.weight }
+        var r = Int.random(in: 0..<total)
+        for entry in pool {
+            r -= entry.weight
+            if r < 0 { return entry.itemId }
+        }
+        return pool.last!.itemId
+    }
+
     /// 该建筑是否有产出功能
     func hasProduction(_ building: PlayerBuilding) -> Bool {
-        productionConfig(for: building.templateId) != nil
+        productionConfig(for: building.templateId) != nil ||
+        farmProductionPool(for: building.templateId) != nil
+    }
+
+    /// 产出冷却周期（小时）
+    private func productionIntervalHours(for templateId: String) -> Double {
+        if let config = productionConfig(for: templateId) { return config.intervalHours }
+        if farmProductionPool(for: templateId) != nil { return farmIntervalHours(for: templateId) }
+        return 24
     }
 
     /// 是否可以领取产出
     func canCollect(_ building: PlayerBuilding) -> Bool {
-        guard building.status == .active,
-              let config = productionConfig(for: building.templateId) else { return false }
+        guard building.status == .active, hasProduction(building) else { return false }
         guard let last = building.lastProducedAt else { return true }
-        return Date().timeIntervalSince(last) >= config.intervalHours * 3600
+        return Date().timeIntervalSince(last) >= productionIntervalHours(for: building.templateId) * 3600
     }
 
     /// 距离下次产出的剩余秒数（nil 表示可立即领取）
     func secondsUntilNextProduction(_ building: PlayerBuilding) -> Double? {
-        guard let config = productionConfig(for: building.templateId),
+        guard hasProduction(building),
               let last = building.lastProducedAt else { return nil }
-        let remaining = config.intervalHours * 3600 - Date().timeIntervalSince(last)
+        let remaining = productionIntervalHours(for: building.templateId) * 3600 - Date().timeIntervalSince(last)
         return remaining > 0 ? remaining : nil
     }
 
@@ -1006,21 +1088,36 @@ final class BuildingManager: ObservableObject {
     func collectProduction(buildingId: UUID, toWarehouse: Bool = false) async throws {
         guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }) else { return }
         let building = playerBuildings[index]
-        guard let config = productionConfig(for: building.templateId),
-              canCollect(building) else { return }
+        guard hasProduction(building), canCollect(building) else { return }
 
-        if toWarehouse {
-            // 直接入仓（不经过背包，产出是新生成物品）
-            guard WarehouseManager.shared.hasWarehouse else { throw WarehouseError.noWarehouseBuilt }
-            guard WarehouseManager.shared.remainingCapacity >= config.quantity else { throw WarehouseError.warehouseFull }
-            await WarehouseManager.shared.receiveOutput(itemId: config.itemId, quantity: config.quantity)
+        // 计算本次产出
+        let outputs: [(itemId: String, quantity: Int)]
+        if let config = productionConfig(for: building.templateId) {
+            let qty = scaledQuantity(base: config.quantity, level: building.level)
+            outputs = [(config.itemId, qty)]
+        } else if let pool = farmProductionPool(for: building.templateId) {
+            let base = farmBaseQuantity(for: building.templateId)
+            let qty = scaledQuantity(base: base, level: building.level)
+            let itemId = weightedRandom(from: pool)
+            outputs = [(itemId, qty)]
         } else {
-            // 存入背包
-            try await InventoryManager.shared.addItem(
-                itemId: config.itemId,
-                quantity: config.quantity,
-                obtainedFrom: "building_\(building.templateId)"
-            )
+            return
+        }
+
+        // 存入背包或仓库
+        for (itemId, quantity) in outputs {
+            if toWarehouse {
+                guard WarehouseManager.shared.hasWarehouse else { throw WarehouseError.noWarehouseBuilt }
+                guard WarehouseManager.shared.remainingCapacity >= quantity else { throw WarehouseError.warehouseFull }
+                await WarehouseManager.shared.receiveOutput(itemId: itemId, quantity: quantity)
+            } else {
+                try await InventoryManager.shared.addItem(
+                    itemId: itemId,
+                    quantity: quantity,
+                    obtainedFrom: "building_\(building.templateId)"
+                )
+            }
+            logger.log("领取产出: \(building.buildingName) → \(itemId) x\(quantity) (\(toWarehouse ? "仓库" : "背包"))", type: .success)
         }
 
         // 更新 last_produced_at
@@ -1032,6 +1129,5 @@ final class BuildingManager: ObservableObject {
             .execute()
 
         playerBuildings[index].lastProducedAt = now
-        logger.log("领取产出: \(building.buildingName) → \(config.itemId) x\(config.quantity) (\(toWarehouse ? "仓库" : "背包"))", type: .success)
     }
 }

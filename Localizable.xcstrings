@@ -388,7 +388,6 @@
       }
     },
     "%@ ×%lld" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1370,6 +1369,9 @@
         }
       }
     },
+    "+%lld" : {
+
+    },
     "×%lld" : {
       "localizations" : {
         "en" : {
@@ -1458,6 +1460,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "001"
+          }
+        }
+      }
+    },
+    "1件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 item"
           }
         }
       }
@@ -1595,6 +1607,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "24h CD"
+          }
+        }
+      }
+    },
+    "50件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "50 items"
           }
         }
       }
@@ -2688,6 +2710,23 @@
         }
       }
     },
+    "item.canned_meat" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canned Meat"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "午餐肉罐头"
+          }
+        }
+      }
+    },
     "item.capacity_expansion" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2705,6 +2744,23 @@
         }
       }
     },
+    "item.chocolate" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chocolate"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "巧克力"
+          }
+        }
+      }
+    },
     "item.cloth" : {
       "localizations" : {
         "en" : {
@@ -2717,6 +2773,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "布料"
+          }
+        }
+      }
+    },
+    "item.cola" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cola"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可乐"
+          }
+        }
+      }
+    },
+    "item.compressed_biscuit" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compressed Biscuit"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "压缩饼干"
           }
         }
       }
@@ -2749,6 +2839,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "电子元件"
+          }
+        }
+      }
+    },
+    "item.energy_drink" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energy Drink"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "能量饮料"
           }
         }
       }
@@ -2817,6 +2924,40 @@
         }
       }
     },
+    "item.food_factory" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Food Factory"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "食品加工厂"
+          }
+        }
+      }
+    },
+    "item.fruit" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fruit"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "水果"
+          }
+        }
+      }
+    },
     "item.fuel" : {
       "localizations" : {
         "en" : {
@@ -2845,6 +2986,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "玻璃"
+          }
+        }
+      }
+    },
+    "item.grain" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粮食"
+          }
+        }
+      }
+    },
+    "item.hardtack" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hardtack"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "压缩饼干"
+          }
+        }
+      }
+    },
+    "item.instant_noodles" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instant Noodles"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "方便面"
+          }
+        }
+      }
+    },
+    "item.juice" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juice"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "果汁"
           }
         }
       }
@@ -2961,6 +3170,23 @@
         }
       }
     },
+    "item.sports_drink" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sports Drink"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运动饮料"
+          }
+        }
+      }
+    },
     "item.stone" : {
       "localizations" : {
         "en" : {
@@ -3005,6 +3231,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "工具箱"
+          }
+        }
+      }
+    },
+    "item.vegetable" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vegetable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "蔬菜"
           }
         }
       }
@@ -3918,7 +4161,14 @@
       }
     },
     "PTT 对讲 — 按住录音，松手即发送语音至频道" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PTT Radio — hold to record, release to send voice to the channel"
+          }
+        }
+      }
     },
     "PTT 对讲 — 按住录音，松手发送语音消息至频道" : {
       "extractionState" : "stale",
@@ -6429,6 +6679,16 @@
         }
       }
     },
+    "一键授权（共三步）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grant All Permissions (3 Steps)"
+          }
+        }
+      }
+    },
     "万m²" : {
       "localizations" : {
         "en" : {
@@ -6706,6 +6966,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "专属呼号前缀"
+          }
+        }
+      }
+    },
+    "丢弃 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard %@"
+          }
+        }
+      }
+    },
+    "丢弃后无法找回" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot be recovered once discarded"
           }
         }
       }
@@ -7147,6 +7427,9 @@
           }
         }
       }
+    },
+    "产出" : {
+
     },
     "仅接收" : {
       "localizations" : {
@@ -7687,6 +7970,16 @@
         }
       }
     },
+    "位置（精确 + 后台）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location (Precise + Background)"
+          }
+        }
+      }
+    },
     "位置安全" : {
       "localizations" : {
         "en" : {
@@ -7696,9 +7989,6 @@
           }
         }
       }
-    },
-    "位置数据仅用于游戏功能，不会出售或用于广告" : {
-
     },
     "位置无效" : {
       "localizations" : {
@@ -7784,7 +8074,14 @@
       }
     },
     "体征入口：底部「个人」→ 体征" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitals: tap 'Profile' at the bottom → Vitals"
+          }
+        }
+      }
     },
     "体征减缓" : {
       "localizations" : {
@@ -7824,7 +8121,14 @@
       }
     },
     "体征监控" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitals Monitor"
+          }
+        }
+      }
     },
     "体征警告：你正处于濒死状态！" : {
       "localizations" : {
@@ -7837,7 +8141,14 @@
       }
     },
     "体征过低会影响探索效率，及时补充食物和水" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low vitals reduce exploration efficiency — replenish food and water promptly"
+          }
+        }
+      }
     },
     "你从废墟中醒来" : {
       "extractionState" : "stale",
@@ -7873,7 +8184,14 @@
       }
     },
     "你在废土上的每一步都被记录。与全球幸存者竞技，解锁专属成就勋章。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every step you take in the wasteland is recorded. Compete with survivors worldwide and unlock exclusive achievement medals."
+          }
+        }
+      }
     },
     "你并不孤单。\n\n设置你的专属呼号，通过通讯频道联系幸存者：" : {
       "extractionState" : "stale",
@@ -7943,6 +8261,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Use"
+          }
+        }
+      }
+    },
+    "使用后将获得以下效果" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects upon use"
           }
         }
       }
@@ -8151,6 +8479,9 @@
         }
       }
     },
+    "健康值" : {
+
+    },
     "储存" : {
       "localizations" : {
         "en" : {
@@ -8176,9 +8507,6 @@
           }
         }
       }
-    },
-    "允许使用位置" : {
-
     },
     "免税，欢迎所有访客搜刮" : {
       "localizations" : {
@@ -8214,6 +8542,19 @@
       }
     },
     "免费玩家可体验全部核心玩法，订阅后解锁更强加成和专属权益。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free players can experience all core gameplay. Subscribe to unlock stronger bonuses and exclusive benefits."
+          }
+        }
+      }
+    },
+    "入仓" : {
+
+    },
+    "入包" : {
 
     },
     "全球" : {
@@ -8250,7 +8591,14 @@
       }
     },
     "全球排行榜：领地面积、探索废墟数量、建筑数量多维度排名" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Global leaderboard: territory area, ruins explored, buildings constructed — ranked across multiple dimensions"
+          }
+        }
+      }
     },
     "全球范围的紧急通讯" : {
       "extractionState" : "stale",
@@ -8447,6 +8795,16 @@
         }
       }
     },
+    "共 %lld 件，选择要丢弃的数量" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld available — select quantity to discard"
+          }
+        }
+      }
+    },
     "关于" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8565,6 +8923,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "军事设施"
+          }
+        }
+      }
+    },
+    "军用压缩饼干，保质期可达十年，是末日最可靠的口粮。补充饥饿+35。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Military-grade compressed biscuits with a shelf life of up to ten years — the most reliable ration in the apocalypse. Satiety +35."
           }
         }
       }
@@ -9296,6 +9665,22 @@
         }
       }
     },
+    "加工" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Process"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加工"
+          }
+        }
+      }
+    },
     "加油站" : {
       "localizations" : {
         "en" : {
@@ -9421,6 +9806,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "加载邮件..."
+          }
+        }
+      }
+    },
+    "加速" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed Boost"
           }
         }
       }
@@ -9684,6 +10079,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Upgrade device to expand search range"
+          }
+        }
+      }
+    },
+    "午餐肉罐头" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canned Meat"
           }
         }
       }
@@ -9960,6 +10366,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "即将过期"
+          }
+        }
+      }
+    },
+    "压缩饼干" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compressed Biscuit"
           }
         }
       }
@@ -10397,6 +10814,17 @@
         }
       }
     },
+    "可乐" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cola"
+          }
+        }
+      }
+    },
     "可发送" : {
       "localizations" : {
         "en" : {
@@ -10409,6 +10837,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "可发送"
+          }
+        }
+      }
+    },
+    "可合成配方" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available Recipes"
           }
         }
       }
@@ -10567,6 +11005,36 @@
         }
       }
     },
+    "合成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Craft"
+          }
+        }
+      }
+    },
+    "合成槽位" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crafting Slots"
+          }
+        }
+      }
+    },
+    "合成槽位已满，请先领取已完成的任务" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All crafting slots are full. Collect a completed job first."
+          }
+        }
+      }
+    },
     "向远处走再返回，步行距离照算，可冲传奇奖励再搜刮近处废墟" : {
       "localizations" : {
         "en" : {
@@ -10583,6 +11051,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Broadcast SOS to channel"
+          }
+        }
+      }
+    },
+    "含电解质的运动饮料，比矿泉水更有效地补充水分。补充水分+40，饥饿+5。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An electrolyte sports drink that replenishes hydration more effectively than plain water. Hydration +40, Satiety +5."
           }
         }
       }
@@ -10779,6 +11258,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "圈地功能测试"
+          }
+        }
+      }
+    },
+    "圈地占领、废墟搜刮、后台轨迹记录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory claiming, ruins scavenging, background tracking"
           }
         }
       }
@@ -11396,8 +11885,35 @@
         }
       }
     },
+    "完成后存入仓库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Store in Warehouse when Done"
+          }
+        }
+      }
+    },
+    "完成后存入背包" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Store in Backpack when Done"
+          }
+        }
+      }
+    },
     "完成挑战任务解锁成就勋章，记录你的末日传奇" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete challenge missions to unlock achievement medals and record your apocalypse legend"
+          }
+        }
+      }
     },
     "完成时间 → %@" : {
       "localizations" : {
@@ -11532,10 +12048,24 @@
       }
     },
     "定期维护建筑保持运行，耐久耗尽则停止产出" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maintain buildings regularly to keep them running — output stops when durability runs out"
+          }
+        }
+      }
     },
     "实时监控体力、饥饿度、饮水量、健康值" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Real-time monitoring of stamina, hunger, hydration, and health"
+          }
+        }
+      }
     },
     "家园" : {
       "extractionState" : "stale",
@@ -11550,6 +12080,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "家园"
+          }
+        }
+      }
+    },
+    "密封完好的纸盒果汁，含有一定营养。补充水分+25，饥饿+15。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A well-sealed carton of juice with moderate nutritional value. Hydration +25, Satiety +15."
           }
         }
       }
@@ -11892,6 +12433,16 @@
         }
       }
     },
+    "工作台合成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workbench Crafting"
+          }
+        }
+      }
+    },
     "工具" : {
       "localizations" : {
         "en" : {
@@ -11950,6 +12501,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "工厂废墟"
+          }
+        }
+      }
+    },
+    "巧克力" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chocolate"
           }
         }
       }
@@ -12915,6 +13477,17 @@
         }
       }
     },
+    "废弃便利店里的能量饮料，含咖啡因，提神效果明显。补充水分+20，饥饿+5。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An energy drink from an abandoned convenience store. High in caffeine with a noticeable stimulating effect. Hydration +20, Satiety +5."
+          }
+        }
+      }
+    },
     "废弃超市" : {
       "localizations" : {
         "en" : {
@@ -13063,7 +13636,14 @@
       }
     },
     "建筑可升级强化，等级越高收益越强，但需要更多物资" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buildings can be upgraded — higher levels yield stronger returns but require more materials"
+          }
+        }
+      }
     },
     "建筑属性" : {
       "localizations" : {
@@ -13446,10 +14026,24 @@
       }
     },
     "建造你的末日基地" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build Your Apocalypse Base"
+          }
+        }
+      }
     },
     "建造入口：点击底部「领地」→ 选择领地 → 建造" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Building: tap 'Territory' at the bottom → select territory → Build"
+          }
+        }
+      }
     },
     "建造加速" : {
       "localizations" : {
@@ -13687,6 +14281,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enable Voice Broadcast"
+          }
+        }
+      }
+    },
+    "开始之前，需要三项授权" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before You Start, Three Permissions Needed"
+          }
+        }
+      }
+    },
+    "开始合成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Crafting"
           }
         }
       }
@@ -14372,7 +14986,14 @@
       }
     },
     "成就入口：底部「个人」→ 成就 / 排行榜" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Achievements: tap 'Profile' at the bottom → Achievements / Leaderboard"
+          }
+        }
+      }
     },
     "成就系统" : {
       "extractionState" : "stale",
@@ -14923,7 +15544,14 @@
       }
     },
     "排行榜与成就" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leaderboard & Achievements"
+          }
+        }
+      }
     },
     "探索" : {
       "extractionState" : "stale",
@@ -15152,7 +15780,14 @@
       }
     },
     "探索者：探索奖励×1.5，搜刮冷却缩短，解锁更多建造权限" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explorer: exploration rewards ×1.5, shorter scavenge cooldown, more building permissions unlocked"
+          }
+        }
+      }
     },
     "探索者加持：体征衰减 -15%" : {
       "extractionState" : "stale",
@@ -15783,7 +16418,14 @@
       }
     },
     "收藏常用频道，公共频道·LIVE 实时查看全球动态" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bookmark frequently used channels — Public LIVE shows real-time global activity"
+          }
+        }
+      }
     },
     "收藏频道" : {
       "localizations" : {
@@ -15878,6 +16520,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "放弃物品"
+          }
+        }
+      }
+    },
+    "数据仅用于游戏功能，不会出售或用于广告" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data is used only for gameplay and will never be sold or used for advertising"
           }
         }
       }
@@ -16041,6 +16693,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New Mail"
+          }
+        }
+      }
+    },
+    "方便面" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instant Noodles"
           }
         }
       }
@@ -16253,7 +16916,14 @@
       }
     },
     "暂不允许（部分功能不可用）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Now (Some features unavailable)"
+          }
+        }
+      }
     },
     "暂无%@" : {
       "extractionState" : "stale",
@@ -16587,7 +17257,14 @@
       }
     },
     "有了领地，才能建造。探索获得物资，存入仓库，在领地内建造各类设施。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory comes before building. Explore to gather supplies, store them in the warehouse, then construct facilities within your domain."
+          }
+        }
+      }
     },
     "有幸存者在呼叫" : {
       "localizations" : {
@@ -16907,7 +17584,14 @@
       }
     },
     "末日世界里，信息就是生存优势。设置专属呼号，加入频道，与全球幸存者合作或博弈。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the apocalypse, information is survival advantage. Set your callsign, join channels, and cooperate or compete with survivors worldwide."
+          }
+        }
+      }
     },
     "末日之主" : {
       "localizations" : {
@@ -16925,8 +17609,26 @@
         }
       }
     },
-    "末日之主的核心玩法基于真实地理位置\n以下功能需要你的授权才能使用" : {
-
+    "末日之主的核心玩法依赖以下权限\n全部允许后即可开始生存之旅" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EarthLord's core gameplay requires the following permissions\nGrant all to begin your survival journey"
+          }
+        }
+      }
+    },
+    "末日前的碳酸饮料，高糖分能快速补充能量。补充水分+15，饥饿+15。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A pre-apocalypse carbonated drink. High sugar content rapidly restores energy. Hydration +15, Satiety +15."
+          }
+        }
+      }
     },
     "末日官方广播" : {
       "localizations" : {
@@ -16964,6 +17666,17 @@
         }
       }
     },
+    "末日幸存者的热门食品，无需加热也能下咽。补充饥饿+30，水分+10。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A staple food for apocalypse survivors. Edible even without heating. Satiety +30, Hydration +10."
+          }
+        }
+      }
+    },
     "末日广播站" : {
       "localizations" : {
         "en" : {
@@ -16981,10 +17694,24 @@
       }
     },
     "末日生存不只是抢资源，保持良好的生存状态才能走得更远。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Survival in the apocalypse is more than grabbing resources — maintaining good vitals lets you go further."
+          }
+        }
+      }
     },
     "末日降临，文明崩溃。\n你是少数幸存者之一。\n\n圈地、探索、建造、交易、通讯——\n五大核心玩法带你从零建立末日领地。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The apocalypse has come, civilization has fallen.\nYou are one of the few survivors.\n\nClaim land, explore, build, trade, communicate —\nfive core mechanics to forge your domain from nothing."
+          }
+        }
+      }
     },
     "末日降临，文明崩溃。\n你是少数幸存者之一。\n\n圈地、探索、建造、通讯——\n四大核心玩法带你从零建立末日领地。" : {
       "extractionState" : "stale",
@@ -17149,6 +17876,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Release to cancel"
+          }
+        }
+      }
+    },
+    "果汁" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juice"
           }
         }
       }
@@ -17714,6 +18452,17 @@
         }
       }
     },
+    "比普通罐头更丰盛的肉类罐头，蛋白质含量高。补充饥饿+55，水分+5。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A heartier canned meat than standard rations, packed with protein. Satiety +55, Hydration +5."
+          }
+        }
+      }
+    },
     "比月卡节省 %lld%%" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -17749,12 +18498,22 @@
       }
     },
     "水分" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hydration"
+          }
+        }
+      }
+    },
+    "水果" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fruit"
           }
         }
       }
@@ -18371,6 +19130,16 @@
         }
       }
     },
+    "点击下方按钮后，系统将依次弹出三次授权确认" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the button below — the system will prompt three permissions in sequence"
+          }
+        }
+      }
+    },
     "点击地图选择建造位置" : {
       "localizations" : {
         "en" : {
@@ -18496,10 +19265,24 @@
       }
     },
     "物资先存仓库，建造时系统自动从背包+仓库扣除" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Store supplies in the warehouse first — the system auto-deducts from your backpack and warehouse when building"
+          }
+        }
+      }
     },
     "物资包：一次性购买稀有建造材料，加速基地建设" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supply Pack: one-time purchase of rare building materials to accelerate base construction"
+          }
+        }
+      }
     },
     "物资包卡片预览" : {
       "extractionState" : "stale",
@@ -19204,6 +19987,16 @@
         }
       }
     },
+    "确认丢弃 ×%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Discard ×%lld"
+          }
+        }
+      }
+    },
     "确认位置" : {
       "localizations" : {
         "en" : {
@@ -19216,6 +20009,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "确认位置"
+          }
+        }
+      }
+    },
+    "确认使用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Use"
           }
         }
       }
@@ -20016,6 +20819,17 @@
         }
       }
     },
+    "粮食" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grain"
+          }
+        }
+      }
+    },
     "系统奖励" : {
       "localizations" : {
         "en" : {
@@ -20338,7 +21152,6 @@
       }
     },
     "绳子" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -20359,11 +21172,22 @@
       }
     },
     "绳索" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rope"
+          }
+        }
+      }
+    },
+    "维修工坊 -20%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repair Workshop -20%"
           }
         }
       }
@@ -20606,6 +21430,9 @@
           }
         }
       }
+    },
+    "耗时 %@" : {
+
     },
     "背包" : {
       "localizations" : {
@@ -21017,6 +21844,17 @@
         }
       }
     },
+    "能量饮料" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energy Drink"
+          }
+        }
+      }
+    },
     "脚踏实地" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -21269,6 +22107,17 @@
         }
       }
     },
+    "蔬菜" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vegetable"
+          }
+        }
+      }
+    },
     "行走距离" : {
       "localizations" : {
         "en" : {
@@ -21388,6 +22237,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unlock Requirements"
+          }
+        }
+      }
+    },
+    "订阅加速，缩短 %@ 建造时间" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription boost: saves %@ build time"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "订阅加速，缩短 %@ 建造时间"
           }
         }
       }
@@ -21572,7 +22437,14 @@
       }
     },
     "订阅解锁更多特权" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscribe for More Benefits"
+          }
+        }
+      }
     },
     "订阅说明" : {
       "extractionState" : "stale",
@@ -21677,7 +22549,14 @@
       }
     },
     "设备升级：收音机 → 对讲机 → 营地电台 → 卫星通讯，覆盖范围逐级扩大" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device upgrades: Radio → Walkie-talkie → Camp Station → Satellite — coverage expands at each tier"
+          }
+        }
+      }
     },
     "设备未解锁" : {
       "localizations" : {
@@ -21799,6 +22678,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "评语（可选）"
+          }
+        }
+      }
+    },
+    "识别步行 / 骑车 / 驾车，仅步行时计算探索距离" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detects walking / cycling / driving — exploration distance counted only while walking"
           }
         }
       }
@@ -23009,6 +23898,27 @@
         }
       }
     },
+    "运动与健身" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motion & Fitness"
+          }
+        }
+      }
+    },
+    "运动饮料" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sports Drink"
+          }
+        }
+      }
+    },
     "运行中" : {
       "localizations" : {
         "en" : {
@@ -23183,13 +24093,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Active"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "进行中"
+            "value" : "In Progress"
           }
         }
       }
@@ -23410,7 +24314,14 @@
       }
     },
     "通讯：合作与竞争" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Communications: Cooperate & Compete"
+          }
+        }
+      }
     },
     "通讯中心" : {
       "localizations" : {
@@ -23429,7 +24340,14 @@
       }
     },
     "通讯入口：底部「通讯」→ 加入或创建频道" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Communications: tap 'Comms' at the bottom → join or create a channel"
+          }
+        }
+      }
     },
     "通讯塔 — 扩大通讯范围，联系更多幸存者" : {
       "extractionState" : "stale",
@@ -24215,9 +25133,6 @@
         }
       }
     },
-    "需要获取你的位置" : {
-
-    },
     "靠近废墟额外获得 AI 生成的末日物资" : {
       "localizations" : {
         "en" : {
@@ -24299,7 +25214,14 @@
       }
     },
     "领主：探索奖励×2，头像专属王冠，全部高级功能无限使用" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lord: exploration rewards ×2, exclusive crown avatar frame, all premium features with no limits"
+          }
+        }
+      }
     },
     "领主专属头衔" : {
       "extractionState" : "stale",
@@ -24793,6 +25715,16 @@
         }
       }
     },
+    "领地被入侵、物资就绪、每日探索提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Territory invaded, supplies ready, daily exploration reminders"
+          }
+        }
+      }
+    },
     "领地需求" : {
       "localizations" : {
         "en" : {
@@ -25015,6 +25947,22 @@
         }
       }
     },
+    "食品加工" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Food Processing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "食品加工"
+          }
+        }
+      }
+    },
     "食物" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -25044,7 +25992,6 @@
       }
     },
     "饱食度" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25202,6 +26149,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "高密度"
+          }
+        }
+      }
+    },
+    "高热量零食，小小一块却能提供大量能量。补充饥饿+25。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A high-calorie snack — a small piece packs a surprising amount of energy. Satiety +25."
           }
         }
       }

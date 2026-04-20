@@ -175,10 +175,11 @@ struct BuildingTemplate: Identifiable, Codable {
         return lang.hasPrefix("en") ? (descriptionEn ?? description) : description
     }
 
-    /// 获取格式化的建造时间（本地化）
-    var formattedBuildTime: String {
-        let minutes = buildTimeSeconds / 60
-        let seconds = buildTimeSeconds % 60
+    /// 获取格式化的建造时间（传入订阅加速倍率）
+    func formattedBuildTime(multiplier: Double = 1.0) -> String {
+        let actualSeconds = Int(Double(buildTimeSeconds) / multiplier)
+        let minutes = actualSeconds / 60
+        let seconds = actualSeconds % 60
         if minutes > 0 && seconds > 0 {
             return String(format: String(localized: "%d分%d秒"), minutes, seconds)
         } else if minutes > 0 {
@@ -186,6 +187,15 @@ struct BuildingTemplate: Identifiable, Codable {
         } else {
             return String(format: String(localized: "%d秒"), seconds)
         }
+    }
+
+    /// 加速标注文字，如 "×2 加速"
+    func buildSpeedLabel(multiplier: Double) -> String {
+        let boost = String(localized: "加速")
+        if multiplier == Double(Int(multiplier)) {
+            return "×\(Int(multiplier)) \(boost)"
+        }
+        return "×\(String(format: "%.1f", multiplier)) \(boost)"
     }
 
     /// 获取所需资源的显示文本
@@ -272,16 +282,22 @@ struct PlayerBuilding: Identifiable, Codable {
 
     /// 获取建造剩余时间（秒）
     func remainingBuildTime(template: BuildingTemplate) -> Int {
+        if let completedAt = buildCompletedAt {
+            return max(0, Int(completedAt.timeIntervalSinceNow))
+        }
         let elapsed = Date().timeIntervalSince(buildStartedAt)
-        let remaining = Double(template.buildTimeSeconds) - elapsed
-        return max(0, Int(remaining))
+        return max(0, Int(Double(template.buildTimeSeconds) - elapsed))
     }
 
     /// 获取建造进度（0.0 - 1.0）
     func buildProgress(template: BuildingTemplate) -> Double {
+        if let completedAt = buildCompletedAt {
+            let total = completedAt.timeIntervalSince(buildStartedAt)
+            let elapsed = Date().timeIntervalSince(buildStartedAt)
+            return min(1.0, max(0.0, elapsed / total))
+        }
         let elapsed = Date().timeIntervalSince(buildStartedAt)
-        let progress = elapsed / Double(template.buildTimeSeconds)
-        return min(1.0, max(0.0, progress))
+        return min(1.0, max(0.0, elapsed / Double(template.buildTimeSeconds)))
     }
 
     // MARK: - 便捷计算属性

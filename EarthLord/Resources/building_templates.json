@@ -32,7 +32,7 @@
       "category": "survival",
       "tier": 1,
       "defaultPublicVisible": false,
-      "description": "用木棍、布料和绳索临时搭建的遮风挡雨处所。比庇护所更容易建造，是幸存者最早的栖身之地。建成后体征衰减降低3%。",
+      "description": "用木棍、布料和绳子临时搭建的遮风挡雨处所。比庇护所更容易建造，是幸存者最早的栖身之地。建成后体征衰减降低3%。",
       "description_en": "A makeshift shelter built from sticks, cloth, and rope. Easier to build than a shelter. Reduces vitals decay by 3% when built.",
       "icon": "building_tent_simple",
       "map_icon_size": 44,
@@ -108,8 +108,8 @@
       "category": "survival",
       "tier": 1,
       "defaultPublicVisible": false,
-      "description": "简易的医疗处置区域，使用医疗物品时回复效果提升20%。",
-      "description_en": "A basic medical area. Medical items restore 20% more vitals when used here.",
+      "description": "简易的医疗处置区域，每日随机产出医疗物资（绷带/药品/急救包）。建有医疗站时，绷带/药品/急救包/抗生素回复更多健康值。",
+      "description_en": "A basic medical area. Auto-produces random medical supplies daily (bandage / medicine / first aid kit). Medical items restore more health when a medical station is built.",
       "icon": "building_medical_station",
       "map_icon_size": 40,
       "required_resources": {
@@ -208,8 +208,8 @@
       "category": "production",
       "tier": 2,
       "defaultPublicVisible": false,
-      "description": "基础的农业设施，可以种植蔬菜和粮食。每日自动产出罐头食品×1。",
-      "description_en": "A basic farming plot. Auto-produces 1 canned food daily.",
+      "description": "基础的农业设施，可以种植蔬菜、水果和粮食。每日随机产出1份农作物（蔬菜/水果/粮食）。",
+      "description_en": "A basic farming plot. Auto-produces 1 random crop daily (vegetable / fruit / grain).",
       "icon": "building_farm_simple",
       "map_icon_size": 90,
       "required_resources": {
@@ -258,8 +258,8 @@
       "category": "production",
       "tier": 2,
       "defaultPublicVisible": false,
-      "description": "用废旧金属框架和玻璃拼装的封闭式温室，不受天气影响，每日自动产出罐头食品×2。",
-      "description_en": "A closed greenhouse built from scrap metal frames and salvaged glass. Weather-independent. Auto-produces 2 canned food daily.",
+      "description": "用废旧金属框架和玻璃拼装的封闭式温室，不受天气影响，每日随机产出2份农作物（粮食概率更高）。",
+      "description_en": "A closed greenhouse built from scrap metal frames and salvaged glass. Weather-independent. Auto-produces 2 random crops daily (grain-weighted).",
       "icon": "building_greenhouse",
       "required_resources": {
         "scrap_metal": 40,
@@ -306,19 +306,41 @@
       "category": "production",
       "tier": 2,
       "defaultPublicVisible": false,
-      "description": "完整的维修设施，工具箱耐久度无限复用，装备修复费用降低。",
-      "description_en": "A full repair facility. Toolbox durability becomes unlimited. Equipment repair costs reduced.",
+      "description": "领地专属维修设施，为本领地所有建筑提供专业维护服务，建筑强化所需材料减少 20%。",
+      "description_en": "A dedicated repair facility for your territory. Reduces upgrade material costs for all buildings in this territory by 20%.",
       "icon": "building_repair_workshop",
       "required_resources": {
         "toolbox": 1,
         "scrap_metal": 100,
         "nails": 30
       },
-      "upgrade_resources": [
-        {"scrap_metal": 60, "nails": 20},
-        {"scrap_metal": 80, "nails": 25}
-      ],
       "build_time_seconds": 14400,
+      "max_per_territory": 1,
+      "max_level": 1
+    },
+    {
+      "id": "food_factory",
+      "template_id": "food_factory",
+      "name": "食品加工厂",
+      "name_en": "Food Factory",
+      "category": "production",
+      "tier": 2,
+      "defaultPublicVisible": false,
+      "description": "将原材料加工成食品的工业设施。每日随机产出加工食品（罐头/面包/压缩饼干），产量随等级提升。",
+      "description_en": "An industrial facility that processes raw materials into food. Produces processed food daily (canned food, bread, hardtack). Output scales with level.",
+      "icon": "building_food_factory",
+      "required_resources": {
+        "wood": 80,
+        "scrap_metal": 120,
+        "cloth": 30,
+        "rope": 15,
+        "toolbox": 1
+      },
+      "upgrade_resources": [
+        {"wood": 50, "scrap_metal": 80, "rope": 8},
+        {"wood": 60, "scrap_metal": 100, "cloth": 20, "toolbox": 1}
+      ],
+      "build_time_seconds": 21600,
       "max_per_territory": 1,
       "max_level": 3
     },

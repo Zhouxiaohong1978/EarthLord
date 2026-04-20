@@ -126,8 +126,9 @@ struct LocationPickerMapView: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
-        mapView.mapType = .hybrid  // 卫星混合模式
+        mapView.mapType = .hybrid
         mapView.showsUserLocation = true
+        mapView.pointOfInterestFilter = .excludingAll  // 隐藏系统POI标记
 
         // 添加领地多边形
         if territoryCoordinates.count >= 3 {
@@ -291,18 +292,29 @@ struct LocationPickerMapView: UIViewRepresentable {
             // 已有建筑标记
             if let buildingAnnotation = annotation as? ExistingBuildingAnnotation {
                 let identifier = "ExistingBuilding"
-                var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKAnnotationView
 
                 if annotationView == nil {
-                    annotationView = MKMarkerAnnotationView(annotation: buildingAnnotation, reuseIdentifier: identifier)
+                    annotationView = MKAnnotationView(annotation: buildingAnnotation, reuseIdentifier: identifier)
                     annotationView?.canShowCallout = true
                 } else {
                     annotationView?.annotation = buildingAnnotation
                 }
 
-                // 设置已有建筑的样式
-                annotationView?.markerTintColor = .systemGray
-                annotationView?.glyphImage = UIImage(systemName: "building.2.fill")
+                let building = buildingAnnotation.building
+                let template = parent.buildingTemplates[building.templateId]
+                let iconName = template?.icon ?? "building_campfire"
+                if let img = UIImage(named: iconName) {
+                    let size = CGFloat(template?.mapIconSize ?? 40)
+                    UIGraphicsBeginImageContextWithOptions(CGSize(width: size, height: size), false, 0)
+                    img.draw(in: CGRect(origin: .zero, size: CGSize(width: size, height: size)))
+                    let resized = UIGraphicsGetImageFromCurrentImageContext()
+                    UIGraphicsEndImageContext()
+                    annotationView?.image = resized
+                    annotationView?.centerOffset = CGPoint(x: 0, y: -size / 2)
+                } else {
+                    annotationView?.image = UIImage(systemName: "building.2.fill")
+                }
 
                 return annotationView
             }

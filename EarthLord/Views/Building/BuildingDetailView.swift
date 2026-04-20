@@ -133,7 +133,7 @@ struct BuildingDetailView: View {
                 attributeRow(
                     icon: "clock",
                     title: String(localized: "建造时间"),
-                    value: template.formattedBuildTime
+                    value: template.formattedBuildTime(multiplier: 1.0)
                 )
 
                 Divider()

@@ -141,6 +141,23 @@ final class CraftingManager: ObservableObject {
             outputQuantity: 2,
             durationSeconds: 2700
         ),
+        // 装备强化台配方
+        CraftingRecipe(
+            id: "rare_to_epic",
+            buildingTemplateId: "equipment_forge",
+            inputs: ["equipment_rare": 3],
+            outputItemId: "equipment_epic",
+            outputQuantity: 1,
+            durationSeconds: 86400
+        ),
+        CraftingRecipe(
+            id: "epic_to_rare",
+            buildingTemplateId: "equipment_forge",
+            inputs: ["equipment_epic": 1],
+            outputItemId: "equipment_rare",
+            outputQuantity: 2,
+            durationSeconds: 14400
+        ),
     ]
 
     func recipes(for buildingTemplateId: String) -> [CraftingRecipe] {

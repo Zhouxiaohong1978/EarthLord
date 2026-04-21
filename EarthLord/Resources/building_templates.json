@@ -370,6 +370,27 @@
       "max_level": 3
     },
     {
+      "id": "equipment_forge",
+      "template_id": "equipment_forge",
+      "name": "装备强化台",
+      "name_en": "Equipment Forge",
+      "category": "production",
+      "tier": 3,
+      "defaultPublicVisible": false,
+      "description": "顶级工匠设施，可将3件稀有装备升炼为1件史诗装备，也可将史诗装备分解为2件稀有装备。需要领主指挥所前置。",
+      "description_en": "A master craftsman's forge. Upgrade 3 rare equipment into 1 epic equipment, or break down epic equipment into 2 rare pieces. Requires Lord's Command Center.",
+      "icon": "building_workbench",
+      "prerequisites": ["lord_command"],
+      "required_resources": {
+        "scrap_metal": 100,
+        "electronic_component": 20,
+        "equipment_epic": 1
+      },
+      "build_time_seconds": 86400,
+      "max_per_territory": 1,
+      "max_level": 1
+    },
+    {
       "id": "solar_panel",
       "template_id": "solar_panel",
       "name": "太阳能板",

@@ -12262,6 +12262,9 @@
         }
       }
     },
+    "将被分解为 %@" : {
+
+    },
     "将被分解为 %@，回收率 60%%" : {
       "localizations" : {
         "en" : {
@@ -25953,6 +25956,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "额外奖励（概率获得）"
+          }
+        }
+      }
+    },
+    "装备强化" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equipment Forge"
           }
         }
       }

@@ -54,7 +54,13 @@ struct CraftingView: View {
                 .animation(.easeInOut(duration: 0.25), value: showConfirm)
             }
         }
-        .navigationTitle(buildingTemplateId == "food_factory" ? String(localized: "食品加工") : String(localized: "工作台合成"))
+        .navigationTitle({
+            switch buildingTemplateId {
+            case "food_factory":      return String(localized: "食品加工")
+            case "equipment_forge":   return String(localized: "装备强化")
+            default:                  return String(localized: "工作台合成")
+            }
+        }())
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { CraftingManager.shared.reloadForCurrentUser() }
         .alert(errorMessage ?? "", isPresented: $showError) {
@@ -303,11 +309,13 @@ struct RecipeRow: View {
         case "nails":       return "pin.fill"
         case "tool":        return "wrench.fill"
         case "toolbox":     return "briefcase.fill"
-        case "bread":       return "birthday.cake.fill"
-        case "hardtack":    return "square.fill"
-        case "canned_food": return "cylinder.fill"
-        case "juice":       return "drop.fill"
-        default:            return "cube.fill"
+        case "bread":           return "birthday.cake.fill"
+        case "hardtack":        return "square.fill"
+        case "canned_food":     return "cylinder.fill"
+        case "juice":           return "drop.fill"
+        case "equipment_epic":  return "shield.lefthalf.filled"
+        case "equipment_rare":  return "shield.fill"
+        default:                return "cube.fill"
         }
     }
 

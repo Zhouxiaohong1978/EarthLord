@@ -8,10 +8,77 @@
 
 import SwiftUI
 
+// MARK: - 交易市场分类筛选
+
+enum TradeMarketFilter: CaseIterable, Identifiable {
+    case all, equipment, blueprint, material, food, medical, tool
+
+    var id: String { title }
+
+    var title: String {
+        switch self {
+        case .all:       return String(localized: "全部")
+        case .equipment: return String(localized: "装备")
+        case .blueprint: return String(localized: "图纸")
+        case .material:  return String(localized: "材料")
+        case .food:      return String(localized: "食物")
+        case .medical:   return String(localized: "医疗")
+        case .tool:      return String(localized: "工具")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .all:       return "square.grid.2x2.fill"
+        case .equipment: return "shield.fill"
+        case .blueprint: return "doc.badge.gearshape.fill"
+        case .material:  return "cube.fill"
+        case .food:      return "fork.knife"
+        case .medical:   return "cross.case.fill"
+        case .tool:      return "wrench.and.screwdriver.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .all:       return ApocalypseTheme.primary
+        case .equipment: return .purple
+        case .blueprint: return .blue
+        case .material:  return .brown
+        case .food:      return .orange
+        case .medical:   return .red
+        case .tool:      return .gray
+        }
+    }
+
+    /// 该分类包含的 itemId 关键词
+    var itemIds: Set<String> {
+        switch self {
+        case .all:       return []
+        case .equipment: return ["equipment_rare", "equipment_epic"]
+        case .blueprint: return ["blueprint_basic", "blueprint_epic"]
+        case .material:  return ["wood", "stone", "scrap_metal", "glass", "cloth", "nails",
+                                  "rope", "seeds", "fuel", "electronic_component", "satellite_module"]
+        case .food:      return ["bread", "hardtack", "canned_food", "juice", "grain",
+                                  "vegetable", "fruit", "water_bottle"]
+        case .medical:   return ["bandage", "medicine", "first_aid_kit", "antibiotics"]
+        case .tool:      return ["tool", "toolbox", "build_speedup", "flashlight",
+                                  "backpack_expand_voucher"]
+        }
+    }
+
+    func matches(_ offer: TradeOffer) -> Bool {
+        guard self != .all else { return true }
+        let allItems = offer.offeringItems + offer.requestingItems
+        return allItems.contains { itemIds.contains($0.itemId) }
+    }
+}
+
 struct TradeMarketView: View {
     @ObservedObject private var tradeManager = TradeManager.shared
 
     @State private var searchText = ""
+    @State private var selectedFilter: TradeMarketFilter = .all
     @State private var selectedOffer: TradeOffer?
     @State private var isFirstLoad = true
 
@@ -27,9 +94,11 @@ struct TradeMarketView: View {
         } else {
             base = tradeManager.availableOffers
         }
+        // 按分类筛选
+        let categorized = selectedFilter == .all ? base : base.filter { selectedFilter.matches($0) }
         // 再按搜索词过滤
-        guard !searchText.isEmpty else { return base }
-        return base.filter { offer in
+        guard !searchText.isEmpty else { return categorized }
+        return categorized.filter { offer in
             let offeringMatch = offer.offeringItems.contains { $0.itemName.localizedCaseInsensitiveContains(searchText) }
             let requestingMatch = offer.requestingItems.contains { $0.itemName.localizedCaseInsensitiveContains(searchText) }
             let userMatch = offer.ownerUsername.localizedCaseInsensitiveContains(searchText)
@@ -48,9 +117,13 @@ struct TradeMarketView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
 
+                // 分类筛选
+                filterChips
+                    .padding(.top, 10)
+
                 // 市场统计
                 marketStats
-                    .padding(.top, 12)
+                    .padding(.top, 10)
                     .padding(.horizontal, 16)
 
                 // 挂单列表
@@ -127,6 +200,42 @@ struct TradeMarketView: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(ApocalypseTheme.cardBackground)
         )
+    }
+
+    // MARK: - 分类筛选
+
+    private var filterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(TradeMarketFilter.allCases) { filter in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedFilter = filter
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: filter.icon)
+                                .font(.system(size: 11))
+                            Text(filter.title)
+                                .font(.system(size: 13, weight: selectedFilter == filter ? .semibold : .medium))
+                        }
+                        .foregroundColor(selectedFilter == filter ? .white : ApocalypseTheme.textSecondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule().fill(selectedFilter == filter ? filter.color : ApocalypseTheme.cardBackground)
+                        )
+                        .overlay(
+                            Capsule().stroke(
+                                selectedFilter == filter ? Color.clear : ApocalypseTheme.textMuted.opacity(0.3),
+                                lineWidth: 1
+                            )
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+        }
     }
 
     // MARK: - 市场统计

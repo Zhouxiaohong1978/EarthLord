@@ -386,7 +386,7 @@
       },
       "upgrade_resources": [
         {"scrap_metal": 60, "electronic_component": 12},
-        {"scrap_metal": 80, "electronic_component": 16}
+        {"scrap_metal": 80, "electronic_component": 16, "equipment_rare": 1}
       ],
       "build_time_seconds": 28800,
       "max_per_territory": 2,
@@ -409,7 +409,7 @@
       },
       "upgrade_resources": [
         {"scrap_metal": 90, "electronic_component": 30},
-        {"scrap_metal": 120, "electronic_component": 40}
+        {"scrap_metal": 120, "electronic_component": 40, "equipment_rare": 1}
       ],
       "build_time_seconds": 86400,
       "max_per_territory": 1,
@@ -456,7 +456,7 @@
       },
       "upgrade_resources": [
         {"scrap_metal": 110, "nails": 36},
-        {"scrap_metal": 145, "nails": 48}
+        {"scrap_metal": 145, "nails": 48, "equipment_rare": 2}
       ],
       "build_time_seconds": 64800,
       "max_per_territory": 1,
@@ -480,7 +480,7 @@
       },
       "upgrade_resources": [
         {"wood": 75, "cloth": 36},
-        {"wood": 100, "cloth": 50}
+        {"wood": 100, "cloth": 50, "equipment_epic": 1}
       ],
       "build_time_seconds": 86400,
       "max_per_territory": 1,
@@ -504,7 +504,7 @@
       },
       "upgrade_resources": [
         {"electronic_component": 25},
-        {"electronic_component": 32}
+        {"electronic_component": 32, "equipment_epic": 2}
       ],
       "build_time_seconds": 259200,
       "max_per_territory": 1,

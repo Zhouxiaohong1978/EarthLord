@@ -131,6 +131,8 @@ func resourceIcon(for resourceId: String) -> String {
         return "doc.badge.gearshape.fill"
     case "equipment_rare":
         return "shield.fill"
+    case "equipment_epic":
+        return "shield.lefthalf.filled"
     case "build_speedup":
         return "bolt.fill"
     default:
@@ -175,6 +177,8 @@ func resourceDisplayName(for resourceId: String) -> String {
         return String(localized: "史诗图纸")
     case "equipment_rare":
         return String(localized: "稀有装备")
+    case "equipment_epic":
+        return String(localized: "史诗装备")
     case "build_speedup":
         return String(localized: "建造加速令")
     case "water", "water_bottle":

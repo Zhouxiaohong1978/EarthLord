@@ -70,7 +70,12 @@ enum TradeMarketFilter: CaseIterable, Identifiable {
     func matches(_ offer: TradeOffer) -> Bool {
         guard self != .all else { return true }
         let allItems = offer.offeringItems + offer.requestingItems
-        return allItems.contains { itemIds.contains($0.itemId) }
+        return allItems.contains { item in
+            if !itemIds.isEmpty { return itemIds.contains(item.itemId) }
+            // 装备分类额外通过 ItemCategory 匹配
+            let def = MockExplorationData.getItemDefinition(by: item.itemId)
+            return def?.category == .equipment
+        }
     }
 }
 

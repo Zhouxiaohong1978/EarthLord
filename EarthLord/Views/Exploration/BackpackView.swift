@@ -28,6 +28,8 @@ extension ItemCategory {
             return "hammer.fill"
         case .clothing:
             return "tshirt.fill"
+        case .equipment:
+            return "shield.fill"
         case .misc:
             return "archivebox.fill"
         }
@@ -50,6 +52,8 @@ extension ItemCategory {
             return .purple
         case .clothing:
             return .indigo
+        case .equipment:
+            return .purple
         case .misc:
             return ApocalypseTheme.textSecondary
         }
@@ -107,6 +111,7 @@ enum BackpackFilterType: CaseIterable, Identifiable {
     case medical
     case weapon
     case clothing
+    case equipment
     case misc
 
     var id: String { title }
@@ -119,9 +124,10 @@ enum BackpackFilterType: CaseIterable, Identifiable {
         case .material: return ItemCategory.material.rawValue
         case .tool:     return ItemCategory.tool.rawValue
         case .medical:  return ItemCategory.medical.rawValue
-        case .weapon:   return ItemCategory.weapon.rawValue
-        case .clothing: return ItemCategory.clothing.rawValue
-        case .misc:     return ItemCategory.misc.rawValue
+        case .weapon:    return ItemCategory.weapon.rawValue
+        case .clothing:  return ItemCategory.clothing.rawValue
+        case .equipment: return ItemCategory.equipment.rawValue
+        case .misc:      return ItemCategory.misc.rawValue
         }
     }
 
@@ -133,9 +139,10 @@ enum BackpackFilterType: CaseIterable, Identifiable {
         case .material: return ItemCategory.material.icon
         case .tool:     return ItemCategory.tool.icon
         case .medical:  return ItemCategory.medical.icon
-        case .weapon:   return ItemCategory.weapon.icon
-        case .clothing: return ItemCategory.clothing.icon
-        case .misc:     return ItemCategory.misc.icon
+        case .weapon:    return ItemCategory.weapon.icon
+        case .clothing:  return ItemCategory.clothing.icon
+        case .equipment: return ItemCategory.equipment.icon
+        case .misc:      return ItemCategory.misc.icon
         }
     }
 
@@ -148,9 +155,10 @@ enum BackpackFilterType: CaseIterable, Identifiable {
         case .material: return .material
         case .tool:     return .tool
         case .medical:  return .medical
-        case .weapon:   return .weapon
-        case .clothing: return .clothing
-        case .misc:     return .misc
+        case .weapon:    return .weapon
+        case .clothing:  return .clothing
+        case .equipment: return .equipment
+        case .misc:      return .misc
         }
     }
 }

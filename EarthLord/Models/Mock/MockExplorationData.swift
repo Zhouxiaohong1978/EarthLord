@@ -191,6 +191,7 @@ enum ItemCategory: String, CaseIterable {
     case tool = "工具"
     case weapon = "武器"
     case clothing = "服装"
+    case equipment = "装备"
     case misc = "杂项"
 }
 
@@ -456,7 +457,7 @@ struct MockExplorationData {
     /// 物品定义表
     /// 记录每种物品的基础属性，用于物品系统的初始化
     static let itemDefinitions: [ItemDefinition] = [
-        // 水类
+        // 饮料
         ItemDefinition(
             id: "water_bottle",
             name: "矿泉水",
@@ -464,8 +465,52 @@ struct MockExplorationData {
             weight: 0.5,
             volume: 0.5,
             rarity: .common,
-            description: "一瓶干净的饮用水，生存必需品。",
+            description: "一瓶干净的饮用水，生存必需品。补充水分+30。",
             maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "energy_drink",
+            name: "能量饮料",
+            category: .water,
+            weight: 0.4,
+            volume: 0.4,
+            rarity: .common,
+            description: "废弃便利店里的能量饮料，含咖啡因，提神效果明显。补充水分+20，饥饿+5。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "cola",
+            name: "可乐",
+            category: .water,
+            weight: 0.5,
+            volume: 0.5,
+            rarity: .common,
+            description: "末日前的碳酸饮料，高糖分能快速补充能量。补充水分+15，饥饿+15。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "juice",
+            name: "果汁",
+            category: .water,
+            weight: 0.5,
+            volume: 0.5,
+            rarity: .common,
+            description: "密封完好的纸盒果汁，含有一定营养。补充水分+25，饥饿+15。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "sports_drink",
+            name: "运动饮料",
+            category: .water,
+            weight: 0.5,
+            volume: 0.5,
+            rarity: .uncommon,
+            description: "含电解质的运动饮料，比矿泉水更有效地补充水分。补充水分+40，饥饿+5。",
+            maxStack: 15,
             hasQuality: false
         ),
 
@@ -477,8 +522,52 @@ struct MockExplorationData {
             weight: 0.4,
             volume: 0.3,
             rarity: .common,
-            description: "密封的罐头食品，保质期长，营养丰富。",
+            description: "密封的罐头食品，保质期长，营养丰富。补充饥饿+40，水分+5。",
             maxStack: 15,
+            hasQuality: true
+        ),
+        ItemDefinition(
+            id: "instant_noodles",
+            name: "方便面",
+            category: .food,
+            weight: 0.1,
+            volume: 0.3,
+            rarity: .common,
+            description: "末日幸存者的热门食品，无需加热也能下咽。补充饥饿+30，水分+10。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "chocolate",
+            name: "巧克力",
+            category: .food,
+            weight: 0.1,
+            volume: 0.1,
+            rarity: .uncommon,
+            description: "高热量零食，小小一块却能提供大量能量。补充饥饿+25。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "compressed_biscuit",
+            name: "压缩饼干",
+            category: .food,
+            weight: 0.2,
+            volume: 0.2,
+            rarity: .uncommon,
+            description: "军用压缩饼干，保质期可达十年，是末日最可靠的口粮。补充饥饿+35。",
+            maxStack: 15,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "canned_meat",
+            name: "午餐肉罐头",
+            category: .food,
+            weight: 0.5,
+            volume: 0.4,
+            rarity: .uncommon,
+            description: "比普通罐头更丰盛的肉类罐头，蛋白质含量高。补充饥饿+55，水分+5。",
+            maxStack: 10,
             hasQuality: true
         ),
 
@@ -557,7 +646,7 @@ struct MockExplorationData {
         ItemDefinition(
             id: "rope",
             name: "绳子",
-            category: .tool,
+            category: .material,
             weight: 0.8,
             volume: 0.5,
             rarity: .common,
@@ -568,13 +657,57 @@ struct MockExplorationData {
 
         // 食物
         ItemDefinition(
+            id: "vegetable",
+            name: "蔬菜",
+            category: .food,
+            weight: 0.3,
+            volume: 0.5,
+            rarity: .common,
+            description: "农田种植的新鲜蔬菜，补充饱食度+15，水分+5。",
+            maxStack: 30,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "fruit",
+            name: "水果",
+            category: .food,
+            weight: 0.2,
+            volume: 0.3,
+            rarity: .common,
+            description: "温室培育的新鲜水果，补充饱食度+10，水分+10。",
+            maxStack: 30,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "grain",
+            name: "粮食",
+            category: .food,
+            weight: 0.5,
+            volume: 0.8,
+            rarity: .common,
+            description: "农田收获的粮食，是末日中最重要的食物来源。补充饱食度+25。",
+            maxStack: 50,
+            hasQuality: false
+        ),
+        ItemDefinition(
             id: "bread",
             name: "面包",
             category: .food,
             weight: 0.2,
             volume: 0.2,
             rarity: .common,
-            description: "末日前的烘焙食品，密封保存，适合随身携带。",
+            description: "末日前的烘焙食品，密封保存，适合随身携带。补充饥饿+25。",
+            maxStack: 20,
+            hasQuality: false
+        ),
+        ItemDefinition(
+            id: "hardtack",
+            name: "压缩饼干",
+            category: .food,
+            weight: 0.3,
+            volume: 0.2,
+            rarity: .uncommon,
+            description: "高热量压缩口粮，便于储存和携带，末日生存必备。补充饥饿+40。",
             maxStack: 20,
             hasQuality: false
         ),
@@ -782,7 +915,7 @@ struct MockExplorationData {
         ItemDefinition(
             id: "equipment_rare",
             name: "稀有装备",
-            category: .misc,
+            category: .equipment,
             weight: 1.0,
             volume: 0.8,
             rarity: .rare,
@@ -794,7 +927,7 @@ struct MockExplorationData {
         ItemDefinition(
             id: "equipment_epic",
             name: "史诗装备",
-            category: .misc,
+            category: .equipment,
             weight: 1.2,
             volume: 1.0,
             rarity: .epic,

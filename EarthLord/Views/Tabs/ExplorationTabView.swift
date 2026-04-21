@@ -850,14 +850,26 @@ struct BackpackContentView: View {
 
     // MARK: - Body
 
+    private var disassembleTitle: String {
+        guard let p = pendingDisassemble else { return "" }
+        if !p.customName.isEmpty { return p.customName }
+        return MockExplorationData.getItemDefinition(by: p.itemId)?.name ?? p.itemId
+    }
     private var disassembleReturnName: String {
         guard let p = pendingDisassemble else { return "" }
-        let desc = inventoryManager.items.first(where: { $0.itemId == p.itemId && $0.customName == p.customName })?.customDescription
+        if p.itemId == "flashlight" || p.itemId == "satellite_module" {
+            return MockExplorationData.getItemDefinition(by: "electronic_component")?.name ?? "电子元件"
+        }
+        let customNameOpt: String? = p.customName.isEmpty ? nil : p.customName
+        let desc = inventoryManager.items.first(where: { $0.itemId == p.itemId && $0.customName == customNameOpt })?.customDescription
         let returnId = InventoryManager.classifyDisassembleMaterial(from: p.customName, description: desc, fallback: p.itemId)
         return MockExplorationData.getItemDefinition(by: returnId)?.name ?? returnId
     }
     private var disassembleReturnQty: Int {
-        max(1, Int(Double(pendingDisassemble?.quantity ?? 1) * 0.6))
+        guard let p = pendingDisassemble else { return 0 }
+        if p.itemId == "flashlight" { return 1 }
+        if p.itemId == "satellite_module" { return 5 }
+        return max(1, Int(Double(p.quantity) * 0.6))
     }
 
     var body: some View {
@@ -892,15 +904,16 @@ struct BackpackContentView: View {
             }
         }
         .confirmationDialog(
-            "拆解 \(pendingDisassemble?.customName ?? "")",
+            "拆解 \(disassembleTitle)",
             isPresented: $showDisassembleConfirm,
             titleVisibility: .visible
         ) {
             Button("确认拆解（返还 \(disassembleReturnName)×\(disassembleReturnQty)）", role: .destructive) {
                 guard let p = pendingDisassemble else { return }
                 Task { @MainActor in
+                    let customNameOpt: String? = p.customName.isEmpty ? nil : p.customName
                     if let item = inventoryManager.items.first(where: {
-                        $0.itemId == p.itemId && $0.customName == p.customName
+                        $0.itemId == p.itemId && $0.customName == customNameOpt
                     }) {
                         _ = try? await InventoryManager.shared.disassembleItem(item)
                     }
@@ -909,7 +922,8 @@ struct BackpackContentView: View {
             }
             Button("取消", role: .cancel) { pendingDisassemble = nil }
         } message: {
-            Text("将被分解为 \(disassembleReturnName)，回收率 60%")
+            let isFixed = pendingDisassemble?.itemId == "flashlight" || pendingDisassemble?.itemId == "satellite_module"
+            Text(isFixed ? "将被分解为 \(disassembleReturnName)" : "将被分解为 \(disassembleReturnName)，回收率 60%")
         }
         .onAppear {
             // 首次加载背包数据
@@ -1075,6 +1089,11 @@ struct BackpackContentView: View {
                                 try? await InventoryManager.shared.useExpandVoucher(inventoryId: backpackItem.id)
                             }
                         }
+                    },
+                    onDrop: { qty in
+                        Task { @MainActor in
+                            try? await InventoryManager.shared.removeItem(itemId: group.itemId, quantity: qty, ignoreQuality: true)
+                        }
                     }
                 )
             }
@@ -1196,10 +1215,14 @@ struct BackpackItemCardNew: View {
     var onUse: (() -> Void)? = nil
     var onDisassemble: (() -> Void)? = nil
     var onExpandVoucher: (() -> Void)? = nil
+    var onDrop: ((Int) -> Void)? = nil
 
     @State private var showExpandSheet = false
+    @State private var showDropSheet = false
+    @State private var showUseSheet = false
 
     private var isAIItem: Bool { customName != nil }
+    private var isDisassemblable: Bool { isAIItem || itemId == "flashlight" || itemId == "satellite_module" }
     private var displayName: String { customName ?? LanguageManager.shared.localizedString(for: definition.name) }
 
     var body: some View {
@@ -1257,44 +1280,50 @@ struct BackpackItemCardNew: View {
             Spacer()
 
             // 操作按钮
-            if isAIItem {
-                Button {
-                    onDisassemble?()
-                } label: {
-                    Text("拆解")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(width: 48, height: 26)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(ApocalypseTheme.warning)
-                        )
+            VStack(spacing: 6) {
+                if isDisassemblable {
+                    Button {
+                        onDisassemble?()
+                    } label: {
+                        Text("拆解")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 26)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(ApocalypseTheme.warning))
+                    }
+                } else if itemId == "backpack_expand_voucher" {
+                    Button {
+                        showExpandSheet = true
+                    } label: {
+                        Text(LanguageManager.shared.localizedString(for: "使用"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 26)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color(red: 1.00, green: 0.82, blue: 0.00)))
+                    }
+                } else if definition.category == .food || definition.category == .water || definition.category == .medical {
+                    Button {
+                        showUseSheet = true
+                    } label: {
+                        Text(LanguageManager.shared.localizedString(for: "使用"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 26)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(ApocalypseTheme.primary))
+                    }
                 }
-            } else if itemId == "backpack_expand_voucher" {
-                Button {
-                    showExpandSheet = true
-                } label: {
-                    Text(LanguageManager.shared.localizedString(for: "使用"))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(width: 48, height: 26)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color(red: 1.00, green: 0.82, blue: 0.00))
-                        )
-                }
-            } else if definition.category == .food || definition.category == .water || definition.category == .medical {
-                Button {
-                    onUse?()
-                } label: {
-                    Text(LanguageManager.shared.localizedString(for: "使用"))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(width: 48, height: 26)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(ApocalypseTheme.primary)
-                        )
+
+                // 所有物品都有丢弃按钮（扩容券除外）
+                if itemId != "backpack_expand_voucher" {
+                    Button {
+                        showDropSheet = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(ApocalypseTheme.danger)
+                            .frame(width: 48, height: 26)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(ApocalypseTheme.danger.opacity(0.15)))
+                    }
                 }
             }
         }
@@ -1307,11 +1336,27 @@ struct BackpackItemCardNew: View {
                         .strokeBorder(isAIItem ? ApocalypseTheme.warning.opacity(0.4) : Color.clear, lineWidth: 1)
                 )
         )
+        .sheet(isPresented: $showDropSheet) {
+            DropItemSheet(itemName: displayName, maxQuantity: totalQuantity) { qty in
+                onDrop?(qty)
+            }
+            .presentationDetents([.height(380)])
+        }
         .sheet(isPresented: $showExpandSheet) {
             ExpandVoucherSheet(onConfirm: {
                 onExpandVoucher?()
             })
             .presentationDetents([.height(320)])
+        }
+        .sheet(isPresented: $showUseSheet) {
+            UseItemSheet(
+                itemName: displayName,
+                itemId: itemId,
+                categoryColor: definition.category.color,
+                categoryIcon: definition.category.icon,
+                onConfirm: { onUse?() }
+            )
+            .presentationDetents([.height(360)])
         }
     }
 }

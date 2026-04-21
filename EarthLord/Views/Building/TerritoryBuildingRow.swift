@@ -1021,6 +1021,18 @@ struct BuildingMaintenanceSheet: View {
                     .font(.system(size: 12))
                     .foregroundColor(ApocalypseTheme.textMuted)
                 Spacer()
+                if manager.repairWorkshopDurabilityBonus(for: building.territoryId) > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "wrench.fill")
+                            .font(.system(size: 9))
+                        Text(String(localized: "维修工坊 +50% 寿命"))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.success)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
+                }
                 Text(String(localized: "100%"))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(ApocalypseTheme.success)
@@ -1293,8 +1305,8 @@ struct BuildingFortifySheet: View {
         let curLevel = building.level
         let newLevel = curLevel + 1
 
-        let curDays   = mgr.durabilityLifeDays(templateId: tid, level: curLevel)
-        let newDays   = mgr.durabilityLifeDays(templateId: tid, level: newLevel)
+        let curDays   = mgr.durabilityLifeDays(templateId: tid, level: curLevel, territoryId: building.territoryId)
+        let newDays   = mgr.durabilityLifeDays(templateId: tid, level: newLevel, territoryId: building.territoryId)
         let durPct    = Int(((newDays - curDays) / curDays * 100).rounded())
 
         let curVital  = mgr.vitalDecayAmount(templateId: tid, level: curLevel)

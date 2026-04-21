@@ -499,6 +499,16 @@ final class BuildingManager: ObservableObject {
         return hasWorkshop ? 0.20 : 0.0
     }
 
+    /// 维修工坊耐久延长加成（有工坊 = +50% 寿命）
+    func repairWorkshopDurabilityBonus(for territoryId: String) -> Double {
+        let hasWorkshop = playerBuildings.contains {
+            $0.territoryId == territoryId &&
+            $0.templateId == "repair_workshop" &&
+            $0.status == .active
+        }
+        return hasWorkshop ? 0.50 : 0.0
+    }
+
     /// 应用维修工坊折扣后的升级材料费用
     func discountedUpgradeCost(_ cost: [String: Int], territoryId: String) -> [String: Int] {
         let discount = repairWorkshopDiscount(for: territoryId)
@@ -815,28 +825,32 @@ final class BuildingManager: ObservableObject {
 
     /// 实时计算建筑耐久度（基于上次维护时间，无需后台任务）
     /// - 篝火：7天归零；其他建筑：30天归零
-    /// - 等级越高衰减越慢（Lv2 × 0.8，Lv3 × 0.6）
+    /// - 等级越高衰减越慢（Lv2 × 0.5，Lv3 × 0.25）
+    /// - 有维修工坊：寿命额外延长 50%
     func computedDurability(for building: PlayerBuilding) -> Int {
         guard building.status == .active else { return building.durability }
         let since = building.lastMaintainedAt ?? building.buildCompletedAt ?? building.buildStartedAt
         let daysPassed = Date().timeIntervalSince(since) / 86400.0
-        let decayRate = durabilityDecayPerDay(templateId: building.templateId, level: building.level)
+        let decayRate = durabilityDecayPerDay(templateId: building.templateId, level: building.level, territoryId: building.territoryId)
         return max(0, Int(100.0 - daysPassed * decayRate))
     }
 
-    /// 每天耐久衰减量
-    /// 等级倍率：Lv1=1.0×，Lv2=0.5×（耐久×2），Lv3=0.25×（耐久×4）
-    private func durabilityDecayPerDay(templateId: String, level: Int) -> Double {
+    /// 每天耐久衰减量（有维修工坊时寿命 ×1.5）
+    private func durabilityDecayPerDay(templateId: String, level: Int, territoryId: String = "") -> Double {
         let baseDays: Double = templateId == "campfire" ? 7.0 : 30.0
         let levelMultiplier = [1.0, 0.5, 0.25][min(level - 1, 2)]
-        return 100.0 / baseDays * levelMultiplier
+        let workshopBonus = territoryId.isEmpty ? 0.0 : repairWorkshopDurabilityBonus(for: territoryId)
+        let effectiveDays = baseDays * (1.0 + workshopBonus)
+        return 100.0 / effectiveDays * levelMultiplier
     }
 
-    /// 指定等级下耐久从 100 衰减至 0 需要的天数
-    func durabilityLifeDays(templateId: String, level: Int) -> Double {
+    /// 指定等级下耐久从 100 衰减至 0 需要的天数（传入 territoryId 则考虑维修工坊加成）
+    func durabilityLifeDays(templateId: String, level: Int, territoryId: String = "") -> Double {
         let baseDays: Double = templateId == "campfire" ? 7.0 : 30.0
         let levelMultiplier = [1.0, 0.5, 0.25][min(level - 1, 2)]
-        return baseDays / levelMultiplier
+        let workshopBonus = territoryId.isEmpty ? 0.0 : repairWorkshopDurabilityBonus(for: territoryId)
+        let effectiveDays = baseDays * (1.0 + workshopBonus)
+        return effectiveDays / levelMultiplier
     }
 
     /// 单栋建筑在指定等级下提供的体征衰减减少量

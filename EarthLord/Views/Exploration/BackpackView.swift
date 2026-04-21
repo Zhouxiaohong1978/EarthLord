@@ -438,6 +438,10 @@ struct BackpackView: View {
                             Task { @MainActor in
                                 try? await InventoryManager.shared.useExpandVoucher(inventoryId: item.id)
                             }
+                        }, onDrop: { qty in
+                            Task { @MainActor in
+                                try? await InventoryManager.shared.removeItem(itemId: item.itemId, quantity: qty, ignoreQuality: true)
+                            }
                         })
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .move(edge: .trailing)),
@@ -566,15 +570,25 @@ struct BackpackItemCard: View {
     var onUse: (() -> Void)? = nil
     var onDisassemble: (() -> Void)? = nil
     var onExpandVoucher: (() -> Void)? = nil
+    var onDrop: ((Int) -> Void)? = nil
 
     @State private var showDisassembleConfirm = false
     @State private var showExpandSheet = false
+    @State private var showDropSheet = false
+    @State private var showUseSheet = false
 
     private var isAIItem: Bool { item.customName != nil }
+    private var isDisassemblable: Bool { isAIItem || item.itemId == "flashlight" || item.itemId == "satellite_module" }
     private var displayName: String { item.customName ?? definition.name }
-    private var disassembleReturn: Int { max(1, Int(Double(item.quantity) * 0.6)) }
+    private var disassembleReturn: Int {
+        if item.itemId == "flashlight" { return 1 }
+        if item.itemId == "satellite_module" { return 5 }
+        return max(1, Int(Double(item.quantity) * 0.6))
+    }
     private var disassembleReturnItemId: String {
-        InventoryManager.classifyDisassembleMaterial(from: item.customName ?? "", description: item.customDescription, fallback: item.itemId)
+        if item.itemId == "flashlight" { return "electronic_component" }
+        if item.itemId == "satellite_module" { return "electronic_component" }
+        return InventoryManager.classifyDisassembleMaterial(from: item.customName ?? "", description: item.customDescription, fallback: item.itemId)
     }
     private var disassembleReturnName: String {
         MockExplorationData.getItemDefinition(by: disassembleReturnItemId)?.name ?? disassembleReturnItemId
@@ -614,11 +628,27 @@ struct BackpackItemCard: View {
         } message: {
             Text("将被分解为 \(disassembleReturnName)，回收率 60%")
         }
+        .sheet(isPresented: $showDropSheet) {
+            DropItemSheet(itemName: displayName, maxQuantity: item.quantity) { qty in
+                onDrop?(qty)
+            }
+            .presentationDetents([.height(380)])
+        }
         .sheet(isPresented: $showExpandSheet) {
             ExpandVoucherSheet(onConfirm: {
                 onExpandVoucher?()
             })
             .presentationDetents([.height(320)])
+        }
+        .sheet(isPresented: $showUseSheet) {
+            UseItemSheet(
+                itemName: displayName,
+                itemId: item.itemId,
+                categoryColor: definition.category.color,
+                categoryIcon: definition.category.icon,
+                onConfirm: { onUse?() }
+            )
+            .presentationDetents([.height(360)])
         }
     }
 
@@ -713,12 +743,12 @@ struct BackpackItemCard: View {
 
     private var actionButtons: some View {
         VStack(spacing: 6) {
-            if isAIItem {
-                // AI 物品：拆解按钮
+            if isDisassemblable {
+                // AI 物品 / 手电筒：拆解按钮
                 Button {
                     showDisassembleConfirm = true
                 } label: {
-                    Text("拆解")
+                    Text(String(localized: "拆解"))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white)
                         .frame(width: 48, height: 26)
@@ -742,9 +772,9 @@ struct BackpackItemCard: View {
                         )
                 }
             } else if definition.category == .food || definition.category == .water || definition.category == .medical {
-                // 标准物品：使用按钮
+                // 食物/饮料/医疗：使用按钮（弹出确认）
                 Button {
-                    onUse?()
+                    showUseSheet = true
                 } label: {
                     Text(LanguageManager.shared.localizedString(for: "使用"))
                         .font(.system(size: 12, weight: .medium))
@@ -756,6 +786,271 @@ struct BackpackItemCard: View {
                         )
                 }
             }
+
+            // 所有物品都有丢弃按钮（扩容券除外）
+            if item.itemId != "backpack_expand_voucher" {
+                Button {
+                    showDropSheet = true
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(ApocalypseTheme.danger)
+                        .frame(width: 48, height: 26)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(ApocalypseTheme.danger.opacity(0.15))
+                        )
+                }
+            }
+        }
+    }
+}
+
+// MARK: - UseItemSheet
+
+struct UseItemSheet: View {
+    let itemName: String
+    let itemId: String
+    let categoryColor: Color
+    let categoryIcon: String
+    let onConfirm: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var effect: ItemVitalEffect {
+        PhysiqueManager.shared.vitalEffect(for: itemId)
+    }
+
+    var body: some View {
+        ZStack {
+            ApocalypseTheme.background.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // 物品图标 + 名称
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(categoryColor.opacity(0.2))
+                            .frame(width: 64, height: 64)
+                        Image(systemName: categoryIcon)
+                            .font(.system(size: 28))
+                            .foregroundColor(categoryColor)
+                    }
+
+                    Text(itemName)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+
+                    Text("使用后将获得以下效果")
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+                .padding(.top, 28)
+                .padding(.bottom, 24)
+
+                // 效果数值
+                HStack(spacing: 12) {
+                    if effect.satietyBoost > 0 {
+                        effectPill(icon: "fork.knife", label: "饱食度", value: effect.satietyBoost, color: .orange)
+                    }
+                    if effect.hydrationBoost > 0 {
+                        effectPill(icon: "drop.fill", label: "水分", value: effect.hydrationBoost, color: .cyan)
+                    }
+                    if effect.healthBoost > 0 {
+                        let bonus = BuildingManager.shared.medicalHealBonus
+                        let actual = effect.healthBoost * bonus
+                        effectPill(icon: "cross.fill", label: "健康值", value: actual, color: .green)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
+
+                // 按钮
+                VStack(spacing: 10) {
+                    Button {
+                        dismiss()
+                        onConfirm()
+                    } label: {
+                        Text("确认使用")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(ApocalypseTheme.primary)
+                            .cornerRadius(12)
+                    }
+
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("取消")
+                            .font(.system(size: 16))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(ApocalypseTheme.cardBackground)
+                            .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+            }
+        }
+    }
+
+    private func effectPill(icon: String, label: LocalizedStringKey, value: Double, color: Color) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.15))
+                    .frame(width: 52, height: 52)
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(color)
+            }
+            Text("+\(Int(value))")
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundColor(color)
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundColor(ApocalypseTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(color.opacity(0.08))
+        )
+    }
+}
+
+// MARK: - DropItemSheet
+
+struct DropItemSheet: View {
+    let itemName: String
+    let maxQuantity: Int
+    let onConfirm: (Int) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var dropQuantity: Int = 1
+
+    var body: some View {
+        ZStack {
+            ApocalypseTheme.background.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // 标题
+                VStack(spacing: 6) {
+                    Text("丢弃 \(itemName)")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+
+                    Text("共 \(maxQuantity) 件，选择要丢弃的数量")
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+                .padding(.top, 24)
+                .padding(.bottom, 24)
+
+                // 数量选择器
+                HStack(spacing: 20) {
+                    // 减少
+                    Button {
+                        if dropQuantity > 1 { dropQuantity -= 1 }
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(dropQuantity > 1 ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+                    }
+                    .disabled(dropQuantity <= 1)
+
+                    // 数量显示
+                    Text("\(dropQuantity)")
+                        .font(.system(size: 40, weight: .bold, design: .rounded))
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                        .frame(minWidth: 80)
+
+                    // 增加
+                    Button {
+                        if dropQuantity < maxQuantity { dropQuantity += 1 }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(dropQuantity < maxQuantity ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
+                    }
+                    .disabled(dropQuantity >= maxQuantity)
+                }
+                .padding(.bottom, 16)
+
+                // 快捷选择
+                HStack(spacing: 12) {
+                    quickSelectButton(label: "1件", value: 1)
+                    if maxQuantity >= 10 {
+                        quickSelectButton(label: "10件", value: 10)
+                    }
+                    if maxQuantity >= 50 {
+                        quickSelectButton(label: "50件", value: 50)
+                    }
+                    quickSelectButton(label: "全部", value: maxQuantity)
+                }
+                .padding(.bottom, 28)
+
+                // 警告
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(ApocalypseTheme.danger)
+                    Text("丢弃后无法找回")
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.danger)
+                }
+                .padding(.bottom, 24)
+
+                // 按钮
+                VStack(spacing: 10) {
+                    Button {
+                        dismiss()
+                        onConfirm(dropQuantity)
+                    } label: {
+                        Text("确认丢弃 ×\(dropQuantity)")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(ApocalypseTheme.danger)
+                            .cornerRadius(12)
+                    }
+
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("取消")
+                            .font(.system(size: 16))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(ApocalypseTheme.cardBackground)
+                            .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+            }
+        }
+    }
+
+    private func quickSelectButton(label: LocalizedStringKey, value: Int) -> some View {
+        Button {
+            dropQuantity = value
+        } label: {
+            Text(label)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(dropQuantity == value ? .white : ApocalypseTheme.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule().fill(dropQuantity == value ? ApocalypseTheme.danger : ApocalypseTheme.cardBackground)
+                )
         }
     }
 }

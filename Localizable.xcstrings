@@ -21192,6 +21192,16 @@
         }
       }
     },
+    "维修工坊 +50% 寿命" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repair Workshop +50% Lifespan"
+          }
+        }
+      }
+    },
     "维护" : {
       "localizations" : {
         "en" : {

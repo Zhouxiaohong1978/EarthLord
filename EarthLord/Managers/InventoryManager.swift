@@ -474,15 +474,27 @@ final class InventoryManager: ObservableObject {
         return fallback
     }
 
-    /// 拆解 AI 命名物品，根据名称+描述推断材料类型，返还 60%（最少 1 个）
+    /// 拆解物品（AI命名物品或手电筒），返还对应材料
     @discardableResult
     func disassembleItem(_ item: BackpackItem) async throws -> (itemId: String, quantity: Int) {
-        guard let customName = item.customName else { return (item.itemId, 0) }
-        let returnItemId = InventoryManager.classifyDisassembleMaterial(from: customName, description: item.customDescription, fallback: item.itemId)
-        let returnQty = max(1, Int(Double(item.quantity) * 0.6))
+        let returnItemId: String
+        let returnQty: Int
+
+        if item.itemId == "flashlight" {
+            returnItemId = "electronic_component"
+            returnQty = 1
+        } else if item.itemId == "satellite_module" {
+            returnItemId = "electronic_component"
+            returnQty = 5
+        } else {
+            guard let customName = item.customName else { return (item.itemId, 0) }
+            returnItemId = InventoryManager.classifyDisassembleMaterial(from: customName, description: item.customDescription, fallback: item.itemId)
+            returnQty = max(1, Int(Double(item.quantity) * 0.6))
+        }
+
         try await deleteItem(inventoryId: item.id)
         try await addItem(itemId: returnItemId, quantity: returnQty, obtainedFrom: "拆解")
-        logger.log("拆解: \(customName) → \(returnItemId) x\(returnQty)", type: .success)
+        logger.log("拆解: \(item.itemId) → \(returnItemId) x\(returnQty)", type: .success)
         return (returnItemId, returnQty)
     }
 

@@ -327,7 +327,8 @@ struct ExplorationSessionResult: Identifiable, Equatable {
 // MARK: - 搜刮结果
 
 /// POI搜刮结果（用于展示搜刮获得的物品）
-struct ScavengeResult: Identifiable {
+struct ScavengeResult: Identifiable, Equatable {
+    static func == (lhs: ScavengeResult, rhs: ScavengeResult) -> Bool { lhs.id == rhs.id }
     let id: UUID
     let poi: POI
     let items: [AIGeneratedItem]

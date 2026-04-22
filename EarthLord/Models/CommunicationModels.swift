@@ -39,13 +39,13 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
     var description: String {
         switch self {
         case .radio:
-            return String(localized: "被动收听广播和紧急信号")
+            return String(localized: "被动收听广播和紧急信号，无法发送消息")
         case .walkieTalkie:
-            return String(localized: "与附近幸存者实时通讯")
+            return String(localized: "与附近3公里的幸存者实时通讯")
         case .campRadio:
-            return String(localized: "与更远距离的营地联系")
+            return String(localized: "可在30公里范围内广播")
         case .satellite:
-            return String(localized: "通过卫星网络全球通讯")
+            return String(localized: "可在100公里+范围内联络")
         }
     }
 
@@ -73,7 +73,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .campRadio:
             return 30.0       // 营地电台中距离
         case .satellite:
-            return Double.infinity  // 手机全球覆盖，无限制
+            return 100.0  // 卫星通讯100公里+覆盖
         }
     }
 
@@ -142,7 +142,7 @@ enum DeviceType: String, Codable, CaseIterable, Identifiable {
         case .campRadio:
             return "30km"
         case .satellite:
-            return String(localized: "全球覆盖")
+            return "100km+"
         }
     }
 
@@ -790,6 +790,65 @@ struct LocationPoint: Codable, Equatable {
         }
         return LocationPoint(latitude: latitude, longitude: longitude)
     }
+
+    /// 从 PostgREST 返回的 hex-encoded EWKB 解析坐标
+    /// 格式：01 [4字节类型] [可选4字节SRID] [8字节经度] [8字节纬度]
+    static func fromWKBHex(_ hex: String) -> LocationPoint? {
+        let s = hex.uppercased()
+        guard s.count >= 42 else { return nil }
+
+        // hex → bytes
+        var bytes = [UInt8]()
+        bytes.reserveCapacity(s.count / 2)
+        var idx = s.startIndex
+        while idx < s.endIndex {
+            let next = s.index(idx, offsetBy: 2, limitedBy: s.endIndex) ?? s.endIndex
+            guard next <= s.endIndex, let byte = UInt8(s[idx..<next], radix: 16) else { return nil }
+            bytes.append(byte)
+            idx = next
+        }
+
+        guard bytes.count >= 21 else { return nil }
+
+        let isLE = bytes[0] == 0x01
+
+        func u32(_ offset: Int) -> UInt32 {
+            let b = bytes
+            let a = UInt32(b[offset]), b1 = UInt32(b[offset+1]),
+                b2 = UInt32(b[offset+2]), b3 = UInt32(b[offset+3])
+            return isLE ? a | (b1 << 8) | (b2 << 16) | (b3 << 24)
+                        : (a << 24) | (b1 << 16) | (b2 << 8) | b3
+        }
+
+        func dbl(_ offset: Int) -> Double {
+            let b = bytes
+            var bits: UInt64
+            if isLE {
+                bits = UInt64(b[offset]) | (UInt64(b[offset+1]) << 8)
+                     | (UInt64(b[offset+2]) << 16) | (UInt64(b[offset+3]) << 24)
+                     | (UInt64(b[offset+4]) << 32) | (UInt64(b[offset+5]) << 40)
+                     | (UInt64(b[offset+6]) << 48) | (UInt64(b[offset+7]) << 56)
+            } else {
+                bits = (UInt64(b[offset]) << 56) | (UInt64(b[offset+1]) << 48)
+                     | (UInt64(b[offset+2]) << 40) | (UInt64(b[offset+3]) << 32)
+                     | (UInt64(b[offset+4]) << 24) | (UInt64(b[offset+5]) << 16)
+                     | (UInt64(b[offset+6]) << 8) | UInt64(b[offset+7])
+            }
+            return Double(bitPattern: bits)
+        }
+
+        let wkbType = u32(1)
+        let hasSRID = (wkbType & 0x20000000) != 0
+        let coordOffset = hasSRID ? 9 : 5
+        guard bytes.count >= coordOffset + 16 else { return nil }
+
+        let longitude = dbl(coordOffset)
+        let latitude  = dbl(coordOffset + 8)
+        guard latitude >= -90 && latitude <= 90,
+              longitude >= -180 && longitude <= 180 else { return nil }
+
+        return LocationPoint(latitude: latitude, longitude: longitude)
+    }
 }
 
 /// GeoJSON Point 格式（用于解码 Supabase geography 类型）
@@ -854,6 +913,7 @@ struct MessageMetadata: Codable, Equatable {
 enum MessageType: String, Codable {
     case text = "text"
     case voice = "voice"
+    case system = "system"  // 系统/分享消息，居中灰色气泡渲染
 }
 
 /// 频道消息模型
@@ -900,25 +960,16 @@ struct ChannelMessage: Codable, Identifiable, Equatable {
         content = try container.decode(String.self, forKey: .content)
         contentEn = try container.decodeIfPresent(String.self, forKey: .contentEn)
 
-        // 解析 PostGIS 位置（支持 WKT 字符串和 GeoJSON 对象）
-        // 🐛 DEBUG: 打印解码过程
+        // 解析 PostGIS 位置（支持 WKT / hex EWKB / GeoJSON）
         if let rawValue = try? container.decode(String.self, forKey: .senderLocation) {
-            print("🐛 [解码] sender_location 字符串: \(rawValue)")
             senderLocation = LocationPoint.fromPostGIS(rawValue)
-            if senderLocation == nil {
-                print("⚠️ [解码] WKT 解析失败")
-            } else {
-                print("✅ [解码] WKT 解析成功: \(senderLocation!)")
-            }
+                ?? LocationPoint.fromWKBHex(rawValue)
         } else if let geoJSON = try? container.decode(GeoJSONPoint.self, forKey: .senderLocation) {
-            print("🐛 [解码] GeoJSON: type=\(geoJSON.type), coords=\(geoJSON.coordinates)")
             senderLocation = LocationPoint(
                 latitude: geoJSON.coordinates[1],
                 longitude: geoJSON.coordinates[0]
             )
-            print("✅ [解码] GeoJSON 解析成功: \(senderLocation!)")
         } else {
-            print("⚠️ [解码] sender_location 为空或格式未知")
             senderLocation = nil
         }
 

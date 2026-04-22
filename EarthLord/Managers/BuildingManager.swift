@@ -591,6 +591,9 @@ final class BuildingManager: ObservableObject {
 
             logger.log("成功加载 \(buildings.count) 个建筑", type: .success)
 
+            // 加载完成后消耗发电机燃料
+            await consumeFuelIfNeeded()
+
             return buildings
 
         } catch {
@@ -800,6 +803,89 @@ final class BuildingManager: ObservableObject {
         logger.log("建筑效果已应用: \(templateId)", type: .info)
     }
 
+    // MARK: - 能源系统
+
+    /// 燃料储备站的燃料容量上限（按等级）
+    func fuelDepotCapacity(level: Int) -> Int {
+        switch level {
+        case 1: return 50
+        case 2: return 100
+        default: return 200
+        }
+    }
+
+    /// 当前活跃的燃料储备站
+    var fuelDepotBuilding: PlayerBuilding? {
+        playerBuildings.first { $0.templateId == "fuel_depot" && $0.status == .active }
+    }
+
+    /// 燃料储备站当前储量
+    var fuelStored: Int { fuelDepotBuilding?.fuelStored ?? 0 }
+
+    /// 领地是否有电（发电机棚active + 燃料 > 0，或太阳能板active）
+    var isPowered: Bool {
+        if hasActiveBuilding(templateId: "solar_panel") { return true }
+        return hasActiveBuilding(templateId: "generator_shed") && fuelStored > 0
+    }
+
+    /// 向燃料储备站存入燃料（从背包扣除）
+    func depositFuel(quantity: Int) async throws {
+        guard let depot = fuelDepotBuilding else {
+            throw BuildingError.buildingNotFound
+        }
+        let capacity = fuelDepotCapacity(level: depot.level)
+        let canDeposit = min(quantity, capacity - depot.fuelStored)
+        guard canDeposit > 0 else { return }
+
+        // 从背包扣除
+        let backpackFuel = InventoryManager.shared.items.filter { $0.itemId == "fuel" && $0.customName == nil }
+        var remaining = canDeposit
+        for item in backpackFuel {
+            guard remaining > 0 else { break }
+            let use = min(remaining, item.quantity)
+            try await InventoryManager.shared.useItem(inventoryId: item.id, quantity: use)
+            remaining -= use
+        }
+        let deposited = canDeposit - remaining
+
+        // 更新数据库
+        guard let index = playerBuildings.firstIndex(where: { $0.id == depot.id }) else { return }
+        let newStored = depot.fuelStored + deposited
+        try await supabase
+            .from("player_buildings")
+            .update(["fuel_stored": newStored])
+            .eq("id", value: depot.id.uuidString)
+            .execute()
+        playerBuildings[index].fuelStored = newStored
+    }
+
+    /// 发电机棚燃料消耗（每24小时消耗1个，App启动时调用）
+    func consumeFuelIfNeeded() async {
+        guard hasActiveBuilding(templateId: "generator_shed"),
+              let depot = fuelDepotBuilding,
+              let index = playerBuildings.firstIndex(where: { $0.id == depot.id }) else { return }
+
+        let now = Date()
+        let lastConsumed = depot.lastFuelConsumedAt ?? depot.buildCompletedAt ?? now
+        let hoursElapsed = now.timeIntervalSince(lastConsumed) / 3600
+        let daysElapsed = Int(hoursElapsed / 24)
+        guard daysElapsed > 0 else { return }
+
+        let consume = min(daysElapsed, depot.fuelStored)
+        let newStored = depot.fuelStored - consume
+
+        try? await supabase
+            .from("player_buildings")
+            .update([
+                "fuel_stored": AnyJSON.integer(newStored),
+                "last_fuel_consumed_at": AnyJSON.string(now.ISO8601Format())
+            ])
+            .eq("id", value: depot.id.uuidString)
+            .execute()
+        playerBuildings[index].fuelStored = newStored
+        playerBuildings[index].lastFuelConsumedAt = now
+    }
+
     /// 计算发电机棚对通讯范围的加成倍率
     var generatorRangeBonus: Double {
         hasActiveBuilding(templateId: "generator_shed") ? 1.2 : 1.0
@@ -895,7 +981,18 @@ final class BuildingManager: ObservableObject {
         return (missing.isEmpty, missing)
     }
 
-    /// 执行维护：消耗材料，耐久恢复至 100，建筑状态改为 active
+    /// 有维修工坊时维护上限 100，无则上限 80
+    func maintenanceMaxDurability(territoryId: String) -> Int {
+        let hasWorkshop = playerBuildings.contains {
+            $0.templateId == "repair_workshop" &&
+            $0.status == .active &&
+            $0.territoryId == territoryId &&
+            computedDurability(for: $0) > 0
+        }
+        return hasWorkshop ? 100 : 80
+    }
+
+    /// 执行维护：消耗材料，耐久恢复（有维修工坊→100，无→80），建筑状态改为 active
     func maintainBuilding(buildingId: UUID) async throws {
         guard AuthManager.shared.currentUser != nil else { throw BuildingError.notAuthenticated }
         guard let index = playerBuildings.firstIndex(where: { $0.id == buildingId }) else {
@@ -933,24 +1030,25 @@ final class BuildingManager: ObservableObject {
         }
 
         let now = Date()
+        let maxDurability = maintenanceMaxDurability(territoryId: building.territoryId)
         try await supabase
             .from("player_buildings")
             .update([
-                "durability": AnyJSON.integer(100),
+                "durability": AnyJSON.integer(maxDurability),
                 "last_maintained_at": AnyJSON.string(now.ISO8601Format()),
-                "durability_zero_at": AnyJSON.null,   // 维护成功，清除缓冲期计时
+                "durability_zero_at": AnyJSON.null,
                 "status": AnyJSON.string(BuildingStatus.active.rawValue),
                 "updated_at": AnyJSON.string(now.ISO8601Format())
             ])
             .eq("id", value: buildingId.uuidString)
             .execute()
 
-        playerBuildings[index].durability = 100
+        playerBuildings[index].durability = maxDurability
         playerBuildings[index].lastMaintainedAt = now
         playerBuildings[index].durabilityZeroAt = nil
         playerBuildings[index].status = .active
         playerBuildings[index].updatedAt = now
-        logger.log("建筑维护完成: \(building.buildingName)，耐久恢复至 100", type: .success)
+        logger.log("建筑维护完成: \(building.buildingName)，耐久恢复至 \(maxDurability)", type: .success)
     }
 
     /// 记录建筑耐久首次归零时间（仅首次调用，后续忽略）

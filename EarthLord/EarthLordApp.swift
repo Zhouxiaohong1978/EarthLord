@@ -60,8 +60,8 @@ struct EarthLordApp: App {
                 NSLog("✅ [App] WarehouseManager 已初始化")
             }
 
-            // 初始化通知管理器 + 请求权限
-            await NotificationManager.shared.requestPermission()
+            // 初始化通知管理器（权限由新手引导流程的 LocationPermissionView 统一申请）
+            _ = NotificationManager.shared
             NSLog("✅ [App] NotificationManager 已初始化")
 
             NSLog("🚀 [App] 所有管理器初始化完成")

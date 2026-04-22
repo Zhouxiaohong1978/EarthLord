@@ -117,6 +117,7 @@
       }
     },
     "(可选)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -219,6 +220,37 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "[%@] Reward sent to mailbox"
+          }
+        }
+      }
+    },
+    "【挂单】%@ 换 %@，有意联系" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Trade] %@ for %@ — contact if interested"
+          }
+        }
+      }
+    },
+    "【探索发现】在「%@」搜到 %@%@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "【探索发现】在「%1$@」搜到 %2$@%3$@"
+          }
+        }
+      }
+    },
+    "【探索发现】在「%@」搜到 %@%@，坐标已共享" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Discovery] Found %2$@%3$@ at 「%1$@」— coords shared"
           }
         }
       }
@@ -1632,6 +1664,7 @@
       }
     },
     "100%" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2046,6 +2079,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%d 周前"
+          }
+        }
+      }
+    },
+    "channel.settings.hint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Public channels are visible to everyone. When approval is required, users must wait for admin approval before joining."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "公开频道可被所有人搜索到；需要审批时，用户加入需等待管理员批准。"
           }
         }
       }
@@ -6879,6 +6928,7 @@
       }
     },
     "不限" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6922,6 +6972,7 @@
       }
     },
     "与更远距离的营地联系" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6937,7 +6988,18 @@
         }
       }
     },
+    "与附近3公里的幸存者实时通讯" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Real-time communication with survivors within 3km"
+          }
+        }
+      }
+    },
     "与附近幸存者实时通讯" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7329,6 +7391,9 @@
         }
       }
     },
+    "交易情报" : {
+
+    },
     "交易成功" : {
       "localizations" : {
         "en" : {
@@ -7446,6 +7511,9 @@
           }
         }
       }
+    },
+    "仅收听" : {
+
     },
     "今日" : {
       "extractionState" : "stale",
@@ -7685,6 +7753,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "介绍一下自己吧…"
+          }
+        }
+      }
+    },
+    "介绍这个频道的用途、规则等…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe the purpose, rules, etc. of this channel…"
           }
         }
       }
@@ -8266,6 +8344,7 @@
       }
     },
     "使用后将获得以下效果" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8635,6 +8714,7 @@
       }
     },
     "全球覆盖" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8762,6 +8842,9 @@
           }
         }
       }
+    },
+    "公开频道" : {
+
     },
     "共 %d 件物品税收待领取，前往邮箱收取" : {
       "localizations" : {
@@ -9059,6 +9142,26 @@
         }
       }
     },
+    "分享到频道" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share to Channel"
+          }
+        }
+      }
+    },
+    "分享探索发现" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share Discovery"
+          }
+        }
+      }
+    },
     "分享日志" : {
       "localizations" : {
         "en" : {
@@ -9136,6 +9239,9 @@
           }
         }
       }
+    },
+    "创建" : {
+
     },
     "创建中..." : {
       "localizations" : {
@@ -9810,6 +9916,9 @@
         }
       }
     },
+    "加载频道中…" : {
+
+    },
     "加速" : {
       "localizations" : {
         "en" : {
@@ -9858,6 +9967,9 @@
         }
       }
     },
+    "包扎后将获得以下效果" : {
+
+    },
     "匹配 %lld 个" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9876,7 +9988,6 @@
       }
     },
     "医疗" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10079,6 +10190,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Upgrade device to expand search range"
+          }
+        }
+      }
+    },
+    "升级设备可扩大覆盖范围" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade device to extend range"
           }
         }
       }
@@ -10658,6 +10779,9 @@
         }
       }
     },
+    "发送到频道" : {
+
+    },
     "发送失败" : {
       "localizations" : {
         "en" : {
@@ -10851,6 +10975,26 @@
         }
       }
     },
+    "可在30公里范围内广播" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Broadcast within a 30km radius"
+          }
+        }
+      }
+    },
+    "可在100公里+范围内联络" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contact others within 100km+ range"
+          }
+        }
+      }
+    },
     "可搜刮" : {
       "localizations" : {
         "en" : {
@@ -10995,7 +11139,6 @@
       }
     },
     "史诗装备" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11216,7 +11359,18 @@
         }
       }
     },
+    "图纸" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blueprint"
+          }
+        }
+      }
+    },
     "圈地 ≥ 1 块（当前%lld块）" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11227,6 +11381,7 @@
       }
     },
     "圈地 ≥ 10 块（当前%lld块）" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11237,6 +11392,7 @@
       }
     },
     "圈地 ≥ 20 块（当前%lld块）" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11525,6 +11681,9 @@
           }
         }
       }
+    },
+    "坐标已共享" : {
+
     },
     "坐标点数量不足（至少需要3个点）" : {
       "localizations" : {
@@ -12170,6 +12329,16 @@
         }
       }
     },
+    "对讲机频道" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walkie-Talkie"
+          }
+        }
+      }
+    },
     "对讲频道" : {
       "localizations" : {
         "en" : {
@@ -12327,6 +12496,9 @@
           }
         }
       }
+    },
+    "尚未订阅任何频道" : {
+
     },
     "尝试其他关键词" : {
       "extractionState" : "stale",
@@ -12564,6 +12736,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已停用"
+          }
+        }
+      }
+    },
+    "已分享" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared"
           }
         }
       }
@@ -12815,6 +12997,7 @@
       }
     },
     "已解锁对讲频道" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12858,6 +13041,7 @@
       }
     },
     "已解锁营地频道" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13934,6 +14118,7 @@
       }
     },
     "建造「瞭望台」解锁对讲机" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13944,6 +14129,7 @@
       }
     },
     "建造「营地电台」解锁营地电台" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13954,6 +14140,7 @@
       }
     },
     "建造「领主指挥所」解锁卫星电话" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -14510,6 +14697,16 @@
         }
       }
     },
+    "当前设备：%@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device: %@ (%@)"
+          }
+        }
+      }
+    },
     "当前设备已是最高型号（卫星电话）" : {
 
     },
@@ -14541,6 +14738,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "当前设备无法发送消息"
+          }
+        }
+      }
+    },
+    "当前设备范围内无可用频道" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No channels in range"
           }
         }
       }
@@ -15599,6 +15806,9 @@
         }
       }
     },
+    "探索发现" : {
+
+    },
     "探索和圈占领地" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -15959,6 +16169,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "推荐"
+          }
+        }
+      }
+    },
+    "推送到频道" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Broadcast to Channel"
           }
         }
       }
@@ -16586,6 +16806,16 @@
         }
       }
     },
+    "断电" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Power"
+          }
+        }
+      }
+    },
     "新世界的缔造者" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -16722,6 +16952,7 @@
       }
     },
     "无前置频道要求" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -16780,6 +17011,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法获取位置"
+          }
+        }
+      }
+    },
+    "无维修工坊" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Repair Workshop"
           }
         }
       }
@@ -17311,6 +17552,9 @@
         }
       }
     },
+    "服用后将获得以下效果" : {
+
+    },
     "服装" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -17821,7 +18065,6 @@
       }
     },
     "材料" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -17909,6 +18152,9 @@
           }
         }
       }
+    },
+    "查看坐标" : {
+
     },
     "查看已完成的交易" : {
       "localizations" : {
@@ -19201,6 +19447,16 @@
         }
       }
     },
+    "燃料提炼" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuel Refinery"
+          }
+        }
+      }
+    },
     "版本信息" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -19217,6 +19473,9 @@
           }
         }
       }
+    },
+    "物品" : {
+
     },
     "物品不足，还需要: %@" : {
       "localizations" : {
@@ -20017,6 +20276,7 @@
       }
     },
     "确认使用" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -20058,6 +20318,9 @@
           }
         }
       }
+    },
+    "确认包扎" : {
+
     },
     "确认升级（消耗 1 枚升级令）" : {
       "localizations" : {
@@ -20185,6 +20448,9 @@
           }
         }
       }
+    },
+    "确认服用" : {
+
     },
     "确认注册" : {
       "localizations" : {
@@ -20315,6 +20581,12 @@
           }
         }
       }
+    },
+    "确认食用" : {
+
+    },
+    "确认饮用" : {
+
     },
     "磨损" : {
       "localizations" : {
@@ -20670,6 +20942,16 @@
         }
       }
     },
+    "等%d件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " and %d more"
+          }
+        }
+      }
+    },
     "等待其他玩家发布交易" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -20848,6 +21130,9 @@
           }
         }
       }
+    },
+    "系统消息" : {
+
     },
     "紧急广播" : {
       "extractionState" : "stale",
@@ -22148,6 +22433,7 @@
       }
     },
     "被动收听广播和紧急信号" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -22159,6 +22445,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "被动收听广播和紧急信号"
+          }
+        }
+      }
+    },
+    "被动收听广播和紧急信号，无法发送消息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passively receive broadcasts and emergency signals. Cannot send messages."
+          }
+        }
+      }
+    },
+    "装备" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equipment"
+          }
+        }
+      }
+    },
+    "装备强化" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equipment Forge"
           }
         }
       }
@@ -22191,6 +22507,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "覆盖范围: %@"
+          }
+        }
+      }
+    },
+    "覆盖范围：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Range: %@"
           }
         }
       }
@@ -23831,6 +24157,7 @@
       }
     },
     "输入频道名称" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -23842,6 +24169,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入频道名称"
+          }
+        }
+      }
+    },
+    "输入频道名称（2-50字）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Channel name (2–50 characters)"
           }
         }
       }
@@ -24417,6 +24754,7 @@
       }
     },
     "通过卫星网络全球通讯" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25061,6 +25399,7 @@
       }
     },
     "需要先解锁对讲频道" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25071,6 +25410,7 @@
       }
     },
     "需要先解锁营地电台" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25095,6 +25435,9 @@
           }
         }
       }
+    },
+    "需要审批加入" : {
+
     },
     "需要建造「瞭望台」解锁对讲机" : {
       "localizations" : {
@@ -25879,6 +26222,7 @@
       }
     },
     "频道名称需要 2-50 个字符" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25895,6 +26239,7 @@
       }
     },
     "频道描述" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25906,6 +26251,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "频道描述"
+          }
+        }
+      }
+    },
+    "频道描述（可选）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Description (Optional)"
           }
         }
       }
@@ -25925,6 +26280,9 @@
           }
         }
       }
+    },
+    "频道设置" : {
+
     },
     "频道详情" : {
       "extractionState" : "stale",
@@ -25960,16 +26318,6 @@
         }
       }
     },
-    "装备强化" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Equipment Forge"
-          }
-        }
-      }
-    },
     "食品加工" : {
       "localizations" : {
         "en" : {
@@ -25987,7 +26335,6 @@
       }
     },
     "食物" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -26003,6 +26350,9 @@
         }
       }
     },
+    "食用后将获得以下效果" : {
+
+    },
     "饮料" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26013,6 +26363,9 @@
           }
         }
       }
+    },
+    "饮用后将获得以下效果" : {
+
     },
     "饱食度" : {
       "localizations" : {

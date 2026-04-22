@@ -13,16 +13,40 @@ struct CreateChannelSheet: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var communicationManager = CommunicationManager.shared
     @ObservedObject private var locationManager = LocationManager.shared
+    @ObservedObject private var commManager = CommunicationManager.shared
 
-    @State private var selectedType: ChannelType = .public
+    @State private var selectedType: ChannelType = .walkie
     @State private var channelName = ""
     @State private var channelDescription = ""
+    @State private var isPublic = false
+    @State private var requiresApproval = false
     @State private var isCreating = false
     @State private var errorMessage: String?
+    @State private var showUnlockAlert = false
 
-    @ObservedObject private var commManager = CommunicationManager.shared
     private var isValidName: Bool {
         channelName.count >= 2 && channelName.count <= 50
+    }
+
+    private var canCreate: Bool {
+        isValidName && !isCreating
+    }
+
+    private var unlockAlertMessage: String {
+        var lines: [String] = []
+        if !isTerritoryMet(for: selectedType) {
+            let needed = requiredTerritoryCount(for: selectedType)
+            lines.append(String(format: String(localized: "需要圈地 %d 块（当前 %d 块）"), needed, territoryCount))
+        }
+        if !isDeviceUnlocked(for: selectedType) {
+            switch selectedType {
+            case .walkie:    lines.append(String(localized: "需要建造「瞭望台」解锁对讲机"))
+            case .camp:      lines.append(String(localized: "需要建造「营地电台」解锁营地电台设备"))
+            case .satellite: lines.append(String(localized: "需要建造「领主指挥所」解锁卫星电话"))
+            default: break
+            }
+        }
+        return lines.joined(separator: "\n")
     }
 
     /// 玩家当前有效领地数量
@@ -33,7 +57,6 @@ struct CreateChannelSheet: View {
         }.count
     }
 
-    /// 频道类型所需最少领地数
     private func requiredTerritoryCount(for type: ChannelType) -> Int {
         switch type {
         case .walkie:    return 1
@@ -43,10 +66,8 @@ struct CreateChannelSheet: View {
         }
     }
 
-    /// 频道类型对应的必需设备
     private func requiredDevice(for type: ChannelType) -> DeviceType? {
         switch type {
-        case .public:    return nil
         case .walkie:    return .walkieTalkie
         case .camp:      return .campRadio
         case .satellite: return .satellite
@@ -54,394 +75,220 @@ struct CreateChannelSheet: View {
         }
     }
 
-    /// 单项设备条件是否满足
     private func isDeviceUnlocked(for type: ChannelType) -> Bool {
-        let required = requiredDevice(for: type)
-        guard let required else { return true }
+        guard let required = requiredDevice(for: type) else { return true }
         return commManager.devices.first(where: { $0.deviceType == required })?.isUnlocked ?? false
     }
 
-    /// 单项领地条件是否满足
     private func isTerritoryMet(for type: ChannelType) -> Bool {
         territoryCount >= requiredTerritoryCount(for: type)
     }
 
-    /// 级联检查：该频道及其前置频道的所有条件是否全部满足
     private func isFullyUnlocked(for type: ChannelType) -> Bool {
         switch type {
-        case .public:
-            return true
         case .walkie:
             return isTerritoryMet(for: .walkie) && isDeviceUnlocked(for: .walkie)
         case .camp:
-            return isFullyUnlocked(for: .walkie)
-                && isTerritoryMet(for: .camp) && isDeviceUnlocked(for: .camp)
+            return isFullyUnlocked(for: .walkie) && isTerritoryMet(for: .camp) && isDeviceUnlocked(for: .camp)
         case .satellite:
-            return isFullyUnlocked(for: .camp)
-                && isTerritoryMet(for: .satellite) && isDeviceUnlocked(for: .satellite)
+            return isFullyUnlocked(for: .camp) && isTerritoryMet(for: .satellite) && isDeviceUnlocked(for: .satellite)
         default:
             return true
         }
     }
 
-    /// 当前选中频道类型的所有解锁条件是否满足
-    private var isRequiredDeviceUnlocked: Bool {
-        isFullyUnlocked(for: selectedType)
+    private func channelTypeColor(_ type: ChannelType) -> Color {
+        switch type {
+        case .walkie:    return Color(red: 0.22, green: 0.78, blue: 0.45)  // 绿色：近距离
+        case .camp:      return Color(red: 0.20, green: 0.60, blue: 1.00)  // 蓝色：中距离
+        case .satellite: return Color(red: 0.75, green: 0.35, blue: 1.00)  // 紫色：远距离
+        default:         return .gray
+        }
     }
 
-    /// 未满足条件时的提示文字（按优先级显示最前置的未满足条件）
-    private var deviceUnlockHint: String? {
-        var hints: [String] = []
-
-        // 营地电台前置条件（营地频道）
-        if selectedType == .camp {
-            if !isFullyUnlocked(for: .walkie) {
-                hints.append(String(localized: "需要先解锁对讲频道"))
-            }
+    private func channelTypeIcon(_ type: ChannelType) -> String {
+        switch type {
+        case .walkie:    return "antenna.radiowaves.left.and.right"
+        case .camp:      return "dot.radiowaves.left.and.right"
+        case .satellite: return "iphone.radiowaves.left.and.right"
+        default:         return "wifi"
         }
+    }
 
-        // 手机频道直接前置：营地电台
-        if selectedType == .satellite {
-            if !isFullyUnlocked(for: .camp) {
-                hints.append(String(localized: "需要先解锁营地电台"))
-            }
+    private func channelTypeName(_ type: ChannelType) -> String {
+        switch type {
+        case .walkie:    return String(localized: "对讲机频道")
+        case .camp:      return String(localized: "营地电台")
+        case .satellite: return String(localized: "手机频道")
+        default:         return type.displayName
         }
+    }
 
-        // 当前频道自身条件（仅在前置已满足时显示）
-        let prerequisiteMet: Bool = {
-            switch selectedType {
-            case .camp:      return isFullyUnlocked(for: .walkie)
-            case .satellite: return isFullyUnlocked(for: .camp)
-            default:         return true
-            }
-        }()
+    private func channelTypeRange(_ type: ChannelType) -> String {
+        switch type {
+        case .walkie:    return "3 km"
+        case .camp:      return "30 km"
+        case .satellite: return "100 km+"
+        default:         return ""
+        }
+    }
 
-        if prerequisiteMet {
-            if !isTerritoryMet(for: selectedType) {
-                let needed = requiredTerritoryCount(for: selectedType)
-                hints.append(String(format: String(localized: "需要圈地 %d 块（当前 %d 块）"), needed, territoryCount))
+    @ViewBuilder
+    private func channelTypeCard(_ type: ChannelType) -> some View {
+        let isSelected = selectedType == type
+        let color = channelTypeColor(type)
+
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                selectedType = type
             }
-            if !isDeviceUnlocked(for: selectedType) {
-                switch selectedType {
-                case .walkie:
-                    hints.append(String(localized: "需要建造「瞭望台」解锁对讲机"))
-                case .camp:
-                    hints.append(String(localized: "需要建造「营地电台」解锁营地电台设备"))
-                case .satellite:
-                    hints.append(String(localized: "需要建造「领主指挥所」解锁卫星电话"))
-                default:
-                    break
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(color.opacity(isSelected ? 0.25 : 0.10))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: channelTypeIcon(type))
+                        .font(.system(size: 20))
+                        .foregroundColor(color)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(channelTypeName(type))
+                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                        .foregroundColor(isSelected ? color : ApocalypseTheme.textPrimary)
+                    Text(String(format: String(localized: "覆盖范围：%@"), channelTypeRange(type)))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(color)
+                        .font(.system(size: 20))
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(color.opacity(isSelected ? 0.12 : 0.04))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? color.opacity(0.6) : Color.clear, lineWidth: 1.5)
+                    )
+            )
         }
-
-        return hints.isEmpty ? nil : hints.joined(separator: "\n")
+        .buttonStyle(.plain)
     }
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // 频道类型选择
-                    channelTypeSection
-
-                    // 频道名称
-                    channelNameSection
-
-                    // 频道描述
-                    channelDescriptionSection
-
-                    // 错误提示
-                    if let error = errorMessage {
-                        errorView(error)
-                    }
-
-                    // 创建按钮
-                    createButton
+            Form {
+                // MARK: 频道名称
+                Section(header: Text(String(localized: "频道名称"))) {
+                    TextField(String(localized: "输入频道名称（2-50字）"), text: $channelName)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                        .padding(.vertical, 4)
                 }
-                .padding()
+
+                // MARK: 频道类型
+                Section(header: Text(String(localized: "频道类型"))) {
+                    VStack(spacing: 10) {
+                        ForEach([ChannelType.walkie, .camp, .satellite], id: \.self) { type in
+                            channelTypeCard(type)
+                        }
+                    }
+                    .padding(.vertical, 6)
+                }
+
+                // MARK: 频道描述
+                Section(header: Text(String(localized: "频道描述（可选）"))) {
+                    TextEditor(text: $channelDescription)
+                        .foregroundColor(ApocalypseTheme.textPrimary)
+                        .frame(minHeight: 100)
+                        .overlay(alignment: .topLeading) {
+                            if channelDescription.isEmpty {
+                                Text(String(localized: "介绍这个频道的用途、规则等…"))
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 4)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                }
+
+                // MARK: 频道设置
+                Section(header: Text(String(localized: "频道设置")),
+                        footer: Text(String(localized: "channel.settings.hint"))
+                            .foregroundColor(.secondary)) {
+                    Toggle(String(localized: "公开频道"), isOn: $isPublic)
+                        .padding(.vertical, 2)
+                    Toggle(String(localized: "需要审批加入"), isOn: $requiresApproval)
+                        .padding(.vertical, 2)
+                }
+
+                // MARK: 错误提示
+                if let error = errorMessage {
+                    Section {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(ApocalypseTheme.danger)
+                            Text(error)
+                                .font(.subheadline)
+                                .foregroundColor(ApocalypseTheme.danger)
+                        }
+                    }
+                }
             }
-            .background(ApocalypseTheme.background)
-            .navigationTitle("创建频道")
+            .navigationTitle(String(localized: "创建频道"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
-                        dismiss()
+                    Button(String(localized: "取消")) { dismiss() }
+                        .foregroundColor(ApocalypseTheme.textSecondary)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        if !isFullyUnlocked(for: selectedType) {
+                            showUnlockAlert = true
+                        } else {
+                            createChannel()
+                        }
+                    } label: {
+                        if isCreating {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Text(String(localized: "创建"))
+                                .fontWeight(.semibold)
+                        }
                     }
-                    .foregroundColor(ApocalypseTheme.textSecondary)
+                    .disabled(!canCreate)
                 }
             }
         }
         .preferredColorScheme(.dark)
-    }
-
-    // MARK: - Channel Type Section
-
-    private var channelTypeSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("频道类型")
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
-                ForEach(ChannelType.creatableTypes) { type in
-                    channelTypeCard(type)
-                }
-            }
+        .alert(String(localized: "设备未解锁"), isPresented: $showUnlockAlert) {
+            Button(String(localized: "知道了"), role: .cancel) {}
+        } message: {
+            Text(unlockAlertMessage)
         }
     }
 
-    private func channelTypeCard(_ type: ChannelType) -> some View {
-        let unlocked = isFullyUnlocked(for: type)
-
-        return Button(action: { selectedType = type }) {
-            VStack(spacing: 8) {
-                // 图标
-                ZStack {
-                    Circle()
-                        .fill(type.color.opacity(selectedType == type ? 0.3 : 0.15))
-                        .frame(width: 50, height: 50)
-
-                    Image(systemName: type.icon)
-                        .font(.title2)
-                        .foregroundColor(unlocked ? type.color : ApocalypseTheme.textMuted)
-
-                    if !unlocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white)
-                            .offset(x: 16, y: 16)
-                    }
-                }
-
-                Text(type.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(unlocked ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
-
-                // 解锁需求列表（公共频道不显示）
-                if type != .public {
-                    Divider()
-                        .background(ApocalypseTheme.textSecondary.opacity(0.2))
-                        .padding(.vertical, 2)
-
-                    VStack(alignment: .leading, spacing: 5) {
-                        ForEach(requirementItems(for: type), id: \.label) { item in
-                            HStack(spacing: 5) {
-                                Image(systemName: item.met ? "checkmark.circle.fill" : "circle")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(item.met ? .green : ApocalypseTheme.textMuted)
-                                Text(item.label)
-                                    .font(.system(size: 10))
-                                    .foregroundColor(item.met ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.8)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .padding(.horizontal, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(ApocalypseTheme.cardBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(
-                                selectedType == type ? type.color : Color.clear,
-                                lineWidth: 2
-                            )
-                    )
-            )
-            .opacity(unlocked ? 1.0 : 0.6)
-        }
-    }
-
-    /// 每个频道类型的三条解锁需求
-    private func requirementItems(for type: ChannelType) -> [(label: String, met: Bool)] {
-        switch type {
-        case .walkie:
-            return [
-                (String(localized: "圈地 ≥ 1 块（当前\(territoryCount)块）"),
-                 isTerritoryMet(for: .walkie)),
-                (String(localized: "建造「瞭望台」解锁对讲机"),
-                 isDeviceUnlocked(for: .walkie)),
-                (String(localized: "无前置频道要求"), true)
-            ]
-        case .camp:
-            return [
-                (String(localized: "已解锁对讲频道"),
-                 isFullyUnlocked(for: .walkie)),
-                (String(localized: "圈地 ≥ 10 块（当前\(territoryCount)块）"),
-                 isTerritoryMet(for: .camp)),
-                (String(localized: "建造「营地电台」解锁营地电台"),
-                 isDeviceUnlocked(for: .camp))
-            ]
-        case .satellite:
-            return [
-                (String(localized: "已解锁营地频道"),
-                 isFullyUnlocked(for: .camp)),
-                (String(localized: "圈地 ≥ 20 块（当前\(territoryCount)块）"),
-                 isTerritoryMet(for: .satellite)),
-                (String(localized: "建造「领主指挥所」解锁卫星电话"),
-                 isDeviceUnlocked(for: .satellite))
-            ]
-        default:
-            return []
-        }
-    }
-
-    // MARK: - Channel Name Section
-
-    private var channelNameSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("频道名称")
-                    .font(.headline)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                Spacer()
-
-                Text("\(channelName.count)/50")
-                    .font(.caption)
-                    .foregroundColor(
-                        channelName.count > 50 ? ApocalypseTheme.danger :
-                        channelName.count < 2 ? ApocalypseTheme.textSecondary :
-                        ApocalypseTheme.success
-                    )
-            }
-
-            TextField("输入频道名称", text: $channelName)
-                .textFieldStyle(.plain)
-                .padding()
-                .background(ApocalypseTheme.cardBackground)
-                .cornerRadius(8)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(
-                            channelName.isEmpty ? Color.clear :
-                            isValidName ? ApocalypseTheme.success.opacity(0.5) :
-                            ApocalypseTheme.danger.opacity(0.5),
-                            lineWidth: 1
-                        )
-                )
-
-            if !channelName.isEmpty && !isValidName {
-                Text("频道名称需要 2-50 个字符")
-                    .font(.caption)
-                    .foregroundColor(ApocalypseTheme.danger)
-            }
-        }
-    }
-
-    // MARK: - Channel Description Section
-
-    private var channelDescriptionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("频道描述")
-                    .font(.headline)
-                    .foregroundColor(ApocalypseTheme.textPrimary)
-
-                Text("(可选)")
-                    .font(.caption)
-                    .foregroundColor(ApocalypseTheme.textSecondary)
-            }
-
-            TextEditor(text: $channelDescription)
-                .frame(minHeight: 80)
-                .padding(8)
-                .background(ApocalypseTheme.cardBackground)
-                .cornerRadius(8)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-                .scrollContentBackground(.hidden)
-        }
-    }
-
-    // MARK: - Error View
-
-    private func errorView(_ message: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(ApocalypseTheme.danger)
-
-            Text(message)
-                .font(.subheadline)
-                .foregroundColor(ApocalypseTheme.danger)
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(ApocalypseTheme.danger.opacity(0.1))
-        .cornerRadius(8)
-    }
-
-    // MARK: - Create Button
-
-    private var createButton: some View {
-        VStack(spacing: 8) {
-            if let hint = deviceUnlockHint {
-                HStack(spacing: 6) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 12))
-                    Text(hint)
-                        .font(.subheadline)
-                }
-                .foregroundColor(ApocalypseTheme.warning)
-                .padding(.horizontal, 4)
-            }
-
-            Button(action: createChannel) {
-                HStack {
-                    if isCreating {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: ApocalypseTheme.textPrimary))
-                            .scaleEffect(0.8)
-                    } else {
-                        Image(systemName: isRequiredDeviceUnlocked ? "plus.circle.fill" : "lock.fill")
-                    }
-                    Text(isCreating ? String(localized: "创建中...") : String(localized: "创建频道"))
-                }
-                .font(.headline)
-                .foregroundColor(ApocalypseTheme.textPrimary)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    isValidName && !isCreating && isRequiredDeviceUnlocked ?
-                    ApocalypseTheme.primary :
-                    ApocalypseTheme.primary.opacity(0.3)
-                )
-                .cornerRadius(12)
-            }
-            .disabled(!isValidName || isCreating || !isRequiredDeviceUnlocked)
-            .padding(.top, 4)
-        }
-    }
-
-    // MARK: - Methods
+    // MARK: - 创建
 
     private func createChannel() {
         guard let userId = authManager.currentUser?.id else {
             errorMessage = String(localized: "用户未登录")
             return
         }
-
         guard isValidName else {
             errorMessage = String(localized: "请输入有效的频道名称")
             return
         }
-
-        guard isRequiredDeviceUnlocked else {
-            errorMessage = deviceUnlockHint
-            return
-        }
+        guard isFullyUnlocked(for: selectedType) else { return }
 
         isCreating = true
         errorMessage = nil
@@ -454,12 +301,11 @@ struct CreateChannelSheet: View {
                     name: channelName.trimmingCharacters(in: .whitespacesAndNewlines),
                     description: channelDescription.isEmpty ? nil : channelDescription.trimmingCharacters(in: .whitespacesAndNewlines),
                     latitude: locationManager.userLocation?.latitude,
-                    longitude: locationManager.userLocation?.longitude
+                    longitude: locationManager.userLocation?.longitude,
+                    isPublic: isPublic,
+                    requiresApproval: requiresApproval
                 )
-
-                await MainActor.run {
-                    dismiss()
-                }
+                await MainActor.run { dismiss() }
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription

@@ -12,11 +12,13 @@ import SwiftUI
 struct ProfileVitalsRow: Codable {
     var satiety: Double?
     var hydration: Double?
+    var health: Double?
     var lastVitalsUpdate: Date?
 
     enum CodingKeys: String, CodingKey {
         case satiety
         case hydration
+        case health
         case lastVitalsUpdate = "last_vitals_update"
     }
 }
@@ -24,12 +26,20 @@ struct ProfileVitalsRow: Codable {
 struct VitalsUpdate: Encodable {
     let satiety: Double
     let hydration: Double
+    let health: Double
     let last_vitals_update: String
 }
 
 struct ItemVitalEffect {
     let satietyBoost: Double
     let hydrationBoost: Double
+    let healthBoost: Double
+
+    init(satietyBoost: Double = 0, hydrationBoost: Double = 0, healthBoost: Double = 0) {
+        self.satietyBoost = satietyBoost
+        self.hydrationBoost = hydrationBoost
+        self.healthBoost = healthBoost
+    }
 }
 
 enum PhysiqueStatus {
@@ -69,6 +79,7 @@ final class PhysiqueManager: ObservableObject {
 
     @Published var satiety: Double = 80      // 0–100
     @Published var hydration: Double = 80    // 0–100
+    @Published var health: Double = 100      // 0–100
     @Published var isLoading = false
 
     // 每小时衰减量（基准）
@@ -78,7 +89,8 @@ final class PhysiqueManager: ObservableObject {
     // MARK: - Computed
 
     var coreLife: Double {
-        min(max(satiety * 0.4 + hydration * 0.6, 0), 100)
+        // 水分最关键(40%) 健康值(35%) 饱食度(25%)
+        min(max(hydration * 0.40 + health * 0.35 + satiety * 0.25, 0), 100)
     }
 
     var status: PhysiqueStatus {
@@ -146,7 +158,7 @@ final class PhysiqueManager: ObservableObject {
         do {
             let row: ProfileVitalsRow = try await SupabaseManager.shared.client
                 .from("profiles")
-                .select("satiety, hydration, last_vitals_update")
+                .select("satiety, hydration, health, last_vitals_update")
                 .eq("id", value: userId)
                 .single()
                 .execute()
@@ -155,12 +167,21 @@ final class PhysiqueManager: ObservableObject {
             let base = Date()
             let lastUpdate = row.lastVitalsUpdate ?? base
             // 最多计算72小时的衰减，防止长时间未登录后体征直接归零
-            // 同时避免切换Tab时load()覆盖掉玩家刚用物品恢复的体征值
             let elapsed = min(base.timeIntervalSince(lastUpdate) / 3600, 72.0)
             let mult = decayMultiplier
 
-            satiety  = min(max((row.satiety  ?? 80) - elapsed * satietyDecayPerHour  * mult, 0), 100)
-            hydration = min(max((row.hydration ?? 80) - elapsed * hydrationDecayPerHour * mult, 0), 100)
+            let newSatiety   = min(max((row.satiety   ?? 80)  - elapsed * satietyDecayPerHour  * mult, 0), 100)
+            let newHydration = min(max((row.hydration ?? 80)  - elapsed * hydrationDecayPerHour * mult, 0), 100)
+
+            // 健康值：饱食/水分充足时自然恢复（+1/h），过低时衰减
+            let healthDecay = healthDecayPerHour(satiety: newSatiety, hydration: newHydration)
+            let healthRegen = (newSatiety > 60 && newHydration > 60) ? 1.0 : 0.0
+            let healthNet = healthRegen - healthDecay  // 正值=恢复，负值=衰减
+            let newHealth = min(max((row.health ?? 100) + elapsed * healthNet, 0), 100)
+
+            satiety   = newSatiety
+            hydration = newHydration
+            health    = newHealth
             await saveVitals()
         } catch {
             satiety   = 80
@@ -171,31 +192,69 @@ final class PhysiqueManager: ObservableObject {
 
     // MARK: - Use Item
 
+    /// 健康值每小时衰减量（分级：轻度/中度/重度）
+    private func healthDecayPerHour(satiety: Double, hydration: Double) -> Double {
+        var decay = 0.0
+        // 水分衰减：< 30 轻度，< 15 重度
+        if hydration < 30 { decay += 1.5 }
+        if hydration < 15 { decay += 1.5 }
+        // 饱食衰减：< 30 轻度，< 15 重度
+        if satiety < 30   { decay += 1.0 }
+        if satiety < 15   { decay += 1.0 }
+        return decay
+    }
+
     func canUse(itemId: String) -> Bool {
         let e = effect(for: itemId)
-        return e.satietyBoost > 0 || e.hydrationBoost > 0
+        return e.satietyBoost > 0 || e.hydrationBoost > 0 || e.healthBoost > 0
+    }
+
+    /// 返回物品的体征回复数值（供 UI 展示用）
+    func vitalEffect(for itemId: String) -> ItemVitalEffect {
+        effect(for: itemId)
     }
 
     func useItem(_ item: BackpackItem) async throws {
         let e = effect(for: item.itemId)
-        guard e.satietyBoost > 0 || e.hydrationBoost > 0 else {
+        guard e.satietyBoost > 0 || e.hydrationBoost > 0 || e.healthBoost > 0 else {
             throw PhysiqueError.notConsumable
         }
         satiety   = min(satiety   + e.satietyBoost,  100)
         hydration = min(hydration + e.hydrationBoost, 100)
+        // 医疗物品健康回复：有医疗站时×1.2
+        if e.healthBoost > 0 {
+            let bonus = BuildingManager.shared.medicalHealBonus
+            health = min(health + e.healthBoost * bonus, 100)
+        }
         await saveVitals()
         try await InventoryManager.shared.useItem(inventoryId: item.id, quantity: 1)
     }
 
     private func effect(for itemId: String) -> ItemVitalEffect {
         switch itemId {
-        case "water_bottle":  return ItemVitalEffect(satietyBoost:  0, hydrationBoost: 30)
-        case "canned_food":   return ItemVitalEffect(satietyBoost: 40, hydrationBoost:  5)
-        case "bread":         return ItemVitalEffect(satietyBoost: 25, hydrationBoost:  0)
-        case "medicine":      return ItemVitalEffect(satietyBoost:  5, hydrationBoost:  5)
-        case "first_aid_kit": return ItemVitalEffect(satietyBoost: 15, hydrationBoost: 15)
-        case "antibiotics":   return ItemVitalEffect(satietyBoost: 10, hydrationBoost: 10)
-        default:              return ItemVitalEffect(satietyBoost:  0, hydrationBoost:  0)
+        // 饮料
+        case "water_bottle":       return ItemVitalEffect(satietyBoost:  0, hydrationBoost: 30)
+        case "energy_drink":       return ItemVitalEffect(satietyBoost:  5, hydrationBoost: 20)
+        case "cola":               return ItemVitalEffect(satietyBoost: 15, hydrationBoost: 15)
+        case "juice":              return ItemVitalEffect(satietyBoost: 15, hydrationBoost: 25)
+        case "sports_drink":       return ItemVitalEffect(satietyBoost:  5, hydrationBoost: 40)
+        // 食物
+        case "canned_food":        return ItemVitalEffect(satietyBoost: 40, hydrationBoost:  5)
+        case "bread":              return ItemVitalEffect(satietyBoost: 25, hydrationBoost:  0)
+        case "instant_noodles":    return ItemVitalEffect(satietyBoost: 30, hydrationBoost: 10)
+        case "chocolate":          return ItemVitalEffect(satietyBoost: 25, hydrationBoost:  0)
+        case "compressed_biscuit": return ItemVitalEffect(satietyBoost: 35, hydrationBoost:  0)
+        case "canned_meat":        return ItemVitalEffect(satietyBoost: 55, hydrationBoost:  5)
+        // 农业产出
+        case "vegetable":          return ItemVitalEffect(satietyBoost: 15, hydrationBoost:  5)
+        case "fruit":              return ItemVitalEffect(satietyBoost: 10, hydrationBoost: 10)
+        case "grain":              return ItemVitalEffect(satietyBoost: 25, hydrationBoost:  0)
+        // 医疗
+        case "bandage":            return ItemVitalEffect(healthBoost:  8)
+        case "medicine":           return ItemVitalEffect(healthBoost: 15)
+        case "first_aid_kit":      return ItemVitalEffect(healthBoost: 30)
+        case "antibiotics":        return ItemVitalEffect(healthBoost: 25)
+        default:                   return ItemVitalEffect()
         }
     }
 
@@ -208,6 +267,11 @@ final class PhysiqueManager: ObservableObject {
         let mult = decayMultiplier
         satiety   = max(satiety   - base * 0.6 * mult, 0)
         hydration = max(hydration - base * 0.8 * mult, 0)
+        // 探索超过2km时健康值额外消耗
+        if distanceKm > 2.0 {
+            let healthCost = min((distanceKm - 2.0) * 2.5, 10.0)
+            health = max(health - healthCost, 0)
+        }
         await saveVitals()
         logger.log("探索消耗体征: 饱食-\(String(format: "%.1f", base * 0.6 * mult)), 水分-\(String(format: "%.1f", base * 0.8 * mult))", type: .info)
     }
@@ -232,6 +296,7 @@ final class PhysiqueManager: ObservableObject {
         let payload = VitalsUpdate(
             satiety: satiety,
             hydration: hydration,
+            health: health,
             last_vitals_update: ISO8601DateFormatter().string(from: Date())
         )
         _ = try? await SupabaseManager.shared.client

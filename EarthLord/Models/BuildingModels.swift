@@ -248,6 +248,8 @@ struct PlayerBuilding: Identifiable, Codable {
     var lastMaintainedAt: Date?
     var durabilityZeroAt: Date?
     var showToOthers: Bool = false
+    var fuelStored: Int = 0
+    var lastFuelConsumedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -269,6 +271,8 @@ struct PlayerBuilding: Identifiable, Codable {
         case lastMaintainedAt = "last_maintained_at"
         case durabilityZeroAt = "durability_zero_at"
         case showToOthers = "show_to_others"
+        case fuelStored = "fuel_stored"
+        case lastFuelConsumedAt = "last_fuel_consumed_at"
     }
 
     /// 检查建造是否已完成（优先用 build_completed_at，兼容加速道具）
@@ -365,6 +369,8 @@ struct PlayerBuildingDB: Codable {
     let lastMaintainedAt: String?
     let durabilityZeroAt: String?
     let showToOthers: Bool?
+    let fuelStored: Int?
+    let lastFuelConsumedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -386,6 +392,8 @@ struct PlayerBuildingDB: Codable {
         case lastMaintainedAt = "last_maintained_at"
         case durabilityZeroAt = "durability_zero_at"
         case showToOthers = "show_to_others"
+        case fuelStored = "fuel_stored"
+        case lastFuelConsumedAt = "last_fuel_consumed_at"
     }
 
     /// 转换为 PlayerBuilding
@@ -413,6 +421,7 @@ struct PlayerBuildingDB: Codable {
         let lastProduced = lastProducedAt.flatMap { parseDate($0) }
         let lastMaintained = lastMaintainedAt.flatMap { parseDate($0) }
         let durabilityZero = durabilityZeroAt.flatMap { parseDate($0) }
+        let lastFuelConsumed = lastFuelConsumedAt.flatMap { parseDate($0) }
 
         return PlayerBuilding(
             id: id,
@@ -433,7 +442,9 @@ struct PlayerBuildingDB: Codable {
             durability: durability ?? 100,
             lastMaintainedAt: lastMaintained,
             durabilityZeroAt: durabilityZero,
-            showToOthers: showToOthers ?? false
+            showToOthers: showToOthers ?? false,
+            fuelStored: fuelStored ?? 0,
+            lastFuelConsumedAt: lastFuelConsumed
         )
     }
 }

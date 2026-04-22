@@ -306,8 +306,8 @@
       "category": "production",
       "tier": 2,
       "defaultPublicVisible": false,
-      "description": "领地专属维修设施，为本领地所有建筑提供专业维护服务，建筑强化所需材料减少 20%。",
-      "description_en": "A dedicated repair facility for your territory. Reduces upgrade material costs for all buildings in this territory by 20%.",
+      "description": "领地专属维修设施。有了它，维护建筑可恢复至 100% 耐久；没有它，维护上限仅为 80%。同时建筑强化所需材料减少 20%，建筑寿命延长 50%。",
+      "description_en": "A dedicated repair facility for your territory. With it, maintenance restores buildings to 100% durability; without it, maintenance is capped at 80%. Also reduces upgrade material costs by 20% and extends building lifespan by 50%.",
       "icon": "building_repair_workshop",
       "required_resources": {
         "toolbox": 1,
@@ -379,7 +379,7 @@
       "defaultPublicVisible": false,
       "description": "顶级工匠设施，可将3件稀有装备升炼为1件史诗装备，也可将史诗装备分解为2件稀有装备。需要领主指挥所前置。",
       "description_en": "A master craftsman's forge. Upgrade 3 rare equipment into 1 epic equipment, or break down epic equipment into 2 rare pieces. Requires Lord's Command Center.",
-      "icon": "building_workbench",
+      "icon": "building_equipment_forge",
       "prerequisites": ["lord_command"],
       "required_resources": {
         "scrap_metal": 100,

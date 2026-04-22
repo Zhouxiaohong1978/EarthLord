@@ -28,6 +28,7 @@ final class TradeManager: ObservableObject {
     /// 市场可用挂单列表
     @Published var availableOffers: [TradeOffer] = []
 
+
     /// 交易历史列表
     @Published var tradeHistory: [TradeHistory] = []
 

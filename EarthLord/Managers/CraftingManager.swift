@@ -141,6 +141,23 @@ final class CraftingManager: ObservableObject {
             outputQuantity: 2,
             durationSeconds: 2700
         ),
+        // 燃料储备站配方
+        CraftingRecipe(
+            id: "fuel_from_wood",
+            buildingTemplateId: "fuel_depot",
+            inputs: ["wood": 10, "cloth": 5],
+            outputItemId: "fuel",
+            outputQuantity: 1,
+            durationSeconds: 7200
+        ),
+        CraftingRecipe(
+            id: "fuel_from_scrap",
+            buildingTemplateId: "fuel_depot",
+            inputs: ["scrap_metal": 5, "seeds": 10],
+            outputItemId: "fuel",
+            outputQuantity: 3,
+            durationSeconds: 14400
+        ),
         // 装备强化台配方
         CraftingRecipe(
             id: "rare_to_epic",

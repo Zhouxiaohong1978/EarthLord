@@ -257,7 +257,7 @@ struct TerritoryBuildingRow: View {
                             .cornerRadius(8)
                     }
                 }
-                if building.templateId == "workbench" || building.templateId == "food_factory" {
+                if building.templateId == "workbench" || building.templateId == "food_factory" || building.templateId == "equipment_forge" || building.templateId == "fuel_depot" {
                     Button { showCraftingView = true } label: {
                         Text(building.templateId == "food_factory" ? String(localized: "加工") : String(localized: "合成"))
                             .font(.system(size: 12, weight: .semibold))
@@ -266,6 +266,44 @@ struct TerritoryBuildingRow: View {
                             .background(ApocalypseTheme.primary)
                             .cornerRadius(8)
                     }
+                }
+                // 燃料储备站：显示燃料量 + 存入按钮
+                if building.templateId == "fuel_depot" {
+                    let bm = BuildingManager.shared
+                    let capacity = bm.fuelDepotCapacity(level: building.level)
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.orange)
+                        Text("\(building.fuelStored)/\(capacity)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ApocalypseTheme.textSecondary)
+                    }
+                    let backpackFuel = InventoryManager.shared.items.filter { $0.itemId == "fuel" && $0.customName == nil }.reduce(0) { $0 + $1.quantity }
+                    if backpackFuel > 0 && building.fuelStored < capacity {
+                        Button {
+                            Task { try? await bm.depositFuel(quantity: backpackFuel) }
+                        } label: {
+                            Text(String(localized: "存入"))
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(Color.orange)
+                                .cornerRadius(8)
+                        }
+                    }
+                }
+                // 需要电力的建筑：断电时显示提示
+                if (building.templateId == "radio_station" || building.templateId == "equipment_forge") && !BuildingManager.shared.isPowered {
+                    HStack(spacing: 3) {
+                        Image(systemName: "bolt.slash.fill")
+                            .font(.system(size: 10))
+                        Text(String(localized: "断电"))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.warning)
+                    .padding(.horizontal, 6).padding(.vertical, 3)
+                    .background(Capsule().fill(ApocalypseTheme.warning.opacity(0.15)))
                 }
                 operationMenu
             }
@@ -1016,12 +1054,14 @@ struct BuildingMaintenanceSheet: View {
             }
             .frame(height: 8)
 
+            let maxDurability = manager.maintenanceMaxDurability(territoryId: building.territoryId)
+            let hasWorkshop = maxDurability == 100
             HStack {
                 Text(String(localized: "维护后恢复至"))
                     .font(.system(size: 12))
                     .foregroundColor(ApocalypseTheme.textMuted)
                 Spacer()
-                if manager.repairWorkshopDurabilityBonus(for: building.territoryId) > 0 {
+                if hasWorkshop {
                     HStack(spacing: 3) {
                         Image(systemName: "wrench.fill")
                             .font(.system(size: 9))
@@ -1032,10 +1072,21 @@ struct BuildingMaintenanceSheet: View {
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
                     .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
+                } else {
+                    HStack(spacing: 3) {
+                        Image(systemName: "wrench.slash.fill")
+                            .font(.system(size: 9))
+                        Text(String(localized: "无维修工坊"))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(ApocalypseTheme.warning)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(ApocalypseTheme.warning.opacity(0.15)))
                 }
-                Text(String(localized: "100%"))
+                Text("\(maxDurability)%")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(ApocalypseTheme.success)
+                    .foregroundColor(hasWorkshop ? ApocalypseTheme.success : ApocalypseTheme.warning)
             }
         }
         .padding(16)

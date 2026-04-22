@@ -588,9 +588,23 @@ final class CommunicationManager: ObservableObject {
                 .execute()
                 .value
 
-            self.channels = response
-            logger.log("成功加载 \(response.count) 个公共频道", type: .success)
-            return response
+            // 按玩家当前设备范围过滤：超出范围的频道不显示
+            let playerLocation = LocationManager.shared.userLocation
+            let maxRange = devices.filter { $0.isUnlocked }
+                .map { $0.currentRange }
+                .max() ?? 0
+
+            let filtered = response.filter { channel in
+                // 官方频道始终显示
+                if channel.id == CommunicationManager.officialChannelId { return true }
+                guard let loc = playerLocation,
+                      let dist = channel.distance(from: loc) else { return true }
+                return dist <= maxRange
+            }
+
+            self.channels = filtered
+            logger.log("加载频道: 总\(response.count)个，范围内\(filtered.count)个", type: .success)
+            return filtered
 
         } catch {
             logger.logError("加载公共频道失败", error: error)
@@ -681,7 +695,9 @@ final class CommunicationManager: ObservableObject {
         name: String,
         description: String? = nil,
         latitude: Double? = nil,
-        longitude: Double? = nil
+        longitude: Double? = nil,
+        isPublic: Bool = false,
+        requiresApproval: Bool = false
     ) async throws -> UUID {
         logger.log("创建频道: \(name)", type: .info)
         isLoading = true
@@ -692,7 +708,9 @@ final class CommunicationManager: ObservableObject {
                 "p_creator_id": .string(creatorId.uuidString),
                 "p_channel_type": .string(channelType.rawValue),
                 "p_name": .string(name),
-                "p_description": description != nil ? .string(description!) : .null
+                "p_description": description != nil ? .string(description!) : .null,
+                "p_is_public": .bool(isPublic),
+                "p_requires_approval": .bool(requiresApproval)
             ]
             if let lat = latitude  { params["p_latitude"]  = .double(lat) }
             if let lon = longitude { params["p_longitude"] = .double(lon) }
@@ -727,6 +745,17 @@ final class CommunicationManager: ObservableObject {
         logger.log("订阅频道: \(channelId)", type: .info)
         isLoading = true
         defer { isLoading = false }
+
+        // 距离校验：非官方频道需在设备范围内才能加入
+        if channelId != CommunicationManager.officialChannelId,
+           let channel = channels.first(where: { $0.id == channelId }),
+           let playerLoc = LocationManager.shared.userLocation,
+           let dist = channel.distance(from: playerLoc) {
+            let maxRange = devices.filter { $0.isUnlocked }.map { $0.currentRange }.max() ?? 0
+            if dist > maxRange {
+                throw CommunicationError.outOfRange
+            }
+        }
 
         do {
             try await supabase
@@ -882,11 +911,24 @@ final class CommunicationManager: ObservableObject {
         channelId: UUID,
         content: String,
         latitude: Double? = nil,
-        longitude: Double? = nil
+        longitude: Double? = nil,
+        messageType: String = "text"
     ) async throws -> UUID {
         logger.log("发送消息到频道: \(channelId)", type: .info)
         isSendingMessage = true
         defer { isSendingMessage = false }
+
+        // 距离校验：发送前确认频道在当前设备范围内
+        if channelId != CommunicationManager.officialChannelId,
+           let channel = channels.first(where: { $0.id == channelId })
+                      ?? subscribedChannels.first(where: { $0.channel.id == channelId })?.channel,
+           let playerLoc = LocationManager.shared.userLocation,
+           let dist = channel.distance(from: playerLoc) {
+            let range = currentDevice?.currentRange ?? 0
+            if dist > range {
+                throw CommunicationError.outOfRange
+            }
+        }
 
         // 获取当前设备类型
         let deviceTypeString = currentDevice?.deviceType.rawValue ?? "unknown"
@@ -896,7 +938,8 @@ final class CommunicationManager: ObservableObject {
                 "p_channel_id": .string(channelId.uuidString),
                 "p_content": .string(content),
                 "p_device_type": .string(deviceTypeString),
-                "p_callsign": .string(displayCallsign)
+                "p_callsign": .string(displayCallsign),
+                "p_message_type": .string(messageType)
             ]
 
             // 🐛 DEBUG: 检查RPC参数

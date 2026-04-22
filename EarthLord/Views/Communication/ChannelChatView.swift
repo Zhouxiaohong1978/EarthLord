@@ -8,6 +8,7 @@
 import SwiftUI
 import Auth
 import CoreLocation
+import MapKit
 import AVFoundation
 
 struct ChannelChatView: View {
@@ -101,11 +102,16 @@ struct ChannelChatView: View {
                         emptyStateView
                     } else {
                         ForEach(messages) { message in
-                            MessageBubbleView(
-                                message: message,
-                                isOwnMessage: message.senderId == currentUserId
-                            )
-                            .id(message.messageId)
+                            if message.messageType == .system {
+                                SystemMessageBubble(message: message)
+                                    .id(message.messageId)
+                            } else {
+                                MessageBubbleView(
+                                    message: message,
+                                    isOwnMessage: message.senderId == currentUserId
+                                )
+                                .id(message.messageId)
+                            }
                         }
                     }
                 }
@@ -334,6 +340,124 @@ struct MessageBubbleView: View {
 
             if !isOwnMessage { Spacer(minLength: 60) }
         }
+    }
+}
+
+// MARK: - 系统消息气泡（探索分享、挂单推送等）
+
+struct SystemMessageBubble: View {
+    let message: ChannelMessage
+
+    private var isExploration: Bool {
+        message.localizedContent.contains("探索发现") || message.localizedContent.contains("Exploration")
+    }
+
+    private var isTrade: Bool {
+        message.localizedContent.contains("挂单") || message.localizedContent.contains("Trade")
+    }
+
+    private var accentColor: Color {
+        if isExploration { return ApocalypseTheme.primary }
+        if isTrade { return ApocalypseTheme.info }
+        return ApocalypseTheme.textSecondary
+    }
+
+    private var iconName: String {
+        if isExploration { return "mappin.circle.fill" }
+        if isTrade { return "tag.circle.fill" }
+        return "info.circle.fill"
+    }
+
+    private var typeLabel: String {
+        if isExploration { return String(localized: "探索发现") }
+        if isTrade { return String(localized: "交易情报") }
+        return String(localized: "系统消息")
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 0) {
+                Spacer()
+                VStack(spacing: 0) {
+                    // 标题行
+                    HStack(spacing: 6) {
+                        Image(systemName: iconName)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(accentColor)
+                        Text(typeLabel)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(accentColor)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 10)
+                    .padding(.bottom, 6)
+
+                    Divider()
+                        .background(accentColor.opacity(0.25))
+                        .padding(.horizontal, 12)
+
+                    // 消息正文
+                    Text(message.localizedContent)
+                        .font(.system(size: 13))
+                        .foregroundColor(ApocalypseTheme.textPrimary.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
+
+                    // 坐标跳转按钮（始终显示，有坐标时跳转地图）
+                    if isExploration || isTrade {
+                        Divider()
+                            .background(accentColor.opacity(0.25))
+                            .padding(.horizontal, 12)
+
+                        Button {
+                            if let loc = message.senderLocation {
+                                openInMaps(lat: loc.latitude, lon: loc.longitude)
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "location.fill")
+                                    .font(.system(size: 11))
+                                Text(message.senderLocation != nil ? "查看坐标" : "坐标已共享")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundColor(message.senderLocation != nil ? accentColor : ApocalypseTheme.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                        }
+                        .disabled(message.senderLocation == nil)
+                    }
+                }
+                .frame(maxWidth: 280)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(accentColor.opacity(0.07))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                Spacer()
+            }
+
+            Text(message.timeAgo)
+                .font(.caption2)
+                .foregroundColor(ApocalypseTheme.textSecondary.opacity(0.5))
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func openInMaps(lat: Double, lon: Double) {
+        let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        let placemark = MKPlacemark(coordinate: coordinate)
+        let mapItem = MKMapItem(placemark: placemark)
+        mapItem.name = typeLabel
+        mapItem.openInMaps(launchOptions: [
+            MKLaunchOptionsMapCenterKey: NSValue(mkCoordinate: coordinate),
+            MKLaunchOptionsMapSpanKey: NSValue(mkCoordinateSpan: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005))
+        ])
     }
 }
 

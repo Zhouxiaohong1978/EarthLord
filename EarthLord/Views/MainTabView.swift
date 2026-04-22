@@ -17,6 +17,12 @@ struct MainTabView: View {
     /// 订阅管理器 - 用于显示过期横幅
     @StateObject private var subscriptionManager = SubscriptionManager.shared
 
+    /// 探索管理器 - 监听搜刮完成后的分享触发
+    @StateObject private var explorationManager = ExplorationManager.shared
+
+    /// 搜刮完成后待分享的结果（驱动 ExplorationShareSheet）
+    @State private var explorationShareResult: ScavengeResult? = nil
+
     init() {
         // 设置 TabBar 外观
         let appearance = UITabBarAppearance()
@@ -117,12 +123,21 @@ struct MainTabView: View {
             }
         }
         .onChange(of: scenePhase) { phase in
-            // App 从后台切回前台时刷新订阅状态，确保过期不延迟生效
             if phase == .active {
                 Task {
                     await subscriptionManager.refreshSubscriptionStatus()
                 }
             }
+        }
+        // 搜刮完成后的探索分享 Sheet（全局挂载，无论哪个 Tab 都能弹出）
+        .sheet(item: $explorationShareResult) { sr in
+            ExplorationShareSheet(result: sr)
+                .presentationDetents([.height(460)])
+        }
+        .onReceive(explorationManager.$pendingExplorationShare) { pending in
+            guard let pending else { return }
+            explorationShareResult = pending
+            explorationManager.pendingExplorationShare = nil
         }
     }
 }

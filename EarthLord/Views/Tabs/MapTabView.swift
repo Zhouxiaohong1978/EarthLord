@@ -765,7 +765,8 @@ struct MapTabView: View {
         let found = territories.first { territory in
             guard territory.isActive == true,
                   territory.allowTrading ?? true,
-                  !AuthManager.shared.isLinkedUser(territory.userId) else { return false }
+                  !AuthManager.shared.isLinkedUser(territory.userId),
+                  TradeManager.shared.availableOffers.contains(where: { $0.ownerId.uuidString == territory.userId }) else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
             // 玩家在领地内部，或距领地边界（任意边线段）100m 以内

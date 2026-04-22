@@ -58,6 +58,7 @@ struct CraftingView: View {
             switch buildingTemplateId {
             case "food_factory":      return String(localized: "食品加工")
             case "equipment_forge":   return String(localized: "装备强化")
+            case "fuel_depot":        return String(localized: "燃料提炼")
             default:                  return String(localized: "工作台合成")
             }
         }())
@@ -315,6 +316,7 @@ struct RecipeRow: View {
         case "juice":           return "drop.fill"
         case "equipment_epic":  return "shield.lefthalf.filled"
         case "equipment_rare":  return "shield.fill"
+        case "fuel":            return "flame.fill"
         default:                return "cube.fill"
         }
     }

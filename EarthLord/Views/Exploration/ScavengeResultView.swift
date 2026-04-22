@@ -549,6 +549,8 @@ struct ItemRow: View {
             return "bolt.fill"
         case .clothing:
             return "tshirt.fill"
+        case .equipment:
+            return "shield.fill"
         case .misc:
             return "archivebox.fill"
         }
@@ -588,7 +590,7 @@ struct ScavengeResultSheet: View {
                 onConfirm: { selectedIds in
                     Task {
                         await explorationManager.confirmScavengeResult(selectedIds: selectedIds)
-                        dismiss()
+                        await MainActor.run { dismiss() }
                     }
                 },
                 onDiscard: {

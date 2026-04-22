@@ -76,8 +76,8 @@ struct ChannelCenterView: View {
     private var deviceRangeLabel: String {
         guard let device = communicationManager.currentDevice else { return "—" }
         let range = device.currentRange
-        if range == Double.infinity { return String(localized: "不限") }
-        if range >= 100 { return String(localized: "全球") }
+        if device.deviceType == .radio { return String(localized: "仅收听") }
+        if range >= 100 { return "100km+" }
         return "\(Int(range)) km"
     }
 

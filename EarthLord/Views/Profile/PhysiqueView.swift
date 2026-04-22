@@ -200,6 +200,16 @@ struct PhysiqueView: View {
                 barColor: ApocalypseTheme.info
             )
 
+            Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
+
+            vitalRow(
+                icon: "cross.fill",
+                iconColor: ApocalypseTheme.success,
+                nameKey: "健康值",
+                value: manager.health,
+                barColor: ApocalypseTheme.success
+            )
+
             Divider().background(Color.white.opacity(0.06))
 
             HStack(spacing: 6) {

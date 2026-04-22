@@ -27,6 +27,7 @@ struct CreateTradeOfferView: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var showSuccessAlert = false
+    @State private var createdOffer: TradeOffer? = nil
 
     /// 有效期选项
     private let durationOptions = [6, 12, 24, 48, 72]
@@ -97,11 +98,13 @@ struct CreateTradeOfferView: View {
                 Text(errorMessage)
             }
             .alert("发布成功", isPresented: $showSuccessAlert) {
-                Button("确定") {
-                    dismiss()
-                }
+                Button(String(localized: "确定")) { dismiss() }
             } message: {
                 Text("挂单已发布，可在「我的挂单」中查看")
+            }
+            .sheet(item: $createdOffer) { offer in
+                TradeBroadcastSheet(offer: offer, onDone: { dismiss() })
+                    .presentationDetents([.height(420)])
             }
         }
     }
@@ -401,7 +404,7 @@ struct CreateTradeOfferView: View {
 
         Task {
             do {
-                _ = try await tradeManager.createOffer(
+                let offer = try await tradeManager.createOffer(
                     offeringItems: offeringItems,
                     requestingItems: requestingItems,
                     message: message.isEmpty ? nil : message,
@@ -410,7 +413,11 @@ struct CreateTradeOfferView: View {
 
                 await MainActor.run {
                     isSubmitting = false
-                    showSuccessAlert = true
+                    if !CommunicationManager.shared.subscribedChannels.isEmpty {
+                        createdOffer = offer   // 直接弹推送 sheet
+                    } else {
+                        showSuccessAlert = true
+                    }
                 }
             } catch {
                 await MainActor.run {

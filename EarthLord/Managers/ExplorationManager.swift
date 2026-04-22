@@ -166,6 +166,9 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 是否显示税收提示
     @Published var showTaxInfo: Bool = false
 
+    /// 搜刮完成后待分享到频道的结果（UI 监听此字段弹出分享 Sheet）
+    @Published var pendingExplorationShare: ScavengeResult? = nil
+
     /// 今日已探索次数
     @Published var todayExplorationCount: Int = 0
 
@@ -411,7 +414,14 @@ final class ExplorationManager: NSObject, ObservableObject {
         explorationEffectiveTier = nil  // 清除上次会话的档位记录
 
         // 保存探索起点（用于 POI 距离过滤，避免 GPS 漂移影响）
-        explorationStartLocation = locationManager.location
+        // 优先用始终在线的 LocationManager.shared（已有有效坐标），
+        // 避免 ExplorationManager 自己的 CLLocationManager 在首次启动时返回纬度=0 的缓存值
+        if let sharedCoord = LocationManager.shared.userLocation,
+           sharedCoord.latitude != 0 {
+            explorationStartLocation = CLLocation(latitude: sharedCoord.latitude, longitude: sharedCoord.longitude)
+        } else {
+            explorationStartLocation = locationManager.location
+        }
         explorationConsecutiveOverspeedCount = 0
 
         // 开始探索
@@ -438,7 +448,9 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         // 搜索附近POI（使用已保存的起点，确保距离过滤一致）
         Task {
-            let startCoord = explorationStartLocation?.coordinate ?? locationManager.location?.coordinate
+            let startCoord = explorationStartLocation?.coordinate
+                ?? LocationManager.shared.userLocation
+                ?? locationManager.location?.coordinate
             guard let coord = startCoord else { return }
             // 先刷新订阅状态，避免 currentTier 在订阅加载完成前读到 .free（竞态条件）
             await SubscriptionManager.shared.refreshSubscriptionStatus()
@@ -867,33 +879,38 @@ final class ExplorationManager: NSObject, ObservableObject {
 
         switch tier {
         case .bronze:
-            // 铜级 (200-500m)：仅生存必需品，帮助新玩家活下去
+            // 铜级 (200-500m)：随机一种饮料 + 随机一种食物，帮助新玩家活下去
+            let drinkPool = ["water_bottle", "energy_drink", "cola", "juice"]
+            let foodPool  = ["canned_food", "bread", "instant_noodles"]
             let rewards = [
-                ObtainedItem(itemId: "water_bottle", quantity: 1, quality: generateRandomQuality()),
-                ObtainedItem(itemId: "canned_food",  quantity: 1, quality: generateRandomQuality())
+                ObtainedItem(itemId: drinkPool.randomElement()!, quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: foodPool.randomElement()!,  quantity: 1, quality: generateRandomQuality())
             ]
             logger.logReward(tier: tier, itemCount: rewards.count, items: rewards)
             return rewards
 
         case .silver:
-            // 银级 (500m-1km)：食物×1 + 水×1 + 木材×3，开始积累篝火材料
+            // 银级 (500m-1km)：随机饮料×1 + 随机食物×1 + 木材×3
+            let drinkPool = ["water_bottle", "energy_drink", "cola", "juice"]
+            let foodPool  = ["canned_food", "bread", "instant_noodles"]
             let rewards = [
-                ObtainedItem(itemId: "water_bottle", quantity: 1, quality: generateRandomQuality()),
-                ObtainedItem(itemId: "canned_food",  quantity: 1, quality: generateRandomQuality()),
-                ObtainedItem(itemId: "wood",         quantity: 3, quality: generateRandomQuality())
+                ObtainedItem(itemId: drinkPool.randomElement()!, quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: foodPool.randomElement()!,  quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "wood",                     quantity: 3, quality: generateRandomQuality())
             ]
             logger.logReward(tier: tier, itemCount: rewards.count, items: rewards)
             return rewards
 
         case .gold:
-            // 金级 (1km-2km)：食物×1 + 水×1 + 木材×3 + 布料×2 + 石头×2
-            // 木材+石头凑够篝火（15+10），木材+布料积累帐篷（50+30）
+            // 金级 (1km-2km)：随机饮料×1 + 随机食物×1 + 木材×3 + 布料×2 + 石头×2
+            let drinkPool = ["water_bottle", "energy_drink", "cola", "juice"]
+            let foodPool  = ["canned_food", "bread", "instant_noodles"]
             let rewards = [
-                ObtainedItem(itemId: "water_bottle", quantity: 1, quality: generateRandomQuality()),
-                ObtainedItem(itemId: "canned_food",  quantity: 1, quality: generateRandomQuality()),
-                ObtainedItem(itemId: "wood",         quantity: 3, quality: generateRandomQuality()),
-                ObtainedItem(itemId: "cloth",        quantity: 2, quality: generateRandomQuality()),
-                ObtainedItem(itemId: "stone",        quantity: 2, quality: generateRandomQuality())
+                ObtainedItem(itemId: drinkPool.randomElement()!, quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: foodPool.randomElement()!,  quantity: 1, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "wood",                     quantity: 3, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "cloth",                    quantity: 2, quality: generateRandomQuality()),
+                ObtainedItem(itemId: "stone",                    quantity: 2, quality: generateRandomQuality())
             ]
             logger.logReward(tier: tier, itemCount: rewards.count, items: rewards)
             return rewards
@@ -908,8 +925,10 @@ final class ExplorationManager: NSObject, ObservableObject {
             var usedItemIds: Set<String> = []
             var rewards: [ObtainedItem] = []
 
-            // 保底：水 + 食物
-            for guaranteedId in ["water_bottle", "canned_food"] {
+            // 保底：随机饮料 + 随机食物
+            let guaranteedDrink = ["water_bottle", "energy_drink", "cola", "juice"].randomElement()!
+            let guaranteedFood  = ["canned_food", "instant_noodles", "bread"].randomElement()!
+            for guaranteedId in [guaranteedDrink, guaranteedFood] {
                 rewards.append(ObtainedItem(itemId: guaranteedId, quantity: 1, quality: generateRandomQuality()))
                 usedItemIds.insert(guaranteedId)
                 if rewards.count >= itemCount { break }
@@ -1002,30 +1021,38 @@ final class ExplorationManager: NSObject, ObservableObject {
         switch rarity {
         case .common:
             // 末日生存核心逻辑：先活下来，再发展壮大
-            // 无论走多远，食物和水始终是最基础的需求，每个档位都必须有
-            // 越远档位建材种类越多、占比越高，但食物水永不消失
+            // 食物和饮料多样化：水、饮料类（能量饮料/可乐/果汁）、食物类（罐头/面包/方便面）
             switch tier {
             case .bronze:
-                // 200-500m：新玩家初探，食物水+基础建材（篝火/庇护所原料）
-                return ["water_bottle", "canned_food", "bread", "wood", "stone", "cloth"]
+                // 200-500m：新玩家初探，生存食物饮料+基础建材
+                return ["water_bottle", "energy_drink", "cola", "juice",
+                        "canned_food", "bread", "instant_noodles",
+                        "wood", "stone", "cloth"]
             case .silver:
-                // 500m-1km：废弃街区，食物水+篝火/庇护所材料为主
-                return ["water_bottle", "canned_food", "bread", "wood", "stone", "cloth"]
+                // 500m-1km：废弃街区，食物饮料+建材
+                return ["water_bottle", "energy_drink", "cola", "juice",
+                        "canned_food", "bread", "instant_noodles",
+                        "wood", "stone", "cloth"]
             case .gold:
-                // 1-2km：废墟核心区，食物水+建材均衡（开始出现绳索）
-                return ["water_bottle", "canned_food", "wood", "stone", "cloth", "rope"]
+                // 1-2km：废墟核心区，食物饮料+建材+绷带
+                return ["water_bottle", "energy_drink", "juice",
+                        "canned_food", "instant_noodles",
+                        "wood", "stone", "cloth", "rope", "bandage"]
             case .diamond:
-                // 2-3km：工业废区，进阶建材为主，食物水稀缺但存在
-                return ["water_bottle", "canned_food", "stone", "scrap_metal", "nails", "rope", "cloth"]
+                // 2-3km：工业废区，进阶建材为主，食物饮料稀缺
+                return ["water_bottle", "canned_food",
+                        "stone", "scrap_metal", "nails", "rope", "cloth"]
             case .legendary:
-                // 5km+：远郊重工业区，高级材料为主，食物水仍可找到
-                return ["water_bottle", "canned_food", "scrap_metal", "nails", "rope", "cloth"]
+                // 5km+：远郊重工业区，高级材料为主，食物饮料偶尔出现
+                return ["water_bottle", "canned_food",
+                        "scrap_metal", "nails", "rope", "cloth"]
             default:
-                return ["water_bottle", "canned_food", "bread", "wood", "stone", "cloth"]
+                return ["water_bottle", "energy_drink", "canned_food", "bread", "instant_noodles", "wood", "stone", "cloth"]
             }
         case .uncommon:
-            // 进阶建造材料 + 工具 + 种子
-            return ["scrap_metal", "nails", "rope", "seeds", "medicine", "tool", "glass"]
+            // 进阶食物（压缩饼干/巧克力/午餐肉/运动饮料）+ 建材 + 工具 + 种子
+            return ["sports_drink", "chocolate", "compressed_biscuit", "canned_meat",
+                    "scrap_metal", "nails", "rope", "seeds", "medicine", "tool", "glass"]
         case .rare:
             // Tier2 物资 + 工具箱
             return ["first_aid_kit", "toolbox", "fuel", "blueprint_basic", "build_speedup"]
@@ -1756,6 +1783,21 @@ extension ExplorationManager {
             generatedByAI = false
         }
 
+        // 加油站必掉燃料（1-3个，额外奖励不受AI影响）
+        if poi.type == .gasStation {
+            let fuelQty = Int.random(in: 1...3)
+            let fuelItem = AIGeneratedItem(
+                name: "燃料桶",
+                nameEn: "Fuel Can",
+                story: "加油站储油罐里残留的燃料，虽然不多，但足以让发电机再转几圈。",
+                storyEn: "Residual fuel from the station's tank. Not much, but enough to keep the generator running.",
+                category: "material",
+                rarity: "common",
+                quantity: fuelQty
+            )
+            aiItems.append(fuelItem)
+        }
+
         // POI 搜刮不属于探索会话，sessionId 传 nil 避免触发外键约束
         let sessionId: String? = nil
 
@@ -1976,6 +2018,21 @@ extension ExplorationManager {
         await saveRewardsToInventory(items: itemsToSave, sessionId: result.sessionId)
 
         logger.log("物品已保存到背包", type: .success)
+
+        // 有物品时触发分享（频道是否可用由 ExplorationShareSheet 内部判断）
+        // 延迟 0.6s：等待 ScavengeResultSheet 动画完全结束后再触发第二个 sheet
+        if !itemsToSave.isEmpty {
+            let shareResult = ScavengeResult(
+                poi: result.poi,
+                items: result.items.filter { selectedIds.contains($0.id) },
+                sessionId: result.sessionId,
+                generatedByAI: result.generatedByAI
+            )
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                print("📣 [Share] 设置 pendingExplorationShare, poi=\(shareResult.poi.name), items=\(shareResult.items.count)")
+                self?.pendingExplorationShare = shareResult
+            }
+        }
 
         // 提示玩家最近的下一个可搜刮POI
         showNextPOIHintAfterScavenge(scavengedPOI: scavengedPOI)

@@ -829,6 +829,24 @@ struct UseItemSheet: View {
         PhysiqueManager.shared.vitalEffect(for: itemId)
     }
 
+    private static let drinkIds: Set<String> = ["water_bottle", "energy_drink", "cola", "juice", "sports_drink"]
+    private static let applyIds: Set<String>  = ["bandage", "first_aid_kit"]
+    private static let takeIds: Set<String>   = ["medicine", "antibiotics"]
+
+    private var actionDescription: String {
+        if Self.applyIds.contains(itemId) { return String(localized: "包扎后将获得以下效果") }
+        if Self.takeIds.contains(itemId)  { return String(localized: "服用后将获得以下效果") }
+        if Self.drinkIds.contains(itemId) { return String(localized: "饮用后将获得以下效果") }
+        return String(localized: "食用后将获得以下效果")
+    }
+
+    private var confirmButtonTitle: String {
+        if Self.applyIds.contains(itemId) { return String(localized: "确认包扎") }
+        if Self.takeIds.contains(itemId)  { return String(localized: "确认服用") }
+        if Self.drinkIds.contains(itemId) { return String(localized: "确认饮用") }
+        return String(localized: "确认食用")
+    }
+
     var body: some View {
         ZStack {
             ApocalypseTheme.background.ignoresSafeArea()
@@ -849,7 +867,7 @@ struct UseItemSheet: View {
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
-                    Text("使用后将获得以下效果")
+                    Text(actionDescription)
                         .font(.system(size: 13))
                         .foregroundColor(ApocalypseTheme.textSecondary)
                 }
@@ -879,7 +897,7 @@ struct UseItemSheet: View {
                         dismiss()
                         onConfirm()
                     } label: {
-                        Text("确认使用")
+                        Text(confirmButtonTitle)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)

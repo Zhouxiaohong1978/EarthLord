@@ -84,10 +84,5 @@ struct TaxInfoBanner: View {
                 .shadow(color: .black.opacity(0.4), radius: 12)
         )
         .padding(.horizontal, 20)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
-                onDismiss()
-            }
-        }
     }
 }

@@ -64,7 +64,7 @@ struct TradeItemRow: View {
 
                     // 品质
                     if let quality = item.quality {
-                        Text(quality.rawValue)
+                        Text(quality.displayName)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(quality.color)
                             .padding(.horizontal, 5)

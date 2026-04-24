@@ -737,7 +737,7 @@ struct RewardItemRow: View {
                     .foregroundColor(ApocalypseTheme.textPrimary)
 
                 if let quality = quality {
-                    Text(quality.rawValue)
+                    Text(quality.displayName)
                         .font(.system(size: 12))
                         .foregroundColor(quality.color)
                 }
@@ -808,7 +808,7 @@ struct SelectableRewardItemRow: View {
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(isSelected ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
                     if let quality = item.quality {
-                        Text(quality.rawValue)
+                        Text(quality.displayName)
                             .font(.system(size: 12))
                             .foregroundColor(isSelected ? quality.color : quality.color.opacity(0.4))
                     }

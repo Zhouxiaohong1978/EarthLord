@@ -701,7 +701,7 @@ struct EditProfileSheet: View {
                                         .frame(width: 56, height: 56)
                                         .clipShape(Circle())
                                         .overlay(Circle().stroke(ApocalypseTheme.info, lineWidth: 2))
-                                    Text("已选择自定义头像")
+                                    Text(String(localized: "已选择自定义头像"))
                                         .font(.caption)
                                         .foregroundColor(ApocalypseTheme.info)
                                     Spacer()
@@ -846,7 +846,7 @@ struct EditProfileSheet: View {
 
     // MARK: - 组件
 
-    private func sectionLabel(_ text: String) -> some View {
+    private func sectionLabel(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.subheadline)
             .foregroundColor(ApocalypseTheme.textSecondary)

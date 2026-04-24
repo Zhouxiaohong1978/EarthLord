@@ -918,7 +918,7 @@ final class BuildingManager: ObservableObject {
         let since = building.lastMaintainedAt ?? building.buildCompletedAt ?? building.buildStartedAt
         let daysPassed = Date().timeIntervalSince(since) / 86400.0
         let decayRate = durabilityDecayPerDay(templateId: building.templateId, level: building.level, territoryId: building.territoryId)
-        return max(0, Int(100.0 - daysPassed * decayRate))
+        return max(0, Int(Double(building.durability) - daysPassed * decayRate))
     }
 
     /// 每天耐久衰减量（有维修工坊时寿命 ×1.5）
@@ -981,8 +981,9 @@ final class BuildingManager: ObservableObject {
         return (missing.isEmpty, missing)
     }
 
-    /// 有维修工坊时维护上限 100，无则上限 80
-    func maintenanceMaxDurability(territoryId: String) -> Int {
+    /// 篝火始终恢复 100%；其他建筑有维修工坊→100，无→80
+    func maintenanceMaxDurability(territoryId: String, templateId: String = "") -> Int {
+        if templateId == "campfire" { return 100 }
         let hasWorkshop = playerBuildings.contains {
             $0.templateId == "repair_workshop" &&
             $0.status == .active &&
@@ -1030,7 +1031,7 @@ final class BuildingManager: ObservableObject {
         }
 
         let now = Date()
-        let maxDurability = maintenanceMaxDurability(territoryId: building.territoryId)
+        let maxDurability = maintenanceMaxDurability(territoryId: building.territoryId, templateId: building.templateId)
         try await supabase
             .from("player_buildings")
             .update([

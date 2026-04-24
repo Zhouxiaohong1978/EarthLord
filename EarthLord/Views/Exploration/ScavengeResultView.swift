@@ -252,9 +252,10 @@ struct SelectableAIItemRow: View {
                         }
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(item.name)
+                            Text(item.localizedName)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(isSelected ? ApocalypseTheme.textPrimary : ApocalypseTheme.textMuted)
+                                .fixedSize(horizontal: false, vertical: true)
                             Text(rarityText(item.rarity))
                                 .font(.system(size: 12))
                                 .foregroundColor(rarityColor(item.rarity).opacity(isSelected ? 1 : 0.5))
@@ -267,12 +268,11 @@ struct SelectableAIItemRow: View {
                             .foregroundColor(isSelected ? ApocalypseTheme.primary : ApocalypseTheme.textMuted)
                     }
 
-                    if !item.story.isEmpty {
-                        let preview = item.story.count > 60 ? String(item.story.prefix(60)) + "..." : item.story
-                        Text(preview)
+                    if !item.localizedStory.isEmpty {
+                        Text(item.localizedStory)
                             .font(.system(size: 13))
                             .foregroundColor(isSelected ? ApocalypseTheme.textSecondary : ApocalypseTheme.textMuted.opacity(0.5))
-                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
@@ -346,7 +346,7 @@ struct AIItemRow: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(item.name)
+                    Text(item.localizedName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(ApocalypseTheme.textPrimary)
 
@@ -363,14 +363,14 @@ struct AIItemRow: View {
             }
 
             // 背景故事（可展开）
-            if !item.story.isEmpty {
+            if !item.localizedStory.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(showFullStory ? item.story : shortenedStory)
+                    Text(showFullStory ? item.localizedStory : shortenedStory)
                         .font(.system(size: 13))
                         .foregroundColor(ApocalypseTheme.textSecondary)
                         .lineLimit(showFullStory ? nil : 2)
 
-                    if item.story.count > 50 {
+                    if item.localizedStory.count > 50 {
                         Button {
                             withAnimation {
                                 showFullStory.toggle()
@@ -393,7 +393,7 @@ struct AIItemRow: View {
     }
 
     private var shortenedStory: String {
-        item.story.count > 50 ? String(item.story.prefix(50)) + "..." : item.story
+        item.localizedStory.count > 50 ? String(item.localizedStory.prefix(50)) + "..." : item.localizedStory
     }
 
     private var rarityColor: Color {
@@ -491,7 +491,7 @@ struct ItemRow: View {
 
                     // 品质
                     if let quality = item.quality {
-                        Text(quality.rawValue)
+                        Text(quality.displayName)
                             .font(.system(size: 12))
                             .foregroundColor(qualityColor(quality))
                     }

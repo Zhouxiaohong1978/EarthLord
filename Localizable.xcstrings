@@ -236,10 +236,16 @@
     },
     "【探索发现】在「%@」搜到 %@%@" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Discovery] Found at \"%@\": %@%@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "【探索发现】在「%1$@」搜到 %2$@%3$@"
+            "state" : "translated",
+            "value" : "【探索发现】在「%@」搜到 %@%@"
           }
         }
       }
@@ -2144,6 +2150,7 @@
       }
     },
     "DOOMSDAY LORD" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4575,6 +4582,9 @@
         }
       }
     },
+    "Send text message" : {
+
+    },
     "settings.delete.account" : {
       "localizations" : {
         "en" : {
@@ -4943,6 +4953,9 @@
           }
         }
       }
+    },
+    "Slide up to cancel" : {
+
     },
     "speed.warning.fast" : {
       "extractionState" : "stale",
@@ -6802,6 +6815,7 @@
       }
     },
     "上滑取消" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7140,7 +7154,6 @@
       }
     },
     "个性签名" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7157,7 +7170,6 @@
       }
     },
     "中危" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7513,7 +7525,14 @@
       }
     },
     "仅收听" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen Only"
+          }
+        }
+      }
     },
     "今日" : {
       "extractionState" : "stale",
@@ -8085,7 +8104,6 @@
       }
     },
     "低危" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8844,7 +8862,20 @@
       }
     },
     "公开频道" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Public Channel"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "公开频道"
+          }
+        }
+      }
     },
     "共 %d 件物品税收待领取，前往邮箱收取" : {
       "localizations" : {
@@ -9241,7 +9272,20 @@
       }
     },
     "创建" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建"
+          }
+        }
+      }
     },
     "创建中..." : {
       "localizations" : {
@@ -9917,7 +9961,20 @@
       }
     },
     "加载频道中…" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading channels…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加载频道中…"
+          }
+        }
+      }
     },
     "加速" : {
       "localizations" : {
@@ -10793,6 +10850,7 @@
       }
     },
     "发送文字消息" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11590,6 +11648,9 @@
         }
       }
     },
+    "在废土上建立你的领地" : {
+
+    },
     "在废土上找到了立足之地" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11683,7 +11744,20 @@
       }
     },
     "坐标已共享" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location Shared"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "坐标已共享"
+          }
+        }
+      }
     },
     "坐标点数量不足（至少需要3个点）" : {
       "localizations" : {
@@ -11729,12 +11803,11 @@
       }
     },
     "基本信息" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Basic Info"
+            "value" : "Basic Information"
           }
         },
         "zh-Hans" : {
@@ -11992,7 +12065,6 @@
       }
     },
     "安全" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -14786,6 +14858,7 @@
       }
     },
     "征服世界，从这里开始" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -15807,7 +15880,20 @@
       }
     },
     "探索发现" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exploration"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索发现"
+          }
+        }
+      }
     },
     "探索和圈占领地" : {
       "extractionState" : "stale",
@@ -18116,6 +18202,22 @@
         }
       }
     },
+    "极危" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extreme Danger"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "极危"
+          }
+        }
+      }
+    },
     "松开取消" : {
       "localizations" : {
         "en" : {
@@ -18154,7 +18256,20 @@
       }
     },
     "查看坐标" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Location"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看坐标"
+          }
+        }
+      }
     },
     "查看已完成的交易" : {
       "localizations" : {
@@ -19475,7 +19590,20 @@
       }
     },
     "物品" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "物品"
+          }
+        }
+      }
     },
     "物品不足，还需要: %@" : {
       "localizations" : {
@@ -23534,12 +23662,11 @@
       }
     },
     "账户信息" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Account Info"
+            "value" : "Account Information"
           }
         },
         "zh-Hans" : {
@@ -24509,7 +24636,6 @@
       }
     },
     "选择头像" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25437,7 +25563,20 @@
       }
     },
     "需要审批加入" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Require Approval to Join"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要审批加入"
+          }
+        }
+      }
     },
     "需要建造「瞭望台」解锁对讲机" : {
       "localizations" : {
@@ -26282,7 +26421,20 @@
       }
     },
     "频道设置" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Channel Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "频道设置"
+          }
+        }
+      }
     },
     "频道详情" : {
       "extractionState" : "stale",
@@ -26496,7 +26648,6 @@
       }
     },
     "高危" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

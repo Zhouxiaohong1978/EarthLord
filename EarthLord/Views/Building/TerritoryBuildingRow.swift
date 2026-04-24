@@ -1054,39 +1054,42 @@ struct BuildingMaintenanceSheet: View {
             }
             .frame(height: 8)
 
-            let maxDurability = manager.maintenanceMaxDurability(territoryId: building.territoryId)
+            let isCampfire = building.templateId == "campfire"
+            let maxDurability = manager.maintenanceMaxDurability(territoryId: building.territoryId, templateId: building.templateId)
             let hasWorkshop = maxDurability == 100
             HStack {
                 Text(String(localized: "维护后恢复至"))
                     .font(.system(size: 12))
                     .foregroundColor(ApocalypseTheme.textMuted)
                 Spacer()
-                if hasWorkshop {
-                    HStack(spacing: 3) {
-                        Image(systemName: "wrench.fill")
-                            .font(.system(size: 9))
-                        Text(String(localized: "维修工坊 +50% 寿命"))
-                            .font(.system(size: 11, weight: .medium))
+                if !isCampfire {
+                    if hasWorkshop {
+                        HStack(spacing: 3) {
+                            Image(systemName: "wrench.fill")
+                                .font(.system(size: 9))
+                            Text(String(localized: "维修工坊 +50% 寿命"))
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(ApocalypseTheme.success)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
+                    } else {
+                        HStack(spacing: 3) {
+                            Image(systemName: "wrench.slash.fill")
+                                .font(.system(size: 9))
+                            Text(String(localized: "无维修工坊"))
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(ApocalypseTheme.warning)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(ApocalypseTheme.warning.opacity(0.15)))
                     }
-                    .foregroundColor(ApocalypseTheme.success)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(ApocalypseTheme.success.opacity(0.15)))
-                } else {
-                    HStack(spacing: 3) {
-                        Image(systemName: "wrench.slash.fill")
-                            .font(.system(size: 9))
-                        Text(String(localized: "无维修工坊"))
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundColor(ApocalypseTheme.warning)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(ApocalypseTheme.warning.opacity(0.15)))
                 }
                 Text("\(maxDurability)%")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(hasWorkshop ? ApocalypseTheme.success : ApocalypseTheme.warning)
+                    .foregroundColor(isCampfire ? ApocalypseTheme.success : (hasWorkshop ? ApocalypseTheme.success : ApocalypseTheme.warning))
             }
         }
         .padding(16)
@@ -1441,11 +1444,11 @@ struct BuildingFortifySheet: View {
     }
 
     private func formatDays(_ days: Double) -> String {
-        if days < 1 { return String(format: "%.0f小时", days * 24) }
+        if days < 1 { return String(format: "%.0f", days * 24) + String(localized: "小时") }
         let d = Int(days)
         let h = Int((days - Double(d)) * 24)
-        if h > 0 { return "\(d)天\(h)小时" }
-        return "\(d)天"
+        if h > 0 { return "\(d)" + String(localized: "天") + "\(h)" + String(localized: "小时") }
+        return "\(d)" + String(localized: "天")
     }
 
     private var confirmButton: some View {

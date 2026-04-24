@@ -30,10 +30,12 @@ struct ExplorationShareSheet: View {
 
     private var broadcastContent: String {
         let poiName = result.poi.name
+        let isEn = Locale.current.language.languageCode?.identifier == "en"
+        let separator = isEn ? ", " : "、"
         let itemSummary = result.items.prefix(3).map { item in
-            let name = item.name.isEmpty ? String(localized: "物品") : item.name
+            let name = item.localizedName.isEmpty ? String(localized: "物品") : item.localizedName
             return "\(name)×\(item.quantity)"
-        }.joined(separator: "、")
+        }.joined(separator: separator)
         let extra = result.items.count > 3 ? String(format: String(localized: "等%d件"), result.items.count) : ""
         return String(format: String(localized: "【探索发现】在「%@」搜到 %@%@"), poiName, itemSummary, extra)
     }

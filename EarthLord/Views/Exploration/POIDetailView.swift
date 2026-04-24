@@ -117,10 +117,6 @@ struct POIDetailView: View {
             // 返回按钮
             backButton
         }
-        // 远程搜刮结果 sheet
-        .sheet(item: $explorationManager.scavengeResult) { result in
-            ScavengeResultSheet(result: result)
-        }
         // 远程搜刮确认弹窗
         .confirmationDialog(
             "使用搜刮令",
@@ -132,6 +128,7 @@ struct POIDetailView: View {
                     isRemoteScavenging = true
                     do {
                         try await explorationManager.remoteScavenge(poi: poi)
+                        // 导航由 .onChange(of: showScavengeResult) 处理，避免与 confirmationDialog 动画冲突
                     } catch {
                         remoteScavengeError = error.localizedDescription
                     }
@@ -141,6 +138,14 @@ struct POIDetailView: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("当前持有搜刮令 ×\(explorationManager.scavengePassCount)，消耗1枚即可立即搜刮该废墟，无需前往现场。")
+        }
+        // 搜刮结果就绪后切换到地图页（等 confirmationDialog 动画结束）
+        .onChange(of: explorationManager.showScavengeResult) { isShowing in
+            if isShowing {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
+                }
+            }
         }
         // 错误提示
         .alert("搜刮失败", isPresented: .init(

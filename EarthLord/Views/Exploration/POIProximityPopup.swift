@@ -99,12 +99,12 @@ struct POIProximityPopup: View {
     /// 危险等级文字
     private var dangerText: String {
         switch poi.dangerLevel {
-        case 1: return "安全"
-        case 2: return "低风险"
-        case 3: return "中等风险"
-        case 4: return "高危"
-        case 5: return "极危"
-        default: return "未知"
+        case 1: return String(localized: "安全")
+        case 2: return String(localized: "低危")
+        case 3: return String(localized: "中危")
+        case 4: return String(localized: "高危")
+        case 5: return String(localized: "极危")
+        default: return String(localized: "未知")
         }
     }
 }

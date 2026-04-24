@@ -394,6 +394,16 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
         return lhs.id == rhs.id
     }
 
+    var localizedName: String {
+        let isEn = Locale.current.language.languageCode?.identifier == "en"
+        return isEn ? (nameEn ?? name) : name
+    }
+
+    var localizedStory: String {
+        let isEn = Locale.current.language.languageCode?.identifier == "en"
+        return isEn ? (storyEn ?? story) : story
+    }
+
     /// 获取物品分类枚举
     var itemCategory: ItemCategory {
         switch category {
@@ -462,10 +472,20 @@ struct AIGeneratedItem: Identifiable, Codable, Equatable {
             case "rare", "epic", "legendary": return "equipment_rare"
             default: return "cloth"
             }
+        case "electronic":
+            switch rarity {
+            case "rare", "epic", "legendary": return "electronic_component"
+            default: return "electronic_component"
+            }
+        case "misc", "document", "paper":
+            switch rarity {
+            case "rare", "epic", "legendary": return "blueprint_basic"
+            default: return "scrap_metal"
+            }
         default:
             switch rarity {
-            case "common": return "wood"
-            case "uncommon": return "rope"
+            case "common": return "scrap_metal"
+            case "uncommon": return "scrap_metal"
             case "rare": return "blueprint_basic"
             case "epic": return "scavenge_pass"
             default: return "blueprint_epic"

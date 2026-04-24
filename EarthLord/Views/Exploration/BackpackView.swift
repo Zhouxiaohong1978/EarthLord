@@ -699,12 +699,14 @@ struct BackpackItemCard: View {
             // 第二行：基底材料（AI物品）或重量、品质、稀有度
             if isAIItem {
                 HStack(spacing: 6) {
-                    Text("基底：\(definition.name)")
+                    let baseMaterialId = InventoryManager.classifyDisassembleMaterial(from: item.customName ?? "", description: item.customDescription, fallback: item.itemId)
+                    let baseName = MockExplorationData.getItemDefinition(by: baseMaterialId)?.name ?? baseMaterialId
+                    Text("基底：\(String(localized: String.LocalizationValue(baseName)))")
                         .font(.system(size: 11))
                         .foregroundColor(ApocalypseTheme.textSecondary)
 
                     if let quality = item.quality {
-                        Text(quality.rawValue)
+                        Text(quality.displayName)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(quality.color)
                             .padding(.horizontal, 5)
@@ -719,7 +721,7 @@ struct BackpackItemCard: View {
                         .foregroundColor(ApocalypseTheme.textSecondary)
 
                     if let quality = item.quality {
-                        Text(quality.rawValue)
+                        Text(quality.displayName)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(quality.color)
                             .padding(.horizontal, 6)

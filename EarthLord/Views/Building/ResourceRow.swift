@@ -169,6 +169,8 @@ func resourceDisplayName(for resourceId: String) -> String {
         return String(localized: "燃料")
     case "electronic_component":
         return String(localized: "电子元件")
+    case "flashlight":
+        return String(localized: "item.flashlight")
     case "satellite_module":
         return String(localized: "卫星模块")
     case "blueprint_basic":

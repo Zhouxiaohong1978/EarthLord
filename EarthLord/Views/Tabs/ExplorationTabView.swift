@@ -801,7 +801,7 @@ struct BackpackContentView: View {
     }
 
     /// 筛选后的物品列表（同 itemId+customName 才合并）
-    private var groupedFilteredItems: [(key: String, itemId: String, totalQuantity: Int, customName: String?)] {
+    private var groupedFilteredItems: [(key: String, itemId: String, totalQuantity: Int, customName: String?, customNameEn: String?)] {
         var items = inventoryManager.items
 
         if let category = selectedFilter.category {
@@ -819,18 +819,18 @@ struct BackpackContentView: View {
         }
 
         // 按 itemId + customName 分组：相同名字的 AI 物品堆叠，不同名字的独立显示
-        var grouped: [String: (itemId: String, quantity: Int, customName: String?)] = [:]
+        var grouped: [String: (itemId: String, quantity: Int, customName: String?, customNameEn: String?)] = [:]
         for item in items {
             let groupKey = "\(item.itemId)|\(item.customName ?? "")"
             if let existing = grouped[groupKey] {
-                grouped[groupKey] = (existing.itemId, existing.quantity + item.quantity, existing.customName)
+                grouped[groupKey] = (existing.itemId, existing.quantity + item.quantity, existing.customName, existing.customNameEn)
             } else {
-                grouped[groupKey] = (item.itemId, item.quantity, item.customName)
+                grouped[groupKey] = (item.itemId, item.quantity, item.customName, item.customNameEn)
             }
         }
 
         // 按显示名排序
-        return grouped.map { (key: $0.key, itemId: $0.value.itemId, totalQuantity: $0.value.quantity, customName: $0.value.customName) }
+        return grouped.map { (key: $0.key, itemId: $0.value.itemId, totalQuantity: $0.value.quantity, customName: $0.value.customName, customNameEn: $0.value.customNameEn) }
             .sorted { a, b in
                 let nameA = a.customName ?? MockExplorationData.getItemDefinition(by: a.itemId)?.name ?? a.itemId
                 let nameB = b.customName ?? MockExplorationData.getItemDefinition(by: b.itemId)?.name ?? b.itemId
@@ -1053,14 +1053,14 @@ struct BackpackContentView: View {
 
     // MARK: - 物品列表
 
-    private var standardGroups: [(key: String, itemId: String, totalQuantity: Int, customName: String?)] {
+    private var standardGroups: [(key: String, itemId: String, totalQuantity: Int, customName: String?, customNameEn: String?)] {
         groupedFilteredItems.filter { $0.customName == nil }
     }
-    private var aiGroups: [(key: String, itemId: String, totalQuantity: Int, customName: String?)] {
+    private var aiGroups: [(key: String, itemId: String, totalQuantity: Int, customName: String?, customNameEn: String?)] {
         groupedFilteredItems.filter { $0.customName != nil }
     }
 
-    private func itemCard(for group: (key: String, itemId: String, totalQuantity: Int, customName: String?)) -> some View {
+    private func itemCard(for group: (key: String, itemId: String, totalQuantity: Int, customName: String?, customNameEn: String?)) -> some View {
         Group {
             if let definition = MockExplorationData.getItemDefinition(by: group.itemId) {
                 BackpackItemCardNew(
@@ -1068,6 +1068,7 @@ struct BackpackContentView: View {
                     totalQuantity: group.totalQuantity,
                     definition: definition,
                     customName: group.customName,
+                    customNameEn: group.customNameEn,
                     onUse: {
                         Task { @MainActor in
                             if let backpackItem = inventoryManager.items.first(where: {
@@ -1212,6 +1213,7 @@ struct BackpackItemCardNew: View {
     let totalQuantity: Int
     let definition: ItemDefinition
     var customName: String? = nil
+    var customNameEn: String? = nil
     var onUse: (() -> Void)? = nil
     var onDisassemble: (() -> Void)? = nil
     var onExpandVoucher: (() -> Void)? = nil
@@ -1223,7 +1225,11 @@ struct BackpackItemCardNew: View {
 
     private var isAIItem: Bool { customName != nil }
     private var isDisassemblable: Bool { isAIItem || itemId == "flashlight" || itemId == "satellite_module" }
-    private var displayName: String { customName ?? LanguageManager.shared.localizedString(for: definition.name) }
+    private var displayName: String {
+        let isEn = Locale.current.language.languageCode?.identifier == "en"
+        if isEn, let nameEn = customNameEn { return nameEn }
+        return customName ?? LanguageManager.shared.localizedString(for: definition.name)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1263,7 +1269,9 @@ struct BackpackItemCardNew: View {
                 // 稀有度 / AI物品基底材料
                 HStack(spacing: 8) {
                     if isAIItem {
-                        Text("基底：\(definition.name)")
+                        let baseMaterialId = InventoryManager.classifyDisassembleMaterial(from: customName ?? "", fallback: itemId)
+                        let baseName = MockExplorationData.getItemDefinition(by: baseMaterialId)?.name ?? baseMaterialId
+                        Text("基底：\(String(localized: String.LocalizationValue(baseName)))")
                             .font(.system(size: 11))
                             .foregroundColor(ApocalypseTheme.textSecondary)
                     } else {

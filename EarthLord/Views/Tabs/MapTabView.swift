@@ -109,8 +109,8 @@ struct MapTabView: View {
     /// 是否显示附近交易市场 Sheet
     @State private var showNearbyTradeSheet = false
 
-    /// 玩家手动关闭了附近交易提示的领地 ID（离开范围后自动重置）
-    @State private var dismissedTradingTerritoryId: String?
+    /// 本次探索中玩家手动关闭过交易提示的领主 userId 集合（探索结束后重置）
+    @State private var dismissedTradingOwnerIds: Set<String> = []
 
     // MARK: - 信号捕获状态
 
@@ -384,6 +384,13 @@ struct MapTabView: View {
                     TaxInfoBanner(info: tax) {
                         withAnimation {
                             explorationManager.showTaxInfo = false
+                        }
+                        // 用户关闭横幅后，若有排队的分享结果则触发分享 Sheet
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            if let queued = explorationManager.queuedShareResult {
+                                explorationManager.pendingExplorationShare = queued
+                                explorationManager.queuedShareResult = nil
+                            }
                         }
                     }
                     .padding(.bottom, 100)
@@ -734,7 +741,9 @@ struct MapTabView: View {
 
             // 关闭按钮
             Button {
-                dismissedTradingTerritoryId = nearbyTradingTerritory?.id
+                if let ownerId = nearbyTradingTerritory?.userId {
+                    dismissedTradingOwnerIds.insert(ownerId.lowercased())
+                }
                 withAnimation { nearbyTradingTerritory = nil }
             } label: {
                 Image(systemName: "xmark")
@@ -762,11 +771,12 @@ struct MapTabView: View {
             return
         }
 
+        let currentUserId = AuthManager.shared.currentUser?.id.uuidString.lowercased() ?? ""
         let found = territories.first { territory in
             guard territory.isActive == true,
                   territory.allowTrading ?? true,
-                  !AuthManager.shared.isLinkedUser(territory.userId),
-                  TradeManager.shared.availableOffers.contains(where: { $0.ownerId.uuidString == territory.userId }) else { return false }
+                  territory.userId.lowercased() != currentUserId,
+                  TradeManager.shared.availableOffers.contains(where: { $0.ownerId.uuidString.lowercased() == territory.userId.lowercased() }) else { return false }
             let points = territory.path
             guard !points.isEmpty else { return false }
             // 玩家在领地内部，或距领地边界（任意边线段）100m 以内
@@ -774,12 +784,8 @@ struct MapTabView: View {
             return MapTabView.minDistanceToBoundary(wgsCoord, path: points) <= 100
         }
 
-        // 若玩家已关闭该领地提示且仍在范围内，不再显示；离开范围则重置关闭记录
-        if let found {
-            if found.id == dismissedTradingTerritoryId { return }
-        } else {
-            dismissedTradingTerritoryId = nil
-        }
+        // 若该领主已被玩家手动关闭过，本次探索不再显示
+        if let found, dismissedTradingOwnerIds.contains(found.userId.lowercased()) { return }
 
         withAnimation {
             nearbyTradingTerritory = found
@@ -2028,6 +2034,8 @@ struct MapTabView: View {
         case .exploring:
             // 开始信号捕获定时器
             startSignalCaptureTimer()
+            // 预加载市场挂单，确保进入领地 100m 时能判断该领地是否有挂单
+            Task { try? await TradeManager.shared.fetchAvailableOffers() }
 
         case .overSpeedWarning:
             // 超速警告，触发震动
@@ -2038,6 +2046,7 @@ struct MapTabView: View {
         case .completed:
             // 停止信号捕获
             stopSignalCaptureTimer()
+            dismissedTradingOwnerIds = []
             // 探索完成，先获取统计数据再显示结果
             Task {
                 do {
@@ -2055,6 +2064,7 @@ struct MapTabView: View {
         case .failed(let reason):
             // 停止信号捕获
             stopSignalCaptureTimer()
+            dismissedTradingOwnerIds = []
             // 探索失败，显示失败弹窗
             explorationFailReason = reason.description
             showExplorationFailed = true

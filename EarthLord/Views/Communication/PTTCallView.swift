@@ -351,7 +351,7 @@ struct PTTCallView: View {
                         Text(String(format: "%.0f\"", recordingDuration))
                             .foregroundColor(ApocalypseTheme.textPrimary)
                             .monospacedDigit()
-                        Text("上滑取消")
+                        Text("Slide up to cancel")
                             .foregroundColor(ApocalypseTheme.textMuted)
                     }
                 }
@@ -417,11 +417,11 @@ struct PTTCallView: View {
             // 提示文字
             if !isRecording {
                 VStack(spacing: 4) {
-                    Text(canSend ? "按住录音 · 上滑取消" : cannotSendReason)
+                    Text(canSend ? "Hold to record · Slide up to cancel" : cannotSendReason)
                         .font(.caption)
                         .foregroundColor(ApocalypseTheme.textSecondary)
                     if canSend && !messageText.isEmpty {
-                        Button("发送文字消息") { sendMessage() }
+                        Button("Send text message") { sendMessage() }
                             .font(.caption)
                             .foregroundColor(ApocalypseTheme.primary)
                     }

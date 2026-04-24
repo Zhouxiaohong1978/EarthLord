@@ -349,7 +349,9 @@ struct SystemMessageBubble: View {
     let message: ChannelMessage
 
     private var isExploration: Bool {
-        message.localizedContent.contains("探索发现") || message.localizedContent.contains("Exploration")
+        message.localizedContent.contains("探索发现") ||
+        message.localizedContent.contains("Exploration") ||
+        message.localizedContent.contains("Discovery")
     }
 
     private var isTrade: Bool {
@@ -420,7 +422,7 @@ struct SystemMessageBubble: View {
                             HStack(spacing: 5) {
                                 Image(systemName: "location.fill")
                                     .font(.system(size: 11))
-                                Text(message.senderLocation != nil ? "查看坐标" : "坐标已共享")
+                                Text(message.senderLocation != nil ? String(localized: "查看坐标") : String(localized: "坐标已共享"))
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .foregroundColor(message.senderLocation != nil ? accentColor : ApocalypseTheme.textSecondary)

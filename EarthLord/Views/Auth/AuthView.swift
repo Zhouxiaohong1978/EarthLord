@@ -174,7 +174,7 @@ struct AuthView: View {
                 .fontWeight(.bold)
                 .foregroundColor(ApocalypseTheme.textPrimary)
 
-            Text("征服世界，从这里开始")
+            Text("在废土上建立你的领地")
                 .font(.subheadline)
                 .foregroundColor(ApocalypseTheme.textSecondary)
         }

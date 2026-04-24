@@ -169,6 +169,9 @@ final class ExplorationManager: NSObject, ObservableObject {
     /// 搜刮完成后待分享到频道的结果（UI 监听此字段弹出分享 Sheet）
     @Published var pendingExplorationShare: ScavengeResult? = nil
 
+    /// 有税收提示时暂存的分享结果，等用户关闭税收横幅后再触发
+    @Published var queuedShareResult: ScavengeResult? = nil
+
     /// 今日已探索次数
     @Published var todayExplorationCount: Int = 0
 
@@ -2002,7 +2005,9 @@ extension ExplorationManager {
                 itemsToSave = []
             }
             logger.log("在他人领地搜刮，扣税 \(taxCount) 件，已投递领主邮箱，实得 \(itemsToSave.count) 件", type: .info)
-            // 通知 UI 显示税收提示
+            // 通知 UI 显示税收提示，同时原子性地设置分享结果
+            // 必须在同一个 MainActor.run 内设置，避免用户快速关闭横幅时 queuedShareResult 尚未就绪
+            let shareItems = result.items.filter { selectedIds.contains($0.id) }
             await MainActor.run {
                 lastTaxInfo = TaxInfo(
                     ownerName: freshTerritory.name ?? String(localized: "未知领地"),
@@ -2010,6 +2015,14 @@ extension ExplorationManager {
                     taxCount: taxCount,
                     broadcastMessage: freshTerritory.broadcastMessage
                 )
+                if !shareItems.isEmpty {
+                    queuedShareResult = ScavengeResult(
+                        poi: result.poi,
+                        items: shareItems,
+                        sessionId: result.sessionId,
+                        generatedByAI: result.generatedByAI
+                    )
+                }
                 showTaxInfo = true
             }
         }
@@ -2019,9 +2032,8 @@ extension ExplorationManager {
 
         logger.log("物品已保存到背包", type: .success)
 
-        // 有物品时触发分享（频道是否可用由 ExplorationShareSheet 内部判断）
-        // 延迟 0.6s：等待 ScavengeResultSheet 动画完全结束后再触发第二个 sheet
-        if !itemsToSave.isEmpty {
+        // 无税收领地时直接触发分享
+        if !showTaxInfo, !selectedIds.isEmpty {
             let shareResult = ScavengeResult(
                 poi: result.poi,
                 items: result.items.filter { selectedIds.contains($0.id) },
@@ -2029,7 +2041,6 @@ extension ExplorationManager {
                 generatedByAI: result.generatedByAI
             )
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-                print("📣 [Share] 设置 pendingExplorationShare, poi=\(shareResult.poi.name), items=\(shareResult.items.count)")
                 self?.pendingExplorationShare = shareResult
             }
         }
@@ -2052,6 +2063,9 @@ extension ExplorationManager {
             logger.logError("没有待确认的探索奖励结果")
             return
         }
+        // 立即清除，防止语言切换导致视图重建时弹窗重现并二次领取
+        explorationResult = nil
+        explorationState = .idle
         let selectedItems = result.obtainedItems.filter { selectedIds.contains($0.id) }
         logger.log("用户确认探索奖励，保存 \(selectedItems.count)/\(result.obtainedItems.count) 件物品到背包", type: .info)
         await saveRewardsToInventory(items: selectedItems, sessionId: nil)

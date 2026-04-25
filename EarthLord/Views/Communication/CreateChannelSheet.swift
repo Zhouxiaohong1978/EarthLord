@@ -34,17 +34,16 @@ struct CreateChannelSheet: View {
 
     private var unlockAlertMessage: String {
         var lines: [String] = []
-        if !isTerritoryMet(for: selectedType) {
-            let needed = requiredTerritoryCount(for: selectedType)
-            lines.append(String(format: String(localized: "需要圈地 %d 块（当前 %d 块）"), needed, territoryCount))
-        }
         if !isDeviceUnlocked(for: selectedType) {
             switch selectedType {
-            case .walkie:    lines.append(String(localized: "需要建造「瞭望台」解锁对讲机"))
-            case .camp:      lines.append(String(localized: "需要建造「营地电台」解锁营地电台设备"))
-            case .satellite: lines.append(String(localized: "需要建造「领主指挥所」解锁卫星电话"))
+            case .walkie:    lines.append(String(localized: "需要解锁对讲机、营地电台或卫星设备"))
+            case .camp:      lines.append(String(localized: "需要建造「营地电台」或解锁卫星设备"))
+            case .satellite: lines.append(String(localized: "需要建造「领主指挥所」解锁卫星设备"))
             default: break
             }
+        } else if !isTokenUnlocked(for: selectedType) && !isTerritoryMet(for: selectedType) {
+            let needed = requiredTerritoryCount(for: selectedType)
+            lines.append(String(format: String(localized: "需要圈地 %d 块（当前 %d 块）"), needed, territoryCount))
         }
         return lines.joined(separator: "\n")
     }
@@ -66,18 +65,31 @@ struct CreateChannelSheet: View {
         }
     }
 
-    private func requiredDevice(for type: ChannelType) -> DeviceType? {
+    private func isDeviceUnlocked(for type: ChannelType) -> Bool {
+        let capable: [DeviceType]
         switch type {
-        case .walkie:    return .walkieTalkie
-        case .camp:      return .campRadio
-        case .satellite: return .satellite
-        default:         return nil
+        case .walkie:    capable = [.walkieTalkie, .campRadio, .satellite]
+        case .camp:      capable = [.campRadio, .satellite]
+        case .satellite: capable = [.satellite]
+        default:         return true
+        }
+        return capable.contains { dt in
+            commManager.devices.first(where: { $0.deviceType == dt })?.isUnlocked ?? false
         }
     }
 
-    private func isDeviceUnlocked(for type: ChannelType) -> Bool {
-        guard let required = requiredDevice(for: type) else { return true }
-        return commManager.devices.first(where: { $0.deviceType == required })?.isUnlocked ?? false
+    /// 该等级或更高等级中，是否有通过升级令解锁的设备（付费路线，无领地门槛）
+    private func isTokenUnlocked(for type: ChannelType) -> Bool {
+        let capable: [DeviceType]
+        switch type {
+        case .walkie:    capable = [.walkieTalkie, .campRadio, .satellite]
+        case .camp:      capable = [.campRadio, .satellite]
+        case .satellite: capable = [.satellite]
+        default:         return true
+        }
+        return capable.contains { dt in
+            commManager.devices.first(where: { $0.deviceType == dt })?.isTokenUnlocked == true
+        }
     }
 
     private func isTerritoryMet(for type: ChannelType) -> Bool {
@@ -85,16 +97,11 @@ struct CreateChannelSheet: View {
     }
 
     private func isFullyUnlocked(for type: ChannelType) -> Bool {
-        switch type {
-        case .walkie:
-            return isTerritoryMet(for: .walkie) && isDeviceUnlocked(for: .walkie)
-        case .camp:
-            return isFullyUnlocked(for: .walkie) && isTerritoryMet(for: .camp) && isDeviceUnlocked(for: .camp)
-        case .satellite:
-            return isFullyUnlocked(for: .camp) && isTerritoryMet(for: .satellite) && isDeviceUnlocked(for: .satellite)
-        default:
-            return true
-        }
+        guard isDeviceUnlocked(for: type) else { return false }
+        // 升级令解锁（付费）：无领地门槛
+        if isTokenUnlocked(for: type) { return true }
+        // 建筑解锁（免费）：需满足领地数量
+        return isTerritoryMet(for: type)
     }
 
     private func channelTypeColor(_ type: ChannelType) -> Color {

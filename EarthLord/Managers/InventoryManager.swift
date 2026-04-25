@@ -498,10 +498,10 @@ final class InventoryManager: ObservableObject {
 
         if item.itemId == "flashlight" {
             returnItemId = "electronic_component"
-            returnQty = 1
+            returnQty = item.quantity
         } else if item.itemId == "satellite_module" {
             returnItemId = "electronic_component"
-            returnQty = 5
+            returnQty = 5 * item.quantity
         } else {
             guard let customName = item.customName else { return (item.itemId, 0) }
             returnItemId = InventoryManager.classifyDisassembleMaterial(from: customName, description: item.customDescription, fallback: item.itemId)

@@ -143,7 +143,9 @@ struct OfficialChannelDetailView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(filteredMessages) { message in
-                    OfficialMessageCard(message: message)
+                    OfficialMessageCard(message: message, isAdmin: authManager.isAdmin) {
+                        Task { await deleteMessage(message) }
+                    }
                 }
             }
             .padding(16)
@@ -196,12 +198,25 @@ struct OfficialChannelDetailView: View {
         }
         isLoading = false
     }
+
+    private func deleteMessage(_ message: ChannelMessage) async {
+        do {
+            try await communicationManager.deleteOfficialMessage(messageId: message.messageId)
+            messages.removeAll { $0.messageId == message.messageId }
+        } catch {
+            print("删除消息失败: \(error)")
+        }
+    }
 }
 
 // MARK: - Official Message Card
 
 struct OfficialMessageCard: View {
     let message: ChannelMessage
+    var isAdmin: Bool = false
+    var onDelete: (() -> Void)? = nil
+
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -227,6 +242,19 @@ struct OfficialMessageCard: View {
                 Text(message.timeAgo)
                     .font(.caption2)
                     .foregroundColor(ApocalypseTheme.textSecondary)
+
+                if isAdmin {
+                    Button(action: { showDeleteConfirm = true }) {
+                        Image(systemName: "trash")
+                            .font(.caption)
+                            .foregroundColor(ApocalypseTheme.danger)
+                    }
+                    .padding(.leading, 8)
+                    .confirmationDialog("删除这条消息？", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+                        Button("删除", role: .destructive) { onDelete?() }
+                        Button("取消", role: .cancel) {}
+                    }
+                }
             }
 
             // Content

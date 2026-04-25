@@ -126,8 +126,8 @@ final class AIItemGenerator {
                 throw AIItemGeneratorError.aiGenerationFailed(errorMsg)
             }
 
-            // 转换为 AIGeneratedItem
-            let generatedItems = items.map { item in
+            // 转换为 AIGeneratedItem，过滤掉名称与 POI 名相同或为空的无效物品
+            let allItems = items.map { item in
                 AIGeneratedItem(
                     name: item.name,
                     nameEn: item.nameEn,
@@ -138,6 +138,13 @@ final class AIItemGenerator {
                     quantity: 1,
                     quality: generateRandomQuality()
                 )
+            }
+            let generatedItems = allItems.filter { item in
+                !item.name.isEmpty && item.name != poi.name
+            }
+
+            guard !generatedItems.isEmpty else {
+                throw AIItemGeneratorError.aiGenerationFailed("AI返回的物品名称无效（与POI名相同）")
             }
 
             logger.log("✅ AI生成成功: \(generatedItems.count) 件物品", type: .success)

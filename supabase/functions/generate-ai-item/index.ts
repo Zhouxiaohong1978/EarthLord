@@ -151,7 +151,7 @@ Deno.serve(async (req: Request) => {
 - legendary: 传说物品，可遇不可求
 
 ### 生成规则
-1. **名称**：5-12 个汉字，富有创意，符合末日氛围（如："生锈的军用水壶"）
+1. **名称**：5-12 个汉字，必须是具体可携带的实物名称（如："生锈的军用水壶"）。**严禁使用地点名称、店铺名称或建筑名称作为物品名称**
 2. **英文名称**：对应的英文名称，3-6个英文单词（如："Rusty Military Canteen"）
 3. **故事**：15-50 个汉字，描述物品的状态、来源或特殊之处
 4. **英文故事**：对应的英文背景故事，15-40个英文单词
@@ -227,6 +227,10 @@ Deno.serve(async (req: Request) => {
     for (const item of items) {
       if (!item.name || !item.story || !item.category || !item.rarity) {
         throw new Error("物品数据缺少必需字段");
+      }
+      // 防止 AI 把 POI 名称当物品名返回
+      if (item.name === poiName || item.name.includes(poiName)) {
+        throw new Error(`物品名称不能与POI名称相同: ${item.name}`);
       }
       if (!item.name_en) item.name_en = item.name;
       if (!item.story_en) item.story_en = item.story;

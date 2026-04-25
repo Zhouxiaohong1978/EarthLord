@@ -171,6 +171,7 @@ struct CommunicationDevice: Identifiable, Codable, Equatable {
     var deviceLevel: Int
     var isUnlocked: Bool
     var isCurrent: Bool
+    var isTokenUnlocked: Bool
     let createdAt: Date
     var updatedAt: Date
 
@@ -181,6 +182,7 @@ struct CommunicationDevice: Identifiable, Codable, Equatable {
         deviceLevel: Int = 1,
         isUnlocked: Bool = false,
         isCurrent: Bool = false,
+        isTokenUnlocked: Bool = false,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -190,6 +192,7 @@ struct CommunicationDevice: Identifiable, Codable, Equatable {
         self.deviceLevel = deviceLevel
         self.isUnlocked = isUnlocked
         self.isCurrent = isCurrent
+        self.isTokenUnlocked = isTokenUnlocked
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -230,6 +233,7 @@ struct CommunicationDeviceDB: Codable {
     let deviceLevel: Int
     let isUnlocked: Bool
     let isCurrent: Bool
+    let isTokenUnlocked: Bool
     let createdAt: String?
     let updatedAt: String?
 
@@ -240,6 +244,7 @@ struct CommunicationDeviceDB: Codable {
         case deviceLevel = "device_level"
         case isUnlocked = "is_unlocked"
         case isCurrent = "is_current"
+        case isTokenUnlocked = "is_token_unlocked"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -266,6 +271,7 @@ struct CommunicationDeviceDB: Codable {
             deviceLevel: deviceLevel,
             isUnlocked: isUnlocked,
             isCurrent: isCurrent,
+            isTokenUnlocked: isTokenUnlocked,
             createdAt: created,
             updatedAt: updated
         )

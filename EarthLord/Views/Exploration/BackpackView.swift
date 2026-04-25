@@ -589,8 +589,8 @@ struct BackpackItemCard: View {
     private var isDisassemblable: Bool { isAIItem || item.itemId == "flashlight" || item.itemId == "satellite_module" }
     private var displayName: String { item.customName ?? definition.name }
     private var disassembleReturn: Int {
-        if item.itemId == "flashlight" { return 1 }
-        if item.itemId == "satellite_module" { return 5 }
+        if item.itemId == "flashlight" { return item.quantity }
+        if item.itemId == "satellite_module" { return 5 * item.quantity }
         return max(1, Int(Double(item.quantity) * 0.6))
     }
     private var disassembleReturnItemId: String {

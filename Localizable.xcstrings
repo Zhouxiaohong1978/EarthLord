@@ -9484,6 +9484,9 @@
         }
       }
     },
+    "删除这条消息？" : {
+
+    },
     "删除邮件" : {
       "localizations" : {
         "en" : {
@@ -25579,6 +25582,7 @@
       }
     },
     "需要建造「瞭望台」解锁对讲机" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25588,7 +25592,11 @@
         }
       }
     },
+    "需要建造「营地电台」或解锁卫星设备" : {
+
+    },
     "需要建造「营地电台」解锁营地电台设备" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25599,6 +25607,7 @@
       }
     },
     "需要建造「领主指挥所」解锁卫星电话" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25607,6 +25616,9 @@
           }
         }
       }
+    },
+    "需要建造「领主指挥所」解锁卫星设备" : {
+
     },
     "需要支援" : {
       "localizations" : {
@@ -25627,6 +25639,9 @@
           }
         }
       }
+    },
+    "需要解锁对讲机、营地电台或卫星设备" : {
+
     },
     "靠近废墟额外获得 AI 生成的末日物资" : {
       "localizations" : {

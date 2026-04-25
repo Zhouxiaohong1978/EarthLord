@@ -397,10 +397,10 @@ final class CommunicationManager: ObservableObject {
 
         // 如果目标设备已存在则解锁，不存在则插入新记录
         if let existingIndex = devices.firstIndex(where: { $0.deviceType == nextType }) {
-            // 已有记录但未解锁 → 解锁并设为当前设备
+            // 已有记录但未解锁 → 解锁并标记为升级令解锁
             try await supabase
                 .from("communication_devices")
-                .update(["is_unlocked": true, "is_current": true])
+                .update(["is_unlocked": true, "is_current": true, "is_token_unlocked": true])
                 .eq("user_id", value: userId.uuidString)
                 .eq("device_type", value: nextType.rawValue)
                 .execute()
@@ -415,26 +415,29 @@ final class CommunicationManager: ObservableObject {
 
             devices[existingIndex].isUnlocked = true
             devices[existingIndex].isCurrent = true
+            devices[existingIndex].isTokenUnlocked = true
             if let oldIndex = devices.firstIndex(where: { $0.deviceType == current.deviceType }) {
                 devices[oldIndex].isCurrent = false
             }
             currentDevice = devices[existingIndex]
 
         } else {
-            // 不存在该设备记录 → 插入
+            // 不存在该设备记录 → 插入，标记为升级令解锁
             struct NewDevice: Encodable {
                 let user_id: String
                 let device_type: String
                 let device_level: Int
                 let is_unlocked: Bool
                 let is_current: Bool
+                let is_token_unlocked: Bool
             }
             let payload = NewDevice(
                 user_id: userId.uuidString,
                 device_type: nextType.rawValue,
                 device_level: 1,
                 is_unlocked: true,
-                is_current: true
+                is_current: true,
+                is_token_unlocked: true
             )
             try await supabase
                 .from("communication_devices")
@@ -1452,6 +1455,14 @@ final class CommunicationManager: ObservableObject {
         channelMessages[CommunicationManager.officialChannelId] = filtered
         logger.log("成功加载 \(filtered.count) 条官方消息", type: .success)
         return filtered
+    }
+
+    func deleteOfficialMessage(messageId: UUID) async throws {
+        try await supabase
+            .from("channel_messages")
+            .delete()
+            .eq("message_id", value: messageId.uuidString)
+            .execute()
     }
 
     // MARK: - Day 36: PTT Methods

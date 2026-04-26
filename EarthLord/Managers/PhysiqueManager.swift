@@ -244,6 +244,7 @@ final class PhysiqueManager: ObservableObject {
         case "instant_noodles":    return ItemVitalEffect(satietyBoost: 30, hydrationBoost: 10)
         case "chocolate":          return ItemVitalEffect(satietyBoost: 25, hydrationBoost:  0)
         case "compressed_biscuit": return ItemVitalEffect(satietyBoost: 35, hydrationBoost:  0)
+        case "hardtack":           return ItemVitalEffect(satietyBoost: 40, hydrationBoost:  0)
         case "canned_meat":        return ItemVitalEffect(satietyBoost: 55, hydrationBoost:  5)
         // 农业产出
         case "vegetable":          return ItemVitalEffect(satietyBoost: 15, hydrationBoost:  5)

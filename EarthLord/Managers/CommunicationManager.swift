@@ -1330,6 +1330,11 @@ final class CommunicationManager: ObservableObject {
                 "p_channel_id": channelId.uuidString
             ]).execute()
 
+            // 同步清零本地预览的未读数
+            if let index = channelPreviews.firstIndex(where: { $0.channelId == channelId }) {
+                channelPreviews[index] = channelPreviews[index].withUnreadCount(0)
+            }
+
             logger.log("标记频道已读: \(channelId)", type: .success)
         } catch {
             logger.logError("标记已读失败", error: error)

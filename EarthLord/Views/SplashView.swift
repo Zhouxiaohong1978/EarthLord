@@ -64,7 +64,10 @@ struct SplashView: View {
     // MARK: - 视频播放
 
     private func setupVideo() {
-        guard let url = Bundle.main.url(forResource: "splash_video", withExtension: "mov") else {
+        let preferredLanguage = Locale.preferredLanguages.first ?? ""
+        let isChinese = preferredLanguage.hasPrefix("zh")
+        let resourceName = isChinese ? "splash_video" : "splash_video_en"
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: "mov") ?? Bundle.main.url(forResource: "splash_video", withExtension: "mov") else {
             isFinished = true
             return
         }

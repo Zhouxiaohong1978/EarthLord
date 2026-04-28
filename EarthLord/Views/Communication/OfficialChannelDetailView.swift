@@ -267,7 +267,7 @@ struct OfficialMessageCard: View {
             HStack {
                 Image(systemName: "megaphone.fill")
                     .font(.caption2)
-                Text(message.senderCallsign ?? LanguageManager.shared.localizedString(for: "末日广播站"))
+                Text(message.senderCallsign == "末日广播站" || message.senderCallsign == nil ? LanguageManager.shared.localizedString(for: "末日广播站") : message.senderCallsign!)
                     .font(.caption2)
             }
             .foregroundColor(ApocalypseTheme.textSecondary)

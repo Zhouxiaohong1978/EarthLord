@@ -8577,7 +8577,20 @@
       }
     },
     "健康值" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Health"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "健康值"
+          }
+        }
+      }
     },
     "储存" : {
       "localizations" : {
@@ -11652,7 +11665,20 @@
       }
     },
     "在废土上建立你的领地" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build Your Territory in the Wasteland"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在废土上建立你的领地"
+          }
+        }
+      }
     },
     "在废土上找到了立足之地" : {
       "extractionState" : "stale",

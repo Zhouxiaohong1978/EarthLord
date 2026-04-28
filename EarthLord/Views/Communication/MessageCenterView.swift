@@ -441,6 +441,9 @@ struct MessageCenterView: View {
         guard let userId = authManager.currentUser?.id else { return }
 
         isLoading = true
+        // 同步通知相关状态，确保角标数量准确
+        await dailyRewardManager.checkTodayStatus()
+        await mailboxManager.loadMails()
         do {
             // 确保订阅官方频道
             await communicationManager.ensureOfficialChannelSubscribed(userId: userId)
@@ -449,31 +452,30 @@ struct MessageCenterView: View {
             // 同时加载订阅频道（用于导航）
             _ = try await communicationManager.loadSubscribedChannels(userId: userId)
 
-            // 确保官方频道始终显示在列表中
-            ensureOfficialChannelInPreviews()
+            // 确保官方频道始终显示在列表中，并更新真实未读数
+            await ensureOfficialChannelInPreviews(userId: userId)
         } catch {
             print("加载消息中心失败: \(error)")
-            // 即使加载失败，也确保官方频道显示
-            ensureOfficialChannelInPreviews()
+            await ensureOfficialChannelInPreviews(userId: userId)
         }
         isLoading = false
     }
 
-    /// 确保官方频道始终在预览列表中
-    private func ensureOfficialChannelInPreviews() {
+    /// 确保官方频道始终在预览列表中，并同步真实未读数
+    private func ensureOfficialChannelInPreviews(userId: UUID? = nil) async {
         let officialId = CommunicationManager.officialChannelId
+        let unreadCount = userId != nil ? (try? await communicationManager.fetchOfficialChannelUnreadCount(userId: userId!)) ?? 0 : 0
 
-        // 检查官方频道是否已在列表中
-        if !communicationManager.channelPreviews.contains(where: { $0.channelId == officialId }) {
-            // 添加默认的官方频道预览
-            let officialPreview = ChannelPreview.officialChannelPreview()
-            communicationManager.channelPreviews.insert(officialPreview, at: 0)
+        if let index = communicationManager.channelPreviews.firstIndex(where: { $0.channelId == officialId }) {
+            // 已在列表中：更新未读数并移到最前
+            var preview = communicationManager.channelPreviews.remove(at: index)
+            if unreadCount > 0 { preview = preview.withUnreadCount(unreadCount) }
+            communicationManager.channelPreviews.insert(preview, at: 0)
         } else {
-            // 确保官方频道在列表最前面
-            if let index = communicationManager.channelPreviews.firstIndex(where: { $0.channelId == officialId }), index != 0 {
-                let preview = communicationManager.channelPreviews.remove(at: index)
-                communicationManager.channelPreviews.insert(preview, at: 0)
-            }
+            // 不在列表中：创建默认预览并插入
+            var officialPreview = ChannelPreview.officialChannelPreview()
+            if unreadCount > 0 { officialPreview = officialPreview.withUnreadCount(unreadCount) }
+            communicationManager.channelPreviews.insert(officialPreview, at: 0)
         }
     }
 }

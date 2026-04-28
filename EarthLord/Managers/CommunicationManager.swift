@@ -1457,6 +1457,34 @@ final class CommunicationManager: ObservableObject {
         return filtered
     }
 
+    /// 获取官方频道真实未读数（基于 channel_reads 表的 last_read_at）
+    func fetchOfficialChannelUnreadCount(userId: UUID) async throws -> Int {
+        struct ReadRecord: Codable {
+            let lastReadAt: String?
+            enum CodingKeys: String, CodingKey { case lastReadAt = "last_read_at" }
+        }
+        let reads: [ReadRecord] = (try? await supabase
+            .from("channel_reads")
+            .select("last_read_at")
+            .eq("user_id", value: userId.uuidString)
+            .eq("channel_id", value: CommunicationManager.officialChannelId.uuidString)
+            .limit(1)
+            .execute()
+            .value) ?? []
+
+        var query = supabase
+            .from("channel_messages")
+            .select("message_id", count: .exact)
+            .eq("channel_id", value: CommunicationManager.officialChannelId.uuidString)
+
+        if let lastReadAtStr = reads.first?.lastReadAt {
+            query = query.gt("created_at", value: lastReadAtStr)
+        }
+
+        let response = try await query.execute()
+        return response.count ?? 0
+    }
+
     func deleteOfficialMessage(messageId: UUID) async throws {
         try await supabase
             .from("channel_messages")

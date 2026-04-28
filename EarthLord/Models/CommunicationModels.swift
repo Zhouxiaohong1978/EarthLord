@@ -1198,6 +1198,21 @@ struct ChannelPreview: Codable, Identifiable {
             lastMessageSender: nil
         )
     }
+
+    func withUnreadCount(_ count: Int) -> ChannelPreview {
+        ChannelPreview(
+            channelId: channelId,
+            channelName: channelName,
+            channelType: channelType,
+            channelCode: channelCode,
+            memberCount: memberCount,
+            isMuted: isMuted,
+            unreadCount: count,
+            lastMessageContent: lastMessageContent,
+            lastMessageTime: lastMessageTime,
+            lastMessageSender: lastMessageSender
+        )
+    }
 }
 
 // MARK: - SurvivorBeaconInfo 求生信标
